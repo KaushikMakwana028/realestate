@@ -66,10 +66,12 @@ $route['edit_site/(:num)'] = 'site/edit_site/$1';
 $route['expenses/(:num)'] = 'site/expenses/$1';
 
 
+$route['plots'] = 'plots/index';
 $route['plots/(:num)'] = 'plots/index/$1';
 
 $route['add_plot'] = 'plots/add_plot';
 $route['plot/edit_plot/(:num)'] = 'plots/edit_plot/$1';
+$route['plots/buyer_details/(:num)'] = 'plots/buyer_details/$1';
 
 $route['users'] = 'user';
 $route['add_user'] = 'user/add_user';
@@ -78,6 +80,13 @@ $route['add_upad'] = 'user/add_upad';
 $route['edit_user/(:num)'] = 'user/edit_user/$1';
 $route['payment_data/(:num)'] = 'plots/payment_data/$1';
 // $route['profile'] = 'user/add_upad';
+
+$route['superadmin/admins'] = 'superadmin/admins';
+$route['superadmin/sites'] = 'superadmin/sites';
+$route['superadmin/get_admins'] = 'superadmin/get_admins';
+$route['superadmin/get_admin_detail/(:num)'] = 'superadmin/get_admin_detail/$1';
+$route['superadmin/get_all_sites'] = 'superadmin/get_all_sites';
+$route['superadmin/get_site_detail/(:num)'] = 'superadmin/get_site_detail/$1';
 
 
 

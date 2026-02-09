@@ -27,6 +27,7 @@
                     <div class="row">
                         <div class="col">
                             <form id="editSiteForm" method="post" enctype="multipart/form-data" action="<?= base_url('site/update_site/' . $site->id); ?>" class="needs-validation" novalidate>
+                                <input type="hidden" name="isActive" value="<?= isset($site->isActive) ? (int)$site->isActive : 1; ?>">
 
                                 <!-- Site Name -->
                                 <div class="mb-3">
@@ -87,6 +88,21 @@
                                         required
                                     >
                                     <div class="invalid-feedback">Please enter the number of plots.</div>
+                                </div>
+
+                                <!-- Site Images -->
+                                <div class="mb-3">
+                                    <label for="siteImages" class="form-label">Site Images</label>
+                                    <input type="file" name="site_images[]" class="form-control" id="siteImages" accept="image/*" multiple>
+                                    <small class="text-muted">You can add more images.</small>
+                                    <?php if (!empty($images)): ?>
+                                        <div class="mt-2 d-flex flex-wrap gap-2">
+                                            <?php foreach ($images as $img): ?>
+                                                <img src="<?= base_url($img); ?>" alt="Site Image" style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <div id="siteImagesPreview" class="mt-2 d-flex flex-wrap gap-2"></div>
                                 </div>
 
                               

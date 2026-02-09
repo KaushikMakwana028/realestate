@@ -56,6 +56,14 @@
                                     <div class="invalid-feedback">Please enter the number of plots.</div>
                                 </div>
 
+                                <!-- Site Images -->
+                                <div class="mb-3">
+                                    <label for="siteImages" class="form-label">Site Images</label>
+                                    <input type="file" name="site_images[]" class="form-control" id="siteImages" accept="image/*" multiple>
+                                    <small class="text-muted">You can select multiple images.</small>
+                                    <div id="siteImagesPreview" class="mt-2 d-flex flex-wrap gap-2"></div>
+                                </div>
+
                                 <!-- Submit Button -->
                                 <div class="mb-3">
                                     <button type="submit" class="btn btn-primary w-100">Save Site</button>

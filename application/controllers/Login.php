@@ -30,19 +30,11 @@ class Login extends CI_Controller
 
 
 
-if ($this->session->userdata('admin')) {
-
-
-
-			if ($this->router->fetch_method() != 'logout') {
-
+        if ($this->session->userdata('admin')) {
+            if ($this->router->fetch_method() != 'logout') {
                 redirect('dashboard');
-
             }
-
-
-
-		}
+        }
 
     }
 
@@ -70,6 +62,8 @@ if ($this->session->userdata('admin')) {
                     'user_id'       => $user->id,
                     'user_name'     => $user->name,
                     'business_name' => $user->business_name,
+                    'profile_image' => $user->profile_image ?? null,
+                    'role'          => $user->role ?? 'admin',
                     'logged_in'     => TRUE
                 ];
 
@@ -138,6 +132,7 @@ if ($this->session->userdata('admin')) {
     'user_id'       => $user_id,
     'user_name'     => $data['name'],
     'business_name' => $data['business_name'],
+    'role'          => 'admin',
     'logged_in'     => TRUE
 ];
 

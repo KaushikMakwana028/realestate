@@ -43,6 +43,12 @@
         <div class="invalid-feedback">Please select a site name.</div>
     </div>
 
+    <!-- Site Images Preview -->
+    <div class="mb-3">
+        <label class="form-label">Site Images</label>
+        <div id="expenseSiteImages" class="d-flex flex-wrap gap-2"></div>
+    </div>
+
    
     <div class="mb-3">
         <label for="expPrice" class="form-label">Price</label>

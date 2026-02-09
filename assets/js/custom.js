@@ -171,6 +171,34 @@ $(document).ready(function () {
     });
   }
 
+  if ($("#siteImages").length) {
+    $("#siteImages").on("change", function () {
+      const preview = $("#siteImagesPreview");
+      preview.empty();
+
+      const files = this.files;
+      if (!files || files.length === 0) return;
+
+      Array.from(files).forEach((file) => {
+        if (!file.type.startsWith("image/")) return;
+        const reader = new FileReader();
+        reader.onload = function (event) {
+          const img = $("<img />", {
+            src: event.target.result,
+            css: {
+              width: "80px",
+              height: "80px",
+              objectFit: "cover",
+              borderRadius: "6px",
+            },
+          });
+          preview.append(img);
+        };
+        reader.readAsDataURL(file);
+      });
+    });
+  }
+
   if ($("#addPlotForm").length) {
     $("#addPlotForm").on("submit", function (e) {
       e.preventDefault();
@@ -218,7 +246,7 @@ $(document).ready(function () {
       });
     });
   }
-   if ($("#addexpForm").length) {
+  if ($("#addexpForm").length) {
     $("#addexpForm").on("submit", function (e) {
       e.preventDefault();
 
@@ -261,6 +289,39 @@ $(document).ready(function () {
             "Something went wrong, please try again.",
             "error"
           );
+        },
+      });
+    });
+
+    $("#siteName").on("change", function () {
+      const siteId = $(this).val();
+      const preview = $("#expenseSiteImages");
+      preview.empty();
+
+      if (!siteId) return;
+
+      $.ajax({
+        url: site_url + "site/get_site_images",
+        type: "POST",
+        data: { site_id: siteId },
+        dataType: "json",
+        success: function (res) {
+          if (!res || !res.status || !res.images || res.images.length === 0) {
+            return;
+          }
+
+          res.images.forEach((imgPath) => {
+            const img = $("<img />", {
+              src: site_url + imgPath,
+              css: {
+                width: "80px",
+                height: "80px",
+                objectFit: "cover",
+                borderRadius: "6px",
+              },
+            });
+            preview.append(img);
+          });
         },
       });
     });
@@ -733,13 +794,14 @@ $(document).ready(function () {
                 $.each(res.data, function (i, plot) {
                     let statusBadge = "";
 
-                    if (plot.status === "available") {
+                    const status = String(plot.status || "").toLowerCase();
+                    if (status === "available") {
                         statusBadge =
                           '<div class="badge rounded-pill text-success bg-light-success p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Available</div>';
-                    } else if (plot.status === "sold") {
+                    } else if (status === "sold") {
                         statusBadge =
                           '<div class="badge rounded-pill text-danger bg-light-danger p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Sold</div>';
-                    } else if (plot.status === "pending") {
+                    } else if (status === "pending") {
                         statusBadge =
                           '<div class="badge rounded-pill text-warning bg-light-warning p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Pending</div>';
                     } else if (plot.isActive == 0) {
@@ -757,12 +819,12 @@ $(document).ready(function () {
                           <td>${plot.facing || "-"}</td>
                           <td>${plot.price || "-"}</td>
                           <td>${statusBadge}</td>
-                       <td>${plot.status === "sold" ? plot.name : "-"}</td>
+                       <td>${status === "sold" ? (plot.name || "-") : "-"}</td>
                           <td>
                             <div class="d-flex order-actions">
                               <a href="${site_url}plot/edit_plot/${plot.id}" class="text"><i class="bx bxs-edit"></i></a>
                               <a href="javascript:;" class="ms-3 text deletePlot" data-id="${plot.id}"><i class="bx bxs-trash"></i></a>
-                              ${plot.status === "sold" 
+                              ${(status === "sold" && plot.buyer_id)
               ? `<a href="${site_url}plots/buyer_details/${plot.id}" class="ms-3 text checkBuyer" data-id="${plot.id}" title="Check Buyer">
                     <i class="bx bxs-user-check"></i>
                  </a>`
@@ -802,33 +864,42 @@ $(document).ready(function () {
 
       paginationHTML += `
         <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
-          <a class="page-link" href="javascript:;" onclick="loadPlots(${currentPage - 1}, '${searchQuery}')">Previous</a>
+          <a class="page-link" href="javascript:;" data-page="${currentPage - 1}">Previous</a>
         </li>
       `;
 
       for (let i = startPage; i <= endPage; i++) {
         paginationHTML += `
           <li class="page-item ${i === currentPage ? "active" : ""}">
-            <a class="page-link" href="javascript:;" onclick="loadPlots(${i}, '${searchQuery}')">${i}</a>
+            <a class="page-link" href="javascript:;" data-page="${i}">${i}</a>
           </li>`;
       }
 
       if (endPage < totalPages) {
         paginationHTML += `
           <li class="page-item">
-            <a class="page-link" href="javascript:;" onclick="loadPlots(${totalPages}, '${searchQuery}')">Last</a>
+            <a class="page-link" href="javascript:;" data-page="${totalPages}">Last</a>
           </li>
         `;
       }
 
       paginationHTML += `
         <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
-          <a class="page-link" href="javascript:;" onclick="loadPlots(${currentPage + 1}, '${searchQuery}')">Next</a>
+          <a class="page-link" href="javascript:;" data-page="${currentPage + 1}">Next</a>
         </li>
       `;
 
       $(".pagination").html(paginationHTML);
     }
+
+    // ✅ Pagination click (delegate)
+    $(document).on("click", ".pagination .page-link", function (e) {
+      e.preventDefault();
+      const page = parseInt($(this).data("page"), 10);
+      if (!page || $(this).closest("li").hasClass("disabled")) return;
+      currentPage = page;
+      loadPlots(currentPage, searchQuery);
+    });
 
     // ✅ Search input
     $("#serchPlot").on("keyup", function () {
@@ -1214,7 +1285,7 @@ $(document).ready(function () {
             if (res.records.length === 0) {
     $("#expensesTable").html(`
         <tr>
-            <td colspan="7" class="text-center text-danger fw-bold py-3">
+            <td colspan="9" class="text-center text-danger fw-bold py-3">
                 No Record Found
             </td>
         </tr>
@@ -1226,13 +1297,41 @@ $(document).ready(function () {
             let indexStart = (page - 1) * 10 + 1;
 
             res.records.forEach((row, i) => {
+                let imagesHtml = "";
+                let imagesArr = [];
+                if (row.site_images) {
+                    try {
+                        const imgs = JSON.parse(row.site_images);
+                        if (Array.isArray(imgs)) {
+                            imagesArr = imgs;
+                            imagesHtml = imgs.slice(0, 3).map((p) => {
+                                const fullSrc = `${site_url}${p}`;
+                                return `<img src="${fullSrc}" data-full="${fullSrc}" class="siteImgPreview" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;cursor:pointer;" />`;
+                            }).join("");
+                        }
+                    } catch (e) {
+                        imagesHtml = "";
+                    }
+                }
+
+                const fullDesc = row.description || "";
+                const shortDesc = fullDesc.length > 30 ? fullDesc.slice(0, 30) + "..." : fullDesc;
+                const encodedImages = encodeURIComponent(JSON.stringify(imagesArr));
+
                 $("#expensesTable").append(`
                     <tr>
                         <td>${indexStart + i}</td>
                         <td>${row.site_name}</td>
+                        <td>${imagesHtml || ""}</td>
                         <td>${row.user_name}</td>
 
-                        <td>${row.description}</td>
+                        <td>
+                            <a href="javascript:;" class="expDesc text-decoration-none"
+                               data-desc="${fullDesc.replace(/"/g, "&quot;")}"
+                               data-images="${encodedImages}">
+                               ${shortDesc || "-"}
+                            </a>
+                        </td>
                         <td>${row.date}</td>
                         <td>${row.amount}</td>
 
@@ -1374,6 +1473,63 @@ $(document).ready(function () {
     // INITIAL LOAD
     loadExpenses(1);
 
+});
+
+// ➤ Show full description modal
+$(document).on("click", ".expDesc", function () {
+    const desc = $(this).data("desc") || "";
+    const imagesEncoded = $(this).data("images") || "";
+    let images = [];
+    try {
+        images = JSON.parse(decodeURIComponent(imagesEncoded)) || [];
+    } catch (e) {
+        images = [];
+    }
+
+    $("#expDescText").text(desc || "-");
+    const $imgWrap = $("#expDescImages");
+    const $imgEmpty = $("#expDescImagesEmpty");
+    $imgWrap.html("");
+    $imgEmpty.addClass("d-none");
+    if (images.length > 0) {
+        images.forEach((p) => {
+            $imgWrap.append(
+                `<img src="${site_url}${p}" data-full="${site_url}${p}" class="expImagePreview" />`
+            );
+        });
+    } else {
+        $imgEmpty.removeClass("d-none");
+    }
+
+    const modal = new bootstrap.Modal(document.getElementById("expDescModal"));
+    modal.show();
+});
+
+// ➤ Show full image from expense modal
+$(document).on("click", ".expImagePreview", function () {
+    const src = $(this).data("full") || $(this).attr("src");
+    $("#siteImageModalImg").attr("src", src || "");
+    // Close description modal before showing full image
+    const expModalEl = document.getElementById("expDescModal");
+    if (expModalEl) {
+        const expModal = bootstrap.Modal.getInstance(expModalEl);
+        if (expModal) expModal.hide();
+    }
+    const modal = new bootstrap.Modal(document.getElementById("siteImageModal"));
+    modal.show();
+});
+
+// ➤ Show full site image
+$(document).on("click", ".siteImgPreview", function () {
+    const src = $(this).data("full") || $(this).attr("src");
+    $("#siteImageModalImg").attr("src", src || "");
+    const modal = new bootstrap.Modal(document.getElementById("siteImageModal"));
+    modal.show();
+});
+
+// Ensure dark transparent backdrop for site image modal
+$(document).on("shown.bs.modal", "#siteImageModal", function () {
+    $(".modal-backdrop").last().addClass("site-image-backdrop");
 });
 document.addEventListener("DOMContentLoaded", function () {
 
@@ -1753,6 +1909,14 @@ $(document).ready(function () {
         function loadPaymentData(page = 1, search = "") {
             currentPage = page;
 
+            if (!buyer_id) {
+                $("#payment_data").html(
+                    `<tr><td colspan='8' class="text-center text-danger">Buyer ID missing</td></tr>`
+                );
+                $(".pagination").html("");
+                return;
+            }
+
             $.ajax({
                 url: site_url + "plots/payment_data_api",
                 method: "POST",
@@ -1769,6 +1933,14 @@ $(document).ready(function () {
                             `<tr><td colspan='8' class="text-center">${res.message}</td></tr>`
                         );
                         $(".pagination").html(""); // clear pagination if no data
+                        return;
+                    }
+
+                    if (!res.logs || res.logs.length === 0) {
+                        $("#payment_data").html(
+                            `<tr><td colspan='8' class="text-center text-muted">No payment records found</td></tr>`
+                        );
+                        $(".pagination").html("");
                         return;
                     }
 
@@ -2033,3 +2205,376 @@ document.getElementById("printBtn").addEventListener("click", function () {
 
 
 
+$(document).ready(function () {
+  let adminPage = 1;
+  let adminSearch = "";
+  let sitePage = 1;
+  let siteSearch = "";
+
+  function renderPagination(containerId, pagination) {
+    if (!pagination || !pagination.total_pages) {
+      $(containerId).html("");
+      return;
+    }
+    let html = "";
+    const total = pagination.total_pages;
+    const current = pagination.current_page;
+
+    html += `<li class="page-item ${current === 1 ? "disabled" : ""}">
+                <a class="page-link" href="javascript:;" data-page="${current - 1}">Previous</a>
+             </li>`;
+
+    let start = Math.max(1, current - 1);
+    let end = Math.min(start + 2, total);
+
+    if (start > 1) html += `<li class="page-item"><a class="page-link" href="javascript:;" data-page="1">1</a></li>`;
+    if (start > 2) html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
+
+    for (let i = start; i <= end; i++) {
+      html += `<li class="page-item ${i === current ? "active" : ""}">
+                  <a class="page-link" href="javascript:;" data-page="${i}">${i}</a>
+               </li>`;
+    }
+
+    if (end < total - 1) html += `<li class="page-item disabled"><a class="page-link">...</a></li>`;
+    if (end < total) html += `<li class="page-item"><a class="page-link" href="javascript:;" data-page="${total}">${total}</a></li>`;
+
+    html += `<li class="page-item ${current === total ? "disabled" : ""}">
+                <a class="page-link" href="javascript:;" data-page="${current + 1}">Next</a>
+             </li>`;
+
+    $(containerId).html(html);
+  }
+
+  function loadAdmins(page = 1, search = "") {
+    if (!$("#superAdminTable").length) return;
+    $.ajax({
+      url: site_url + "superadmin/get_admins",
+      method: "GET",
+      data: { page: page, search: search },
+      dataType: "json",
+      success: function (res) {
+        if (res.status && res.data && res.data.length > 0) {
+          let rows = "";
+          res.data.forEach((admin, i) => {
+            rows += `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${admin.name || "-"}</td>
+                <td>${admin.business_name || "-"}</td>
+                <td>${admin.mobile || "-"}</td>
+                <td>${admin.email || "-"}</td>
+                <td>${admin.sites_count || 0}</td>
+                <td>${admin.plots_count || 0}</td>
+                <td>${admin.users_count || 0}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary viewAdmin" data-id="${admin.id}">View</button>
+                </td>
+              </tr>
+            `;
+          });
+          $("#superAdminTable").html(rows);
+          renderPagination("#adminPagination", res.pagination);
+        } else {
+          $("#superAdminTable").html(
+            '<tr><td colspan="9" class="text-center text-muted">No admins found</td></tr>'
+          );
+          renderPagination("#adminPagination", { total_pages: 0, current_page: 1 });
+        }
+      },
+      error: function () {
+        $("#superAdminTable").html(
+          '<tr><td colspan="9" class="text-center text-danger">Failed to load admins</td></tr>'
+        );
+        renderPagination("#adminPagination", { total_pages: 0, current_page: 1 });
+      },
+    });
+  }
+
+  function loadSuperSites(page = 1, search = "") {
+    if (!$("#superAdminSitesTable").length) return;
+    $.ajax({
+      url: site_url + "superadmin/get_all_sites",
+      method: "GET",
+      data: { page: page, search: search },
+      dataType: "json",
+      success: function (res) {
+        if (res.status && res.data && res.data.length > 0) {
+          let rows = "";
+          res.data.forEach((site, i) => {
+            rows += `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${site.name || "-"}</td>
+                <td>${site.admin_name || "-"}</td>
+                <td>${site.location || "-"}</td>
+                <td>${site.total_plots || 0}</td>
+                <td>${site.total_expenses || 0}</td>
+                <td>
+                  <button class="btn btn-sm btn-primary viewSiteDetail" data-id="${site.id}">View</button>
+                </td>
+              </tr>
+            `;
+          });
+          $("#superAdminSitesTable").html(rows);
+          renderPagination("#sitePagination", res.pagination);
+        } else {
+          $("#superAdminSitesTable").html(
+            '<tr><td colspan="7" class="text-center text-muted">No sites found</td></tr>'
+          );
+          renderPagination("#sitePagination", { total_pages: 0, current_page: 1 });
+        }
+      },
+      error: function () {
+        $("#superAdminSitesTable").html(
+          '<tr><td colspan="7" class="text-center text-danger">Failed to load sites</td></tr>'
+        );
+        renderPagination("#sitePagination", { total_pages: 0, current_page: 1 });
+      },
+    });
+  }
+
+  $(document).on("click", ".viewAdmin", function () {
+    const adminId = $(this).data("id");
+    if (!adminId) return;
+
+    $.ajax({
+      url: site_url + "superadmin/get_admin_detail/" + adminId,
+      method: "GET",
+      dataType: "json",
+      success: function (res) {
+        if (!res.status) {
+          Swal.fire("Error", res.message || "Unable to load admin details", "error");
+          return;
+        }
+
+        const admin = res.admin || {};
+        const sites = res.sites || [];
+
+        const headerHtml = `
+          <div class="d-flex align-items-center gap-3">
+            <div>
+              <strong>${admin.name || "-"}</strong>
+              <div class="text-muted">${admin.business_name || "-"}</div>
+              <div class="small">${admin.email || "-"}</div>
+              <div class="small">${admin.mobile || "-"}</div>
+            </div>
+          </div>
+        `;
+
+        let sitesHtml = "";
+        if (sites.length === 0) {
+          sitesHtml = '<div class="text-muted">No sites found for this admin.</div>';
+        } else {
+          sites.forEach((site) => {
+            let imagesHtml = "";
+            if (site.images && site.images.length > 0) {
+              imagesHtml = site.images
+                .map((img) => {
+                  const fullUrl = site_url + img;
+                  return `
+                    <div class="me-2 mb-2">
+                      <img src="${fullUrl}" alt="site" style="width:120px;height:90px;object-fit:cover;border-radius:6px;">
+                      <div class="mt-1">
+                        <a class="btn btn-sm btn-outline-primary" href="${fullUrl}" download>Download</a>
+                      </div>
+                    </div>
+                  `;
+                })
+                .join("");
+            } else {
+              imagesHtml = '<div class="text-muted">No images</div>';
+            }
+
+            let plotsHtml = "";
+            if (site.plots && site.plots.length > 0) {
+              plotsHtml =
+                '<div class="table-responsive"><table class="table mb-0"><thead class="table-light"><tr><th>#</th><th>Plot No</th><th>Size</th><th>Dimension</th><th>Facing</th><th>Price</th><th>Status</th></tr></thead><tbody>' +
+                site.plots
+                  .map((p, idx) => {
+                    return `
+                      <tr>
+                        <td>${idx + 1}</td>
+                        <td>${p.plot_number || "-"}</td>
+                        <td>${p.size || "-"}</td>
+                        <td>${p.dimension || "-"}</td>
+                        <td>${p.facing || "-"}</td>
+                        <td>${p.price || 0}</td>
+                        <td>${p.status || "-"}</td>
+                      </tr>
+                    `;
+                  })
+                  .join("") +
+                "</tbody></table></div>";
+            } else {
+              plotsHtml = '<div class="text-muted">No plots</div>';
+            }
+
+            sitesHtml += `
+              <div class="card mb-3">
+                <div class="card-body">
+                  <div class="mb-2">
+                    <strong>${site.name || "-"}</strong>
+                    <div class="text-muted">${site.location || "-"}</div>
+                  </div>
+                  <div class="d-flex flex-wrap mb-3">${imagesHtml}</div>
+                  <div>${plotsHtml}</div>
+                </div>
+              </div>
+            `;
+          });
+        }
+
+        $("#adminDetailHeader").html(headerHtml);
+        $("#adminDetailSites").html(sitesHtml);
+        $("#adminDetailModal").modal("show");
+      },
+      error: function () {
+        Swal.fire("Error", "Unable to load admin details", "error");
+      },
+    });
+  });
+
+  $(document).on("click", ".viewSiteDetail", function () {
+    const siteId = $(this).data("id");
+    if (!siteId) return;
+
+    $.ajax({
+      url: site_url + "superadmin/get_site_detail/" + siteId,
+      method: "GET",
+      dataType: "json",
+      success: function (res) {
+        if (!res.status) {
+          Swal.fire("Error", res.message || "Unable to load site details", "error");
+          return;
+        }
+
+        const site = res.site || {};
+        const images = res.images || [];
+        const expenses = res.expenses || [];
+        const plots = res.plots || [];
+
+        const headerHtml = `
+          <div>
+            <strong>${site.name || "-"}</strong>
+            <div class="text-muted">${site.location || "-"}</div>
+            <div class="small">Admin: ${site.admin_name || "-"}</div>
+          </div>
+        `;
+
+        let imagesHtml = "";
+        if (images.length > 0) {
+          imagesHtml = images
+            .map((img) => {
+              const fullUrl = site_url + img;
+              return `
+                <div>
+                  <img src="${fullUrl}" alt="site" style="width:120px;height:90px;object-fit:cover;border-radius:6px;">
+                  <div class="mt-1">
+                    <a class="btn btn-sm btn-outline-primary" href="${fullUrl}" download>Download</a>
+                  </div>
+                </div>
+              `;
+            })
+            .join("");
+        } else {
+          imagesHtml = '<div class="text-muted">No images</div>';
+        }
+
+        let expensesHtml = "";
+        if (expenses.length > 0) {
+          expenses.forEach((exp, i) => {
+            expensesHtml += `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${exp.description || "-"}</td>
+                <td>${exp.date || "-"}</td>
+                <td>${exp.amount || 0}</td>
+                <td>${exp.status || "-"}</td>
+              </tr>
+            `;
+          });
+        } else {
+          expensesHtml =
+            '<tr><td colspan="5" class="text-center text-muted">No expenses found</td></tr>';
+        }
+
+        let plotsHtml = "";
+        if (plots.length > 0) {
+          plots.forEach((p, i) => {
+            plotsHtml += `
+              <tr>
+                <td>${i + 1}</td>
+                <td>${p.plot_number || "-"}</td>
+                <td>${p.size || "-"}</td>
+                <td>${p.dimension || "-"}</td>
+                <td>${p.facing || "-"}</td>
+                <td>${p.price || 0}</td>
+                <td>${p.status || "-"}</td>
+              </tr>
+            `;
+          });
+        } else {
+          plotsHtml =
+            '<tr><td colspan="7" class="text-center text-muted">No plots found</td></tr>';
+        }
+
+        $("#siteDetailHeader").html(headerHtml);
+        $("#siteDetailImages").html(imagesHtml);
+        $("#siteDetailExpenses").html(expensesHtml);
+        $("#siteDetailPlots").html(plotsHtml);
+        $("#siteDetailModal").modal("show");
+      },
+      error: function () {
+        Swal.fire("Error", "Unable to load site details", "error");
+      },
+    });
+  });
+
+  // Admin pagination + search
+  $(document).on("click", "#adminPagination .page-link", function (e) {
+    e.preventDefault();
+    const page = parseInt($(this).data("page"), 10);
+    if (!page || $(this).closest("li").hasClass("disabled")) return;
+    adminPage = page;
+    loadAdmins(adminPage, adminSearch);
+  });
+
+  $("#adminSearch").on("keyup", function (e) {
+    if (e.key === "Enter") {
+      adminSearch = $(this).val();
+      adminPage = 1;
+      loadAdmins(adminPage, adminSearch);
+    }
+  });
+  $("#adminSearchBtn").on("click", function () {
+    adminSearch = $("#adminSearch").val();
+    adminPage = 1;
+    loadAdmins(adminPage, adminSearch);
+  });
+
+  // Site pagination + search
+  $(document).on("click", "#sitePagination .page-link", function (e) {
+    e.preventDefault();
+    const page = parseInt($(this).data("page"), 10);
+    if (!page || $(this).closest("li").hasClass("disabled")) return;
+    sitePage = page;
+    loadSuperSites(sitePage, siteSearch);
+  });
+
+  $("#siteSearch").on("keyup", function (e) {
+    if (e.key === "Enter") {
+      siteSearch = $(this).val();
+      sitePage = 1;
+      loadSuperSites(sitePage, siteSearch);
+    }
+  });
+  $("#siteSearchBtn").on("click", function () {
+    siteSearch = $("#siteSearch").val();
+    sitePage = 1;
+    loadSuperSites(sitePage, siteSearch);
+  });
+
+  loadAdmins(adminPage, adminSearch);
+  loadSuperSites(sitePage, siteSearch);
+});

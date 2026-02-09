@@ -23,8 +23,8 @@ class Plots extends My_Controller
 
 
 
-    public function index($id){
-        $this->data['id'] = $id;
+    public function index($id = null){
+        $this->data['id'] = $id ?? '';
         $this->load->view('header');
 
         $this->load->view('plot_view',$this->data);
@@ -253,19 +253,23 @@ public function get_plots_ajax()
 
     // ---- ADD BUYER NAME IF SOLD ----
     foreach ($plots as $p) {
+        $p->buyer_id = null;
+        $p->name = '';
 
-        if ($p->status === 'sold') {
-
+        if (strtolower((string)$p->status) === 'sold') {
             // fetch buyer from buyer table using plot_id
-            $buyer = $this->db->select('name')
+            $buyer = $this->db->select('id, name')
                               ->from('buyer')
                               ->where('plot_id', $p->id)
+                              ->where('isActive', 1)
+                              ->order_by('id', 'DESC')
                               ->get()
                               ->row();
 
-            $p->name = $buyer ? $buyer->name : '';  // buyer field
-        } else {
-            $p->name = ''; // not sold
+            if ($buyer) {
+                $p->buyer_id = $buyer->id;
+                $p->name = $buyer->name;
+            }
         }
     }
 
@@ -431,6 +435,27 @@ public function payment_data_api()
     $this->db->limit($limit, $offset);
 
     $logs = $this->db->get()->result();
+
+    // Fallback: if no cash_payment_logs, show initial payment from payment_details
+    if (empty($logs)) {
+        $payment_details = $this->db->get_where("payment_details", [
+            "buyer_id" => $buyer_id
+        ])->row();
+
+        if ($payment_details) {
+            $logs = [
+                (object) [
+                    "id" => null,
+                    "paid_amount" => $payment_details->down_payment ?? 0,
+                    "created_on" => $payment_details->created_on ?? $payment_details->created_at ?? date('Y-m-d'),
+                    "status" => "approve",
+                ]
+            ];
+
+            $total_rows = 1;
+            $page = 1;
+        }
+    }
 
     echo json_encode([
         "status" => true,

@@ -15,6 +15,20 @@ class My_Controller extends CI_Controller
 
         $this->admin = $this->session->userdata('admin');
 
+        if ($this->admin && empty($this->admin['role'])) {
+            $adminRow = $this->db->select('role, profile_image, business_name, name')
+                ->where('id', $this->admin['user_id'])
+                ->get('user_master')
+                ->row();
+            if ($adminRow) {
+                $this->admin['role'] = $adminRow->role ?? 'admin';
+                $this->admin['profile_image'] = $adminRow->profile_image ?? null;
+                $this->admin['business_name'] = $adminRow->business_name ?? $this->admin['business_name'] ?? '';
+                $this->admin['user_name'] = $adminRow->name ?? $this->admin['user_name'] ?? '';
+                $this->session->set_userdata('admin', $this->admin);
+            }
+        }
+
         // echo "<pre>";
         // print_r($this->admin);
         // die;

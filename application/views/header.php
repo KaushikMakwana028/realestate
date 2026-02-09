@@ -122,66 +122,89 @@
 
 			<!--navigation-->
 
+		<?php $role = $this->session->userdata('admin')['role'] ?? 'admin'; ?>
 		<ul class="metismenu" id="menu">
 
-    <!-- Dashboard -->
-    <li>
-        <a href="<?= base_url('dashboard');?>" class="">
-            <div class="parent-icon"><i class='bx bx-home-alt'></i></div>
-            <div class="menu-title">Dashboard</div>
-        </a>
-    </li>
+    <?php if ($role === 'superadmin'): ?>
+        <li>
+            <a href="<?= base_url('dashboard');?>" class="">
+                <div class="parent-icon"><i class='bx bx-home-alt'></i></div>
+                <div class="menu-title">Dashboard</div>
+            </a>
+        </li>
+        <li>
+            <a href="<?= base_url('superadmin/admins'); ?>" class="">
+                <div class="parent-icon"><i class='bx bx-user'></i></div>
+                <div class="menu-title">Admins</div>
+            </a>
+        </li>
+        <li>
+            <a href="<?= base_url('superadmin/sites'); ?>" class="">
+                <div class="parent-icon"><i class='bx bx-globe'></i></div>
+                <div class="menu-title">Sites</div>
+            </a>
+        </li>
+    <?php else: ?>
+        <!-- Dashboard -->
+        <li>
+            <a href="<?= base_url('dashboard');?>" class="">
+                <div class="parent-icon"><i class='bx bx-home-alt'></i></div>
+                <div class="menu-title">Dashboard</div>
+            </a>
+        </li>
 
-    <!-- Sites -->
-    <li>
-        <a href="javascript:;" class="has-arrow">
-            <div class="parent-icon"><i class='bx bx-globe'></i></div>
-            <div class="menu-title">Sites</div>
-        </a>
-        <ul>
-            <li><a href="<?= base_url('site');?>"><i class='bx bx-list-ul'></i>All Sites</a></li>
-            <li><a href="<?= base_url('add_site');?>"><i class='bx bx-plus-circle'></i>Add New</a></li>
-            <li><a href="<?= base_url('add_expenses');?>"><i class='bx bx-plus-circle'></i>Add Expenses</a></li>
+        <!-- Sites -->
+        <li>
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class='bx bx-globe'></i></div>
+                <div class="menu-title">Sites</div>
+            </a>
+            <ul>
+                <li><a href="<?= base_url('site');?>"><i class='bx bx-list-ul'></i>All Sites</a></li>
+                <li><a href="<?= base_url('add_site');?>"><i class='bx bx-plus-circle'></i>Add New</a></li>
+                <li><a href="<?= base_url('add_expenses');?>"><i class='bx bx-plus-circle'></i>Add Expenses</a></li>
 
-        </ul>
-    </li>
+            </ul>
+        </li>
 
-    <!-- Plot -->
-    <li>
-        <a href="javascript:;" class="has-arrow">
-            <div class="parent-icon"><i class='bx bx-map-alt'></i></div>
-            <div class="menu-title">Plot</div>
-        </a>
-        <ul>
-            <li><a href="<?= base_url('add_plot');?>"><i class='bx bx-plus-circle'></i>Add New</a></li>
-        </ul>
-    </li>
+        <!-- Plot -->
+        <li>
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class='bx bx-map-alt'></i></div>
+                <div class="menu-title">Plot</div>
+            </a>
+            <ul>
+                <li><a href="<?= base_url('plots');?>"><i class='bx bx-list-ul'></i>All Plots</a></li>
+                <li><a href="<?= base_url('add_plot');?>"><i class='bx bx-plus-circle'></i>Add New</a></li>
+            </ul>
+        </li>
 
-    <!-- Users -->
-    <li>
-        <a href="javascript:;" class="has-arrow">
-            <div class="parent-icon"><i class='bx bx-user'></i></div>
-            <div class="menu-title">User</div>
-        </a>
-        <ul>
-            <li><a href="<?= base_url('users');?>"><i class='bx bx-group'></i>All Users</a></li>
-            <li><a href="<?= base_url('add_user');?>"><i class='bx bx-user-plus'></i>Add New</a></li>
-            <li><a href="<?= base_url('add_upad');?>"><i class='bx bx-user-plus'></i>Add Upad</a></li>
+        <!-- Users -->
+        <li>
+            <a href="javascript:;" class="has-arrow">
+                <div class="parent-icon"><i class='bx bx-user'></i></div>
+                <div class="menu-title">User</div>
+            </a>
+            <ul>
+                <li><a href="<?= base_url('users');?>"><i class='bx bx-group'></i>All Users</a></li>
+                <li><a href="<?= base_url('add_user');?>"><i class='bx bx-user-plus'></i>Add New</a></li>
+                <li><a href="<?= base_url('add_upad');?>"><i class='bx bx-user-plus'></i>Add Upad</a></li>
 
-        </ul>
-    </li>
-	<li>
-        <a href="<?= base_url('inquiry');?>" class="">
-            <div class="parent-icon"><i class='bx bx-message-square-dots'></i></div>
-            <div class="menu-title">Inquiry</div>
-        </a>
-    </li>
-	<li>
-        <a href="<?= base_url('attedance');?>" class="">
-            <div class="parent-icon"><i class='bx bx-time-five'></i></div>
-            <div class="menu-title">Attedance</div>
-        </a>
-    </li>
+            </ul>
+        </li>
+        <li>
+            <a href="<?= base_url('inquiry');?>" class="">
+                <div class="parent-icon"><i class='bx bx-message-square-dots'></i></div>
+                <div class="menu-title">Inquiry</div>
+            </a>
+        </li>
+        <li>
+            <a href="<?= base_url('attedance');?>" class="">
+                <div class="parent-icon"><i class='bx bx-time-five'></i></div>
+                <div class="menu-title">Attedance</div>
+            </a>
+        </li>
+    <?php endif; ?>
 
 
 </ul>
