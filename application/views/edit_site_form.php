@@ -95,10 +95,34 @@
                                     <label for="siteImages" class="form-label">Site Images</label>
                                     <input type="file" name="site_images[]" class="form-control" id="siteImages" accept="image/*" multiple>
                                     <small class="text-muted">You can add more images.</small>
+                                    <div class="mt-2">
+                                        <?php
+                                        $img_status = $site->site_images_status ?? '';
+                                        $has_images = !empty($images);
+                                        if (!empty($img_status) && $has_images):
+                                        ?>
+                                            <span class="badge bg-<?= $img_status === 'approve' ? 'success' : ($img_status === 'reject' ? 'danger' : 'warning'); ?>">
+                                                <?= ucfirst($img_status); ?>
+                                            </span>
+                                            <?php if ($img_status === 'reject' && !empty($site->site_images_reason)): ?>
+                                                <span class="text-danger ms-2"><?= htmlspecialchars($site->site_images_reason); ?></span>
+                                            <?php endif; ?>
+                                        <?php endif; ?>
+                                    </div>
                                     <?php if (!empty($images)): ?>
                                         <div class="mt-2 d-flex flex-wrap gap-2">
                                             <?php foreach ($images as $img): ?>
                                                 <img src="<?= base_url($img); ?>" alt="Site Image" style="width:80px;height:80px;object-fit:cover;border-radius:6px;">
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+                                    <?php if (!empty($pending_images)): ?>
+                                        <div class="mt-2 d-flex flex-wrap gap-2">
+                                            <?php foreach ($pending_images as $img): ?>
+                                                <div style="position:relative;">
+                                                    <img src="<?= base_url($img); ?>" alt="Pending Image" style="width:80px;height:80px;object-fit:cover;border-radius:6px;opacity:0.7;">
+                                                    <span class="badge bg-warning" style="position:absolute;bottom:4px;left:4px;">Pending</span>
+                                                </div>
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; ?>

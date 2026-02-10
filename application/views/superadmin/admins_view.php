@@ -21,8 +21,10 @@
                 </div>
                 <div class="d-lg-flex align-items-center mb-3 gap-3">
                     <div class="position-relative">
-                        <input type="text" id="adminSearch" class="form-control ps-5 radius-30" placeholder="Search Admin">
-                        <span class="position-absolute top-50 product-show translate-middle-y"><i class="bx bx-search"></i></span>
+                        <input type="text" id="adminSearch" class="form-control ps-5 radius-30"
+                            placeholder="Search Admin">
+                        <span class="position-absolute top-50 product-show translate-middle-y"><i
+                                class="bx bx-search"></i></span>
                     </div>
                     <button type="button" id="adminSearchBtn" class="btn btn-primary radius-30 px-4">Search</button>
                 </div>
@@ -44,7 +46,10 @@
                         </thead>
                         <tbody id="superAdminTable">
                             <?php if (!empty($super_admins)): ?>
-                                <?php $i = 1; foreach ($super_admins as $admin): ?>
+                                <?php
+                                $i = $admin_start_index;
+                                foreach ($super_admins as $admin): ?>
+
                                     <tr>
                                         <td><?= $i++; ?></td>
                                         <td><?= $admin->name ?? '-'; ?></td>
@@ -55,30 +60,60 @@
                                         <td><?= $admin->plots_count ?? 0; ?></td>
                                         <td><?= $admin->users_count ?? 0; ?></td>
                                         <td>
-                                            <button class="btn btn-sm btn-primary viewAdmin" data-id="<?= $admin->id; ?>">View</button>
+                                            <button class="btn btn-sm btn-primary viewAdmin"
+                                                data-id="<?= $admin->id; ?>">View</button>
                                         </td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php else: ?>
-                                <tr><td colspan="9" class="text-center text-muted">No admins found</td></tr>
+                                <tr>
+                                    <td colspan="9" class="text-center text-muted">No admins found</td>
+                                </tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <nav aria-label="Admin pagination">
-                    <ul class="pagination round-pagination justify-content-center" id="adminPagination">
-                        <?php if (!empty($admins_total_pages) && $admins_total_pages > 1): ?>
-                            <li class="page-item disabled"><a class="page-link" href="javascript:;">Previous</a></li>
-                            <?php for ($p = 1; $p <= $admins_total_pages; $p++): ?>
-                                <li class="page-item <?= $p === 1 ? 'active' : ''; ?>">
-                                    <a class="page-link" href="javascript:;" data-page="<?= $p; ?>"><?= $p; ?></a>
-                                </li>
-                            <?php endfor; ?>
-                            <li class="page-item"><a class="page-link" href="javascript:;" data-page="2">Next</a></li>
-                        <?php endif; ?>
+                <?php
+                // ---- Build search param ONLY when search is not empty ----
+                $adminSearchParam = !empty($admin_search)
+                    ? '&search=' . urlencode($admin_search)
+                    : '';
+                ?>
+
+                <nav>
+                    <ul class="pagination justify-content-center mt-3" id="adminPagination">
+
+                        <!-- Previous -->
+                        <li class="page-item <?= ($admins_current_page <= 1) ? 'disabled' : '' ?>">
+                            <a class="page-link"
+                                href="<?= base_url('superadmin/admins?page=' . ($admins_current_page - 1) . $adminSearchParam) ?>">
+                                Previous
+                            </a>
+                        </li>
+
+                        <!-- Page numbers -->
+                        <?php for ($p = 1; $p <= $admins_total_pages; $p++): ?>
+                            <li class="page-item <?= ($p == $admins_current_page) ? 'active' : '' ?>">
+                                <a class="page-link"
+                                    href="<?= base_url('superadmin/admins?page=' . $p . $adminSearchParam) ?>">
+                                    <?= $p ?>
+                                </a>
+                            </li>
+                        <?php endfor; ?>
+
+                        <!-- Next -->
+                        <li class="page-item <?= ($admins_current_page >= $admins_total_pages) ? 'disabled' : '' ?>">
+                            <a class="page-link"
+                                href="<?= base_url('superadmin/admins?page=' . ($admins_current_page + 1) . $adminSearchParam) ?>">
+                                Next
+                            </a>
+                        </li>
+
                     </ul>
                 </nav>
+
+
             </div>
         </div>
 
@@ -98,3 +133,125 @@
         </div>
     </div>
 </div>
+
+<style>
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: #fff;
+    }
+
+    .pagination .page-link {
+        color: #0d6efd;
+        border-radius: 8px;
+        padding: 6px 12px;
+    }
+
+    /* Space between table and pagination */
+    .table-responsive {
+        margin-bottom: 25px;
+    }
+
+    #adminPagination {
+        margin-top: 10px;
+    }
+</style>
+
+<script>
+    document.getElementById("adminSearchBtn").addEventListener("click", function () {
+        let q = document.getElementById("adminSearch").value.trim();
+        window.location.href = "<?= base_url('superadmin/admins') ?>?search=" + encodeURIComponent(q);
+    });
+
+    document.addEventListener("click", function (e) {
+        const btn = e.target.closest(".viewAdmin");
+        if (!btn) return;
+        const adminId = btn.getAttribute("data-id");
+
+        const headerEl = document.getElementById("adminDetailHeader");
+        const sitesEl = document.getElementById("adminDetailSites");
+        if (!headerEl || !sitesEl) return;
+        headerEl.innerHTML = "Loading...";
+        sitesEl.innerHTML = "";
+
+        if (typeof bootstrap !== "undefined" && bootstrap.Modal) {
+            const modalEl = document.getElementById("adminDetailModal");
+            const modal = new bootstrap.Modal(modalEl);
+            modal.show();
+        }
+
+        fetch("<?= base_url('superadmin/get_admin_detail/'); ?>" + adminId)
+            .then((r) => r.json())
+            .then((data) => {
+                if (!data.status) {
+                    headerEl.innerHTML = `<div class="text-danger">${data.message || "Failed to load"}</div>`;
+                    return;
+                }
+
+                const admin = data.admin || {};
+                const sites = data.sites || [];
+
+                headerEl.innerHTML = `
+                    <div class="d-flex flex-wrap gap-3 align-items-center">
+                        <div class="badge bg-primary">${admin.name || "-"}</div>
+                        <div class="text-muted">${admin.business_name || "-"}</div>
+                        <div class="text-muted">${admin.email || "-"}</div>
+                        <div class="text-muted">${admin.mobile || "-"}</div>
+                    </div>
+                `;
+
+                if (!sites.length) {
+                    sitesEl.innerHTML = `<div class="text-muted">No sites found for this admin.</div>`;
+                    return;
+                }
+
+                const siteCards = sites.map((s) => {
+                    const images = (s.images || []).map((img) =>
+                        `<img src="<?= base_url(); ?>${img}" style="width:70px;height:70px;object-fit:cover;border-radius:6px;margin:4px;">`
+                    ).join("") || "<div class='text-muted'>No images</div>";
+
+                    const plots = (s.plots || []).map((p) => `
+                        <tr>
+                            <td>${p.plot_number || "-"}</td>
+                            <td>${p.size || "-"}</td>
+                            <td>${p.dimension || "-"}</td>
+                            <td>${p.facing || "-"}</td>
+                            <td>${p.price || "-"}</td>
+                            <td>${p.status || "-"}</td>
+                        </tr>
+                    `).join("") || `<tr><td colspan="6" class="text-muted">No plots</td></tr>`;
+
+                    return `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6 class="mb-2">${s.name || "-"}</h6>
+                                <div class="mb-2 text-muted">${s.location || "-"}</div>
+                                <div class="mb-2"><strong>Total Plots:</strong> ${s.total_plots || 0}</div>
+                                <div class="mb-3">${images}</div>
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <thead>
+                                            <tr>
+                                                <th>Plot No</th>
+                                                <th>Size</th>
+                                                <th>Dimension</th>
+                                                <th>Facing</th>
+                                                <th>Price</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>${plots}</tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }).join("");
+
+                sitesEl.innerHTML = siteCards;
+            })
+            .catch(() => {
+                headerEl.innerHTML = `<div class="text-danger">Error loading details</div>`;
+            });
+    });
+</script>

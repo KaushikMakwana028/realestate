@@ -112,6 +112,19 @@ $this->db->where('MONTH(attendance_time)', $current_month);
 $this->db->where('YEAR(attendance_time)', $current_year);
 $data['attendance_approved'] = $this->db->count_all_results('attendance');
 
+    $this->db->from('sites');
+    $this->db->where('admin_id', $admin_id);
+    $this->db->where('isActive', 1);
+    $data['maps_total'] = $this->db->count_all_results();
+
+    $this->db->from('sites');
+    $this->db->where('admin_id', $admin_id);
+    $this->db->where('isActive', 1);
+    $this->db->where('site_map IS NOT NULL', null, false);
+    $this->db->where('site_map !=', '');
+    $data['maps_uploaded'] = $this->db->count_all_results();
+    $data['maps_pending'] = max(0, $data['maps_total'] - $data['maps_uploaded']);
+
     $role = $this->admin['role'] ?? 'admin';
     $data['is_superadmin'] = ($role === 'superadmin');
     if ($data['is_superadmin']) {
@@ -173,6 +186,22 @@ $data['attendance_approved'] = $this->db->count_all_results('attendance');
         $this->db->where('MONTH(attendance_time)', $current_month);
         $this->db->where('YEAR(attendance_time)', $current_year);
         $data['attendance_approved'] = $this->db->count_all_results('attendance');
+
+        $this->db->from('sites');
+        $this->db->where('isActive', 1);
+        $data['maps_total'] = $this->db->count_all_results();
+
+        $this->db->from('sites');
+        $this->db->where('isActive', 1);
+        $this->db->where('site_map IS NOT NULL', null, false);
+        $this->db->where('site_map !=', '');
+        $data['maps_uploaded'] = $this->db->count_all_results();
+        $data['maps_pending'] = max(0, $data['maps_total'] - $data['maps_uploaded']);
+
+        $this->db->from('sites');
+        $this->db->where('isActive', 1);
+        $this->db->where('site_images_status', 'pending');
+        $data['image_requests_pending'] = $this->db->count_all_results();
 
         // Server-side data for super admin tables (fallback if JS fails)
         $data['super_admins'] = $this->db

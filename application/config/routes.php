@@ -87,6 +87,9 @@ $route['superadmin/get_admins'] = 'superadmin/get_admins';
 $route['superadmin/get_admin_detail/(:num)'] = 'superadmin/get_admin_detail/$1';
 $route['superadmin/get_all_sites'] = 'superadmin/get_all_sites';
 $route['superadmin/get_site_detail/(:num)'] = 'superadmin/get_site_detail/$1';
+$route['superadmin/upload_site_map'] = 'superadmin/upload_site_map';
+$route['superadmin/site_images_pending'] = 'superadmin/site_images_pending';
+$route['superadmin/site_images_action'] = 'superadmin/site_images_action';
 
 
 

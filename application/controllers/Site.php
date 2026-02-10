@@ -269,6 +269,70 @@ class Site extends My_Controller
 
         echo json_encode(['status' => true, 'images' => $images]);
     }
+
+    public function get_site_detail($site_id = null)
+    {
+        header('Content-Type: application/json');
+
+        if (empty($site_id) || !is_numeric($site_id)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid site id']);
+            return;
+        }
+
+        $admin_id = $this->admin['user_id'];
+
+        $site = $this->db
+            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.admin_id')
+            ->from('sites s')
+            ->where('s.id', $site_id)
+            ->where('s.admin_id', $admin_id)
+            ->where('s.isActive', 1)
+            ->get()
+            ->row();
+
+        if (!$site) {
+            echo json_encode(['status' => false, 'message' => 'Site not found']);
+            return;
+        }
+
+        $site->has_map = !empty($site->site_map);
+
+        $images = [];
+        if (!empty($site->site_images)) {
+            $decoded = json_decode($site->site_images, true);
+            if (is_array($decoded)) {
+                $images = $decoded;
+            }
+        }
+
+        $expenses = $this->db
+            ->select('id, description, date, amount, status')
+            ->from('expenses')
+            ->where('site_id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->order_by('id', 'DESC')
+            ->get()
+            ->result();
+
+        $plots = $this->db
+            ->select('id, plot_number, size, dimension, facing, price, status')
+            ->from('plots')
+            ->where('site_id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->order_by('id', 'DESC')
+            ->get()
+            ->result();
+
+        echo json_encode([
+            'status' => true,
+            'site' => $site,
+            'images' => $images,
+            'expenses' => $expenses,
+            'plots' => $plots
+        ]);
+    }
     public function assign_site()
     {
         header('Content-Type: application/json');
@@ -382,9 +446,7 @@ class Site extends My_Controller
                 return;
             }
             if (!empty($upload['paths'])) {
-                $this->db->where('id', $site_id)->update('sites', [
-                    'site_images' => json_encode($upload['paths'])
-                ]);
+                $this->append_pending_site_images($site_id, $upload['paths']);
             }
             $response = ['status' => 'success', 'message' => 'Site added successfully'];
         } else {
@@ -406,14 +468,26 @@ class Site extends My_Controller
             }
         }
 
+        $pending_images = [];
+        if (!empty($site->site_images_pending)) {
+            $decoded_pending = json_decode($site->site_images_pending, true);
+            if (is_array($decoded_pending)) {
+                $pending_images = $decoded_pending;
+            }
+        }
+
         // Load view with data
         $this->load->view('header');
-        $this->load->view('edit_site_form', ['site' => $site, 'images' => $images]);
+        $this->load->view('edit_site_form', [
+            'site' => $site,
+            'images' => $images,
+            'pending_images' => $pending_images
+        ]);
         $this->load->view('footer');
     }
     public function update_site($id)
     {
-        $site = $this->db->select('site_images')->where('id', $id)->get('sites')->row();
+        $site = $this->db->select('site_images, site_images_pending')->where('id', $id)->get('sites')->row();
         $existing_images = [];
         if (!empty($site->site_images)) {
             $decoded = json_decode($site->site_images, true);
@@ -443,8 +517,7 @@ class Site extends My_Controller
         }
 
         if (!empty($upload['paths'])) {
-            $all_images = array_values(array_merge($existing_images, $upload['paths']));
-            $data['site_images'] = json_encode($all_images);
+            $this->append_pending_site_images($id, $upload['paths']);
         }
 
         $updated = $this->db->where('id', $id)->update('sites', $data);
@@ -504,6 +577,30 @@ class Site extends My_Controller
         }
 
         return ['error' => null, 'paths' => $paths];
+    }
+
+    private function append_pending_site_images($site_id, array $paths)
+    {
+        if (empty($paths)) {
+            return;
+        }
+
+        $site = $this->db->select('site_images_pending')->where('id', $site_id)->get('sites')->row();
+        $pending = [];
+        if (!empty($site->site_images_pending)) {
+            $decoded = json_decode($site->site_images_pending, true);
+            if (is_array($decoded)) {
+                $pending = $decoded;
+            }
+        }
+
+        $pending = array_values(array_merge($pending, $paths));
+
+        $this->db->where('id', $site_id)->update('sites', [
+            'site_images_pending' => json_encode($pending),
+            'site_images_status' => 'pending',
+            'site_images_reason' => null
+        ]);
     }
 
 
