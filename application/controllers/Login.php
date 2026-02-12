@@ -68,6 +68,9 @@ class Login extends CI_Controller
                 ];
 
                 $this->session->set_userdata('admin', $adminSession);
+                $this->session->unset_userdata('superadmin_original');
+                $this->session->unset_userdata('is_impersonating_admin');
+                $this->session->unset_userdata('impersonated_admin_id');
 
                 $this->session->set_flashdata('success', 'Login successful! Welcome back, ' . $user->name . '.');
                 redirect(base_url('dashboard'));
@@ -137,6 +140,9 @@ class Login extends CI_Controller
 ];
 
 $this->session->set_userdata('admin', $adminSession);
+$this->session->unset_userdata('superadmin_original');
+$this->session->unset_userdata('is_impersonating_admin');
+$this->session->unset_userdata('impersonated_admin_id');
 
                 $this->session->set_flashdata('success', 'Registration successful! Welcome, ' . $data['name'] . '.');
                 redirect(base_url('dashboard'));
@@ -151,6 +157,9 @@ $this->session->set_userdata('admin', $adminSession);
         // Clear session and redirect to login page
 
         $this->session->unset_userdata('admin');
+        $this->session->unset_userdata('superadmin_original');
+        $this->session->unset_userdata('is_impersonating_admin');
+        $this->session->unset_userdata('impersonated_admin_id');
 
         $this->session->sess_destroy();
 

@@ -146,6 +146,10 @@ class Site extends My_Controller
 
         $search = $this->input->post('search');
         $site_id = $this->input->post('site_id');
+        $month_filter = trim((string) $this->input->post('month_filter'));
+        if (!preg_match('/^\d{4}-\d{2}$/', $month_filter)) {
+            $month_filter = '';
+        }
 
         /* ----------------------------------------------
            COUNT QUERY
@@ -162,6 +166,15 @@ class Site extends My_Controller
             $this->db->like('description', $search);
         }
 
+        if ($month_filter !== '') {
+            $safe_month = $this->db->escape($month_filter);
+            $this->db->where(
+                "(DATE_FORMAT(STR_TO_DATE(`date`, '%Y-%m-%d'), '%Y-%m') = {$safe_month} OR DATE_FORMAT(STR_TO_DATE(`date`, '%d-%m-%Y'), '%Y-%m') = {$safe_month})",
+                null,
+                false
+            );
+        }
+
         $total = $this->db->count_all_results();
 
 
@@ -171,7 +184,7 @@ class Site extends My_Controller
     $this->db->select('
         expenses.*, 
         sites.name AS site_name,
-        sites.site_images AS site_images,
+        expenses.expense_image AS expense_image,
         COALESCE(users.name, user_master.name) AS user_name
     ');
     $this->db->from('expenses');
@@ -193,10 +206,67 @@ class Site extends My_Controller
             $this->db->like('expenses.description', $search);
         }
 
+        if ($month_filter !== '') {
+            $safe_month = $this->db->escape($month_filter);
+            $this->db->where(
+                "(DATE_FORMAT(STR_TO_DATE(expenses.date, '%Y-%m-%d'), '%Y-%m') = {$safe_month} OR DATE_FORMAT(STR_TO_DATE(expenses.date, '%d-%m-%Y'), '%Y-%m') = {$safe_month})",
+                null,
+                false
+            );
+        }
+
         $this->db->order_by('expenses.id', 'DESC');
         $this->db->limit($limit, $offset);
 
         $records = $this->db->get()->result();
+
+        $this->db->select('status, COUNT(*) AS total_count, COALESCE(SUM(amount), 0) AS total_amount');
+        $this->db->from('expenses');
+        $this->db->where('admin_id', $admin_id);
+        $this->db->where('isActive', 1);
+
+        if (!empty($site_id)) {
+            $this->db->where('site_id', $site_id);
+        }
+
+        if (!empty($search)) {
+            $this->db->like('description', $search);
+        }
+
+        if ($month_filter !== '') {
+            $safe_month = $this->db->escape($month_filter);
+            $this->db->where(
+                "(DATE_FORMAT(STR_TO_DATE(`date`, '%Y-%m-%d'), '%Y-%m') = {$safe_month} OR DATE_FORMAT(STR_TO_DATE(`date`, '%d-%m-%Y'), '%Y-%m') = {$safe_month})",
+                null,
+                false
+            );
+        }
+
+        $this->db->group_by('status');
+        $summaryRows = $this->db->get()->result();
+
+        $summary = [
+            'approved_count' => 0,
+            'approved_amount' => 0,
+            'pending_count' => 0,
+            'pending_amount' => 0,
+            'rejected_count' => 0,
+            'rejected_amount' => 0
+        ];
+
+        foreach ($summaryRows as $s) {
+            $status = strtolower((string) ($s->status ?? ''));
+            if ($status === 'approve' || $status === 'approved') {
+                $summary['approved_count'] = (int) ($s->total_count ?? 0);
+                $summary['approved_amount'] = (float) ($s->total_amount ?? 0);
+            } elseif ($status === 'pending') {
+                $summary['pending_count'] = (int) ($s->total_count ?? 0);
+                $summary['pending_amount'] = (float) ($s->total_amount ?? 0);
+            } else if ($status === 'reject' || $status === 'rejected') {
+                $summary['rejected_count'] = (int) ($s->total_count ?? 0);
+                $summary['rejected_amount'] = (float) ($s->total_amount ?? 0);
+            }
+        }
 
         /* ----------------------------------------------
            RESPONSE
@@ -206,7 +276,8 @@ class Site extends My_Controller
             "records" => $records,
             "total" => $total,
             "limit" => $limit,
-            "page" => $page
+            "page" => $page,
+            "summary" => $summary
         ]);
     }
 
@@ -234,6 +305,86 @@ class Site extends My_Controller
         ]);
 
         echo json_encode(["status" => true]);
+    }
+
+    public function update_expense()
+    {
+        header('Content-Type: application/json');
+
+        $admin_id = $this->admin['user_id'] ?? null;
+        if (!$admin_id) {
+            echo json_encode(['status' => false, 'message' => 'Unauthorized access']);
+            return;
+        }
+
+        $id = (int) $this->input->post('id');
+        $amount = trim((string) $this->input->post('price'));
+        $desc = trim((string) $this->input->post('description'));
+        $date = trim((string) $this->input->post('date'));
+
+        if (empty($id) || $amount === '' || $desc === '' || $date === '') {
+            echo json_encode(['status' => false, 'message' => 'All fields are required']);
+            return;
+        }
+
+        $expense = $this->db
+            ->where('id', $id)
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->get('expenses')
+            ->row();
+
+        if (!$expense) {
+            echo json_encode(['status' => false, 'message' => 'Expense not found']);
+            return;
+        }
+
+        $update_data = [
+            'amount' => $amount,
+            'description' => $desc,
+            'date' => $date
+        ];
+
+        if (!empty($_FILES['expense_image']['name'])) {
+            $upload_path = FCPATH . 'uploads/expenses/';
+            if (!is_dir($upload_path)) {
+                mkdir($upload_path, 0777, true);
+            }
+
+            $safe_name = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $_FILES['expense_image']['name']);
+            $config = [
+                'upload_path' => $upload_path,
+                'allowed_types' => 'jpg|jpeg|png|webp',
+                'max_size' => 4096,
+                'file_name' => time() . '_' . $safe_name
+            ];
+
+            $this->load->library('upload');
+            $this->upload->initialize($config);
+
+            if (!$this->upload->do_upload('expense_image')) {
+                echo json_encode([
+                    'status' => false,
+                    'message' => $this->upload->display_errors('', '') ?: 'Expense image upload failed'
+                ]);
+                return;
+            }
+
+            $uploadData = $this->upload->data();
+            $update_data['expense_image'] = 'uploads/expenses/' . $uploadData['file_name'];
+        }
+
+        $updated = $this->db
+            ->where('id', $id)
+            ->where('admin_id', $admin_id)
+            ->update('expenses', $update_data);
+
+        if ($updated) {
+            echo json_encode(['status' => true, 'message' => 'Expense updated successfully']);
+            return;
+        }
+
+        echo json_encode(['status' => false, 'message' => 'Failed to update expense']);
     }
 
     public function get_users()
@@ -282,7 +433,7 @@ class Site extends My_Controller
         $admin_id = $this->admin['user_id'];
 
         $site = $this->db
-            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.admin_id')
+            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.listed_map, s.admin_id')
             ->from('sites s')
             ->where('s.id', $site_id)
             ->where('s.admin_id', $admin_id)
@@ -295,7 +446,7 @@ class Site extends My_Controller
             return;
         }
 
-        $site->has_map = !empty($site->site_map);
+        $site->has_map = ((int) ($site->listed_map ?? 0) === 1) || !empty($site->site_map);
 
         $images = [];
         if (!empty($site->site_images)) {
@@ -432,6 +583,7 @@ class Site extends My_Controller
             'location' => $location,
             'area' => $area,
             'total_plots' => $total_plots,
+            'listed_map' => 0,
             'isActive' => 1, // Default active
             'created_at' => date('Y-m-d')
         ];
@@ -674,6 +826,36 @@ class Site extends My_Controller
         $amount = trim($this->input->post('price'));
         $desc = trim($this->input->post('description'));
         $date = trim($this->input->post('date'));
+        $expense_image = null;
+
+        if (!empty($_FILES['expense_image']['name'])) {
+            $upload_path = FCPATH . 'uploads/expenses/';
+            if (!is_dir($upload_path)) {
+                mkdir($upload_path, 0777, true);
+            }
+
+            $safe_name = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $_FILES['expense_image']['name']);
+            $config = [
+                'upload_path' => $upload_path,
+                'allowed_types' => 'jpg|jpeg|png|webp',
+                'max_size' => 4096,
+                'file_name' => time() . '_' . $safe_name
+            ];
+
+            $this->load->library('upload');
+            $this->upload->initialize($config);
+
+            if (!$this->upload->do_upload('expense_image')) {
+                echo json_encode([
+                    'status' => 'error',
+                    'message' => $this->upload->display_errors('', '') ?: 'Expense image upload failed'
+                ]);
+                return;
+            }
+
+            $uploadData = $this->upload->data();
+            $expense_image = 'uploads/expenses/' . $uploadData['file_name'];
+        }
 
         $data = [
             'admin_id' => $admin_id,
@@ -681,6 +863,7 @@ class Site extends My_Controller
             'amount' => $amount,
             'description' => $desc,
             'date' => $date,
+            'expense_image' => $expense_image,
             'status' => 'approve',
             'isActive' => 1,
             'created_at' => date('Y-m-d')

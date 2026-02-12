@@ -1,46 +1,51 @@
-<div class="page-wrapper">
-    <div class="page-content">
+<div class="page-wrapper bg-light">
+    <div class="page-content container-fluid">
+
+        <!-- Breadcrumb -->
         <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="ps-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item">
-                            <a href="<?= base_url('dashboard'); ?>"><i class="bx bx-home-alt"></i></a>
-                        </li>
-                        <li class="breadcrumb-item active" aria-current="page">Sites</li>
-                    </ol>
-                </nav>
-            </div>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0 p-0">
+                    <li class="breadcrumb-item">
+                        <a href="<?= base_url('dashboard'); ?>"><i class="bx bx-home-alt"></i></a>
+                    </li>
+                    <li class="breadcrumb-item active">Sites</li>
+                </ol>
+            </nav>
         </div>
 
-        <div class="card">
+        <div class="card border-0 shadow-sm radius-10">
             <div class="card-body">
+
                 <div class="d-flex align-items-center justify-content-between mb-3">
-                    <h5 class="card-title mb-0">All Sites (Super Admin)</h5>
-                    <div class="text-muted">View sites, expenses, and images</div>
+                    <h5 class="card-title mb-0 fw-bold">📍 All Sites (Super Admin)</h5>
+                    <small class="text-muted">View sites, expenses, and images</small>
                 </div>
-                
-                <!-- Search Form - IMPORTANT: Use GET method -->
-                <form method="GET" action="<?= base_url('superadmin/sites'); ?>" class="d-lg-flex align-items-center mb-3 gap-3">
-                    <div class="position-relative">
-                        <input type="text" name="search" class="form-control ps-5 radius-30"
-                            placeholder="Search Site" 
-                            value="<?= !empty($site_search) ? htmlspecialchars($site_search) : '' ?>">
-                        <span class="position-absolute top-50 product-show translate-middle-y">
+
+                <!-- Search -->
+                <form method="GET" action="<?= base_url('superadmin/sites'); ?>"
+                    class="d-lg-flex align-items-center mb-3 gap-3">
+
+                    <div class="position-relative flex-grow-1">
+                        <input type="text" name="search" class="form-control ps-5 radius-30" placeholder="Search Site"
+                            value="<?= htmlspecialchars($site_search ?? '') ?>">
+                        <span class="position-absolute top-50 translate-middle-y ms-3">
                             <i class="bx bx-search"></i>
                         </span>
                     </div>
+
                     <button type="submit" class="btn btn-primary radius-30 px-4">Search</button>
+
                     <?php if (!empty($site_search)): ?>
                         <a href="<?= base_url('superadmin/sites'); ?>" class="btn btn-secondary radius-30 px-4">Clear</a>
                     <?php endif; ?>
                 </form>
 
-                <div class="table-responsive">
-                    <table class="table mb-0">
+                <!-- Table -->
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle table-hover">
                         <thead class="table-light">
                             <tr>
-                                <th>Index</th>
+                                <th>#</th>
                                 <th>Site</th>
                                 <th>Admin</th>
                                 <th>Location</th>
@@ -51,72 +56,85 @@
                                 <th>Upload Map</th>
                             </tr>
                         </thead>
+
                         <tbody>
                             <?php if (!empty($super_sites)): ?>
-                                <?php
-                                $i = $site_start_index;
-                                foreach ($super_sites as $site): ?>
+                                <?php $i = $site_start_index; ?>
+
+                                <?php foreach ($super_sites as $site): ?>
+
                                     <?php
                                     $img_status = $site->site_images_status ?? '';
-                                    $has_images = !empty($site->site_images) && $site->site_images !== 'NULL' && $site->site_images !== 'null';
+                                    $has_images = !empty($site->site_images) &&
+                                        $site->site_images !== 'NULL' &&
+                                        $site->site_images !== 'null';
+
                                     $has_approved_images = ($img_status === 'approve') && $has_images;
                                     $has_map = !empty($site->site_map);
-                                    $listed_map = $has_map;
+                                    $listed_map = ((int) ($site->listed_map ?? 0) === 1) || $has_map;
 
-                                    $reasons = [];
-                                    if (!$has_map) {
-                                        $reasons[] = 'Map not uploaded';
-                                    }
-                                    $reason_text = implode(' | ', $reasons);
+                                    $reason_text = !$has_map ? 'Map not uploaded' : '';
                                     ?>
+
                                     <tr>
                                         <td><?= $i++; ?></td>
-                                        <td><?= htmlspecialchars($site->name ?? '-'); ?></td>
+                                        <td class="fw-semibold"><?= htmlspecialchars($site->name ?? '-'); ?></td>
                                         <td><?= htmlspecialchars($site->admin_name ?? '-'); ?></td>
                                         <td><?= htmlspecialchars($site->location ?? '-'); ?></td>
                                         <td><?= $site->total_plots ?? 0; ?></td>
+
                                         <td>
                                             <?php if ($img_status === 'pending'): ?>
                                                 <span class="badge bg-warning">Pending</span>
                                                 <button type="button" class="btn btn-sm btn-outline-primary ms-2 reviewImages"
-                                                    data-id="<?= $site->id; ?>"
-                                                    data-bs-toggle="modal" data-bs-target="#siteImagesReviewModal">
+                                                    data-id="<?= $site->id; ?>" data-bs-toggle="modal"
+                                                    data-bs-target="#siteImagesReviewModal">
                                                     Review
                                                 </button>
+
                                             <?php elseif ($img_status === 'reject'): ?>
-                                                <span class="badge bg-danger">Reject</span>
+                                                <span class="badge bg-danger">Rejected</span>
+
                                             <?php elseif ($has_approved_images): ?>
-                                                <span class="badge bg-success">Approve</span>
+                                                <span class="badge bg-success">Approved</span>
+
                                             <?php else: ?>
                                                 <span class="badge bg-secondary">No Images</span>
                                             <?php endif; ?>
                                         </td>
+
                                         <td>
                                             <?php if ($listed_map): ?>
                                                 <span class="badge bg-success">Yes</span>
                                             <?php else: ?>
                                                 <span class="badge bg-secondary mapReason"
-                                                    data-reason="<?= htmlspecialchars($reason_text); ?>"
-                                                    style="cursor:pointer;">No</span>
+                                                    data-reason="<?= htmlspecialchars($reason_text); ?>" style="cursor:pointer;">
+                                                    No
+                                                </span>
                                             <?php endif; ?>
                                         </td>
+
                                         <td>
-                                            <button class="btn btn-sm btn-primary viewSiteDetail"
-                                                data-id="<?= $site->id; ?>">View</button>
+                                            <button class="btn btn-sm btn-primary viewSiteDetail" data-id="<?= $site->id; ?>">
+                                                View
+                                            </button>
                                         </td>
+
                                         <td>
                                             <button type="button" class="btn btn-sm btn-success uploadSiteMap"
                                                 data-id="<?= $site->id; ?>"
-                                                onclick="document.getElementById('siteMapSiteId').value='<?= $site->id; ?>';"
+                                                data-has-images="<?= $has_approved_images ? '1' : '0'; ?>"
                                                 data-bs-toggle="modal" data-bs-target="#siteMapUploadModal">
                                                 Upload Map
                                             </button>
                                         </td>
                                     </tr>
+
                                 <?php endforeach; ?>
+
                             <?php else: ?>
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted">
+                                    <td colspan="9" class="text-center text-muted py-4">
                                         <?php if (!empty($site_search)): ?>
                                             No sites found for "<?= htmlspecialchars($site_search) ?>"
                                         <?php else: ?>
@@ -129,69 +147,94 @@
                     </table>
                 </div>
 
+                <!-- Pagination (your logic kept) -->
                 <?php if ($sites_total_pages > 1): ?>
-                    <div class="d-flex justify-content-center mt-3">
-                        <nav>
-                            <ul class="pagination justify-content-center">
-                                <!-- Previous Button -->
-                                <li class="page-item <?= ($sites_current_page <= 1) ? 'disabled' : '' ?>">
-                                    <a class="page-link"
-                                        href="<?= base_url('superadmin/sites?page=' . max(1, $sites_current_page - 1) . (!empty($site_search) ? '&search=' . urlencode($site_search) : '')) ?>">
-                                        &laquo; Prev
-                                    </a>
-                                </li>
+                    <nav>
+                        <ul class="pagination justify-content-center">
 
-                                <!-- Page Numbers -->
-                                <?php for ($i = 1; $i <= $sites_total_pages; $i++): ?>
-                                    <?php if ($i == 1 || $i == $sites_total_pages || ($i >= $sites_current_page - 2 && $i <= $sites_current_page + 2)): ?>
-                                        <li class="page-item <?= ($i == $sites_current_page) ? 'active' : '' ?>">
-                                            <a class="page-link"
-                                                href="<?= base_url('superadmin/sites?page=' . $i . (!empty($site_search) ? '&search=' . urlencode($site_search) : '')) ?>">
-                                                <?= $i ?>
-                                            </a>
-                                        </li>
-                                    <?php elseif ($i == $sites_current_page - 3 || $i == $sites_current_page + 3): ?>
-                                        <li class="page-item disabled">
-                                            <span class="page-link">...</span>
-                                        </li>
-                                    <?php endif; ?>
-                                <?php endfor; ?>
+                            <li class="page-item <?= ($sites_current_page <= 1) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= base_url('superadmin/sites?page=' .
+                                    max(1, $sites_current_page - 1) .
+                                    (!empty($site_search) ? '&search=' . urlencode($site_search) : '')) ?>">
+                                    &laquo; Prev
+                                </a>
+                            </li>
 
-                                <!-- Next Button -->
-                                <li class="page-item <?= ($sites_current_page >= $sites_total_pages) ? 'disabled' : '' ?>">
-                                    <a class="page-link"
-                                        href="<?= base_url('superadmin/sites?page=' . min($sites_total_pages, $sites_current_page + 1) . (!empty($site_search) ? '&search=' . urlencode($site_search) : '')) ?>">
-                                        Next &raquo;
-                                    </a>
-                                </li>
-                            </ul>
-                        </nav>
-                    </div>
+                            <?php for ($i = 1; $i <= $sites_total_pages; $i++): ?>
+                                <?php if (
+                                    $i == 1 ||
+                                    $i == $sites_total_pages ||
+                                    ($i >= $sites_current_page - 2 &&
+                                        $i <= $sites_current_page + 2)
+                                ): ?>
+
+                                    <li class="page-item <?= ($i == $sites_current_page) ? 'active' : '' ?>">
+                                        <a class="page-link"
+                                            href="<?= base_url('superadmin/sites?page=' . $i .
+                                                (!empty($site_search) ? '&search=' . urlencode($site_search) : '')) ?>">
+                                            <?= $i ?>
+                                        </a>
+                                    </li>
+
+                                <?php elseif (
+                                    $i == $sites_current_page - 3 ||
+                                    $i == $sites_current_page + 3
+                                ): ?>
+                                    <li class="page-item disabled">
+                                        <span class="page-link">...</span>
+                                    </li>
+                                <?php endif; ?>
+                            <?php endfor; ?>
+
+                            <li class="page-item <?= ($sites_current_page >= $sites_total_pages) ? 'disabled' : '' ?>">
+                                <a class="page-link" href="<?= base_url('superadmin/sites?page=' .
+                                    min($sites_total_pages, $sites_current_page + 1) .
+                                    (!empty($site_search) ? '&search=' . urlencode($site_search) : '')) ?>">
+                                    Next &raquo;
+                                </a>
+                            </li>
+
+                        </ul>
+                    </nav>
                 <?php endif; ?>
+
             </div>
         </div>
+
+        <!-- =================== MODALS (UNCHANGED BUT SAFE) =================== -->
 
         <!-- Map Upload Modal -->
         <div class="modal fade" id="siteMapUploadModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">
                 <div class="modal-content">
-                    <form id="siteMapUploadForm" method="post" action="<?= base_url('superadmin/upload_site_map'); ?>" enctype="multipart/form-data">
+                    <form id="siteMapUploadForm" method="post" action="<?= base_url('superadmin/upload_site_map'); ?>"
+                        enctype="multipart/form-data">
+
                         <div class="modal-header">
                             <h5 class="modal-title">Upload Site Map (JSON)</h5>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                         </div>
+
                         <div class="modal-body">
-                            <input type="hidden" id="siteMapSiteId" name="site_id" value="" required>
+                            <input type="hidden" id="siteMapSiteId" name="site_id" required>
+
                             <div class="mb-3">
                                 <label class="form-label">JSON File</label>
                                 <input type="file" class="form-control" id="siteMapFile" name="site_map"
                                     accept=".json,.geojson" required>
-                                <div class="form-text">Upload a valid JSON map file for this site.</div>
+                                <div class="form-text">
+                                    Upload a valid JSON map file for this site.
+                                </div>
                             </div>
                         </div>
+
                         <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                            <button type="submit" class="btn btn-primary" id="uploadMapBtn">Upload</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="uploadMapBtn">
+                                Upload
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -204,7 +247,7 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Site Details</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
                         <div id="siteDetailContent">Loading...</div>
@@ -219,25 +262,37 @@
                 <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title">Review Site Images</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
+
                     <div class="modal-body">
-                        <input type="hidden" id="reviewSiteId" value="">
-                        <div id="pendingImagesContainer" class="d-flex flex-wrap gap-2"></div>
+                        <input type="hidden" id="reviewSiteId">
+                        <div id="pendingImagesContainer" class="d-flex flex-wrap gap-2">
+                        </div>
+
                         <div class="mt-3">
-                            <label class="form-label">Reject Reason (required if reject)</label>
+                            <label class="form-label">
+                                Reject Reason (required if reject)
+                            </label>
                             <input type="text" id="rejectReason" class="form-control" placeholder="Enter reject reason">
                         </div>
                     </div>
+
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-danger" id="rejectImagesBtn">Reject</button>
-                        <button type="button" class="btn btn-success" id="approveImagesBtn">Approve</button>
+                        <button type="button" class="btn btn-danger" id="rejectImagesBtn">
+                            Reject
+                        </button>
+                        <button type="button" class="btn btn-success" id="approveImagesBtn">
+                            Approve
+                        </button>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
+
 
 <style>
     .pagination .page-item.active .page-link {
@@ -268,20 +323,20 @@
         font-size: 0.85em;
         font-weight: 500;
     }
-    
+
     .card-title {
         font-weight: 600;
     }
-    
+
     /* SweetAlert Customization */
     .swal2-popup {
         border-radius: 10px;
     }
-    
+
     .swal2-success {
         border-color: #28a745;
     }
-    
+
     .swal2-error {
         border-color: #dc3545;
     }
@@ -443,21 +498,21 @@
     }
 
     // Form handler for map upload with SweetAlert
-    document.getElementById('siteMapUploadForm')?.addEventListener('submit', async function(e) {
+    document.getElementById('siteMapUploadForm')?.addEventListener('submit', async function (e) {
         e.preventDefault();
-        
+
         const form = this;
         const formData = new FormData(form);
         const submitBtn = document.getElementById('uploadMapBtn');
         const originalText = submitBtn.innerHTML;
-        
+
         // Validate file
         const fileInput = document.getElementById('siteMapFile');
         if (!fileInput.files || fileInput.files.length === 0) {
             showSweetAlert('error', 'Error', 'Please select a JSON file first');
             return;
         }
-        
+
         // Check file type
         const fileName = fileInput.files[0].name;
         const fileExt = fileName.split('.').pop().toLowerCase();
@@ -465,7 +520,7 @@
             showSweetAlert('error', 'Invalid File', 'Please upload a valid JSON or GeoJSON file');
             return;
         }
-        
+
         // Show loading SweetAlert
         if (typeof Swal !== 'undefined') {
             Swal.fire({
@@ -480,20 +535,20 @@
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Uploading...';
             submitBtn.disabled = true;
         }
-        
+
         try {
             const response = await fetch(form.action, {
                 method: 'POST',
                 body: formData
             });
-            
+
             const data = await response.json();
-            
+
             // Close loading SweetAlert
             if (typeof Swal !== 'undefined') {
                 Swal.close();
             }
-            
+
             if (data.status) {
                 // Success with SweetAlert
                 if (typeof Swal !== 'undefined') {
@@ -521,7 +576,7 @@
             } else {
                 // Error with SweetAlert
                 showSweetAlert('error', 'Upload Failed', data.message || 'Failed to upload map. Please try again.');
-                
+
                 // Reset button if not using SweetAlert
                 if (typeof Swal === 'undefined') {
                     submitBtn.innerHTML = originalText;
@@ -530,15 +585,15 @@
             }
         } catch (error) {
             console.error('Error:', error);
-            
+
             // Close loading if using SweetAlert
             if (typeof Swal !== 'undefined') {
                 Swal.close();
             }
-            
+
             // Show error
             showSweetAlert('error', 'Error', 'An error occurred while uploading. Please try again.');
-            
+
             // Reset button if not using SweetAlert
             if (typeof Swal === 'undefined') {
                 submitBtn.innerHTML = originalText;
@@ -548,7 +603,7 @@
     });
 
     // Reset form when modal closes
-    document.getElementById('siteMapUploadModal')?.addEventListener('hidden.bs.modal', function() {
+    document.getElementById('siteMapUploadModal')?.addEventListener('hidden.bs.modal', function () {
         const form = document.getElementById('siteMapUploadForm');
         if (form) {
             form.reset();
@@ -558,8 +613,28 @@
         }
     });
 
+    // Prevent modal opening when site images are not approved/uploaded
+    document.getElementById('siteMapUploadModal')?.addEventListener('show.bs.modal', function (e) {
+        const triggerBtn = e.relatedTarget;
+        if (!triggerBtn || !triggerBtn.classList.contains('uploadSiteMap')) return;
+
+        const hasImages = triggerBtn.getAttribute('data-has-images') === '1';
+        const siteId = triggerBtn.getAttribute('data-id');
+
+        if (!hasImages) {
+            e.preventDefault();
+            showSweetAlert('warning', 'Images Not Uploaded', 'Please upload and approve site images before uploading map JSON.');
+            return;
+        }
+
+        const siteIdInput = document.getElementById('siteMapSiteId');
+        if (siteIdInput) {
+            siteIdInput.value = siteId || '';
+        }
+    });
+
     // Handle view site detail button (if needed)
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const btn = e.target.closest('.viewSiteDetail');
         if (!btn) return;
         const siteId = btn.getAttribute('data-id');
@@ -615,6 +690,7 @@
 
                 const hasMap =
                     site.has_map === true ||
+                    Number(site.listed_map || 0) === 1 ||
                     (site.site_map && site.site_map !== "NULL" && site.site_map !== "null" && site.site_map !== "");
                 const mapBadge = hasMap
                     ? `<span class="badge bg-success">Map Uploaded</span>`
@@ -711,7 +787,7 @@
     });
 
     // Handle Enter key in search
-    document.querySelector('input[name="search"]')?.addEventListener('keypress', function(e) {
+    document.querySelector('input[name="search"]')?.addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
             e.preventDefault();
             this.form.submit();
@@ -719,10 +795,10 @@
     });
 
     // Initialize tooltips if any
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
         if (typeof bootstrap !== 'undefined' && bootstrap.Tooltip) {
-            tooltipTriggerList.forEach(function(tooltipTriggerEl) {
+            tooltipTriggerList.forEach(function (tooltipTriggerEl) {
                 new bootstrap.Tooltip(tooltipTriggerEl);
             });
         }
@@ -733,7 +809,7 @@
     });
 
     // Show reason when Listed Map is No
-    document.addEventListener('click', function(e) {
+    document.addEventListener('click', function (e) {
         const badge = e.target.closest('.mapReason');
         if (!badge) return;
         const reason = badge.getAttribute('data-reason') || 'Not available';
@@ -750,7 +826,7 @@
     });
 
     // Review pending images
-    document.addEventListener('click', async function(e) {
+    document.addEventListener('click', async function (e) {
         const btn = e.target.closest('.reviewImages');
         if (!btn) return;
         const siteId = btn.getAttribute('data-id');

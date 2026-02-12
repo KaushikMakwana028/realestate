@@ -1,4 +1,4 @@
-// user form js
+﻿// user form js
 
 $(document).ready(function () {
 	const toggleLink = document.querySelector("#show_hide_password a");
@@ -61,7 +61,7 @@ if (profileImageInput) {
 }
 
 $(document).ready(function () {
-	// ✅ Check if form exists before binding event
+	// âœ… Check if form exists before binding event
 	if ($("#addUserForm").length) {
 		$("#addUserForm").on("submit", function (e) {
 			e.preventDefault();
@@ -109,7 +109,7 @@ $(document).ready(function () {
 			});
 		});
 
-		// ✅ Image Preview
+		// âœ… Image Preview
 		$("#profileImage").on("change", function () {
 			const file = this.files[0];
 			if (file) {
@@ -278,6 +278,8 @@ $(document).ready(function () {
 						Swal.fire("Success!", response.message, "success");
 						$("#addexpForm")[0].reset();
 						$("#addexpForm").removeClass("was-validated");
+						$("#expenseImageFieldWrap").addClass("d-none");
+						$("#expenseImagePreview").empty();
 					} else {
 						Swal.fire("Error!", response.message, "error");
 					}
@@ -295,35 +297,34 @@ $(document).ready(function () {
 
 		$("#siteName").on("change", function () {
 			const siteId = $(this).val();
-			const preview = $("#expenseSiteImages");
+			const fieldWrap = $("#expenseImageFieldWrap");
+			const preview = $("#expenseImagePreview");
+			const input = $("#expenseImage");
+
+			preview.empty();
+			input.val("");
+
+			if (siteId) {
+				fieldWrap.removeClass("d-none");
+			} else {
+				fieldWrap.addClass("d-none");
+			}
+		});
+
+		$("#expenseImage").on("change", function () {
+			const preview = $("#expenseImagePreview");
 			preview.empty();
 
-			if (!siteId) return;
+			const file = this.files && this.files[0];
+			if (!file || !file.type.startsWith("image/")) return;
 
-			$.ajax({
-				url: site_url + "site/get_site_images",
-				type: "POST",
-				data: { site_id: siteId },
-				dataType: "json",
-				success: function (res) {
-					if (!res || !res.status || !res.images || res.images.length === 0) {
-						return;
-					}
-
-					res.images.forEach((imgPath) => {
-						const img = $("<img />", {
-							src: site_url + imgPath,
-							css: {
-								width: "80px",
-								height: "80px",
-								objectFit: "cover",
-								borderRadius: "6px",
-							},
-						});
-						preview.append(img);
-					});
-				},
-			});
+			const reader = new FileReader();
+			reader.onload = function (event) {
+				preview.html(
+					`<img src="${event.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;" alt="Expense image preview" />`,
+				);
+			};
+			reader.readAsDataURL(file);
 		});
 	}
 
@@ -528,7 +529,7 @@ $(document).ready(function () {
 			$(".pagination").html(html);
 		}
 
-		// 🔹 Pagination click
+		// ðŸ”¹ Pagination click
 		$(document).on("click", ".pagination a.page-link", function (e) {
 			e.preventDefault();
 			let page = $(this).data("page");
@@ -538,7 +539,7 @@ $(document).ready(function () {
 			}
 		});
 
-		// 🔹 Search
+		// ðŸ”¹ Search
 		$("#serchSite").on("keyup", function () {
 			searchQuery = $(this).val();
 			currentPage = 1;
@@ -574,10 +575,7 @@ $(document).ready(function () {
 
 					const imageHtml = images.length
 						? images
-								.map(
-									(img) =>
-										`<img src="${site_url}${img}" alt="Site Image">`,
-								)
+								.map((img) => `<img src="${site_url}${img}" alt="Site Image">`)
 								.join("")
 						: '<div class="text-muted">No images</div>';
 
@@ -658,9 +656,7 @@ $(document).ready(function () {
 							</div>
 							<div>
 								<div class="site-detail-label">Map</div>
-								<div class="site-detail-value">${
-									hasMap ? "Uploaded" : "Not Uploaded"
-								}</div>
+								<div class="site-detail-value">${hasMap ? "Uploaded" : "Not Uploaded"}</div>
 							</div>
 						</div>
 					</div>
@@ -737,7 +733,7 @@ $(document).ready(function () {
 
 		$(document).on("click", ".assignSite", function () {
 			const siteId = $(this).data("id");
-			const adminId = $(this).data("admin"); // ✅ get admin id
+			const adminId = $(this).data("admin"); // âœ… get admin id
 
 			$.ajax({
 				url: site_url + "site/get_users",
@@ -783,7 +779,7 @@ $(document).ready(function () {
 									data: {
 										site_id: siteId,
 										user_id: userId,
-										admin_id: adminId, // ✅ send admin id
+										admin_id: adminId, // âœ… send admin id
 									},
 									success: function (res) {
 										if (res.status) {
@@ -802,7 +798,7 @@ $(document).ready(function () {
 			});
 		});
 
-		// 🔹 Initial load
+		// ðŸ”¹ Initial load
 		loadSites();
 	}
 });
@@ -963,7 +959,7 @@ $("#addUpadForm").on("submit", function (e) {
 	});
 });
 $(document).ready(function () {
-	// ✅ Run only if table exists
+	// âœ… Run only if table exists
 	if ($("#plotTable").length) {
 		let currentPage = 1;
 		let searchQuery = "";
@@ -1048,7 +1044,7 @@ $(document).ready(function () {
 			});
 		}
 
-		// ✅ Pagination Rendering
+		// âœ… Pagination Rendering
 		function renderPagination(totalPages, currentPage) {
 			let paginationHTML = "";
 
@@ -1090,7 +1086,7 @@ $(document).ready(function () {
 			$(".pagination").html(paginationHTML);
 		}
 
-		// ✅ Pagination click (delegate)
+		// âœ… Pagination click (delegate)
 		$(document).on("click", ".pagination .page-link", function (e) {
 			e.preventDefault();
 			const page = parseInt($(this).data("page"), 10);
@@ -1099,13 +1095,13 @@ $(document).ready(function () {
 			loadPlots(currentPage, searchQuery);
 		});
 
-		// ✅ Search input
+		// âœ… Search input
 		$("#serchPlot").on("keyup", function () {
 			searchQuery = $(this).val();
 			loadPlots(1, searchQuery);
 		});
 
-		// ✅ Delete plot with confirmation
+		// âœ… Delete plot with confirmation
 		$(document).on("click", ".deletePlot", function () {
 			const id = $(this).data("id");
 
@@ -1130,7 +1126,7 @@ $(document).ready(function () {
 			});
 		});
 
-		// ✅ Initial Load
+		// âœ… Initial Load
 		loadPlots();
 	}
 });
@@ -1139,7 +1135,7 @@ $(document).ready(function () {
 		let currentPage = 1;
 		let searchQuery = "";
 
-		// ✅ Fetch users with pagination + search
+		// âœ… Fetch users with pagination + search
 		function loadUsers(page = 1, search = "") {
 			$.ajax({
 				url: site_url + "user/get_users_ajax", // <-- your backend endpoint
@@ -1204,7 +1200,7 @@ $(document).ready(function () {
 			});
 		}
 
-		// ✅ Render pagination (3 visible + Last + Next)
+		// âœ… Render pagination (3 visible + Last + Next)
 		function renderPagination(totalPages, currentPage) {
 			let paginationHTML = "";
 			const maxVisible = 3;
@@ -1243,13 +1239,13 @@ $(document).ready(function () {
 			$(".pagination").html(paginationHTML);
 		}
 
-		// ✅ Search functionality
+		// âœ… Search functionality
 		$("#serchUser").on("keyup", function () {
 			searchQuery = $(this).val();
 			loadUsers(1, searchQuery);
 		});
 
-		// ✅ Delete user confirmation
+		// âœ… Delete user confirmation
 		$(document).on("click", ".deleteUser", function () {
 			const id = $(this).data("id");
 
@@ -1274,7 +1270,7 @@ $(document).ready(function () {
 			});
 		});
 
-		// ✅ Initial Load
+		// âœ… Initial Load
 		loadUsers();
 	}
 });
@@ -1324,7 +1320,7 @@ $(document).ready(function () {
                 <tr>
                     <td>${start + i + 1}</td>
                     <td>${r.user_name}</td>
-                    <td>₹${r.amount}</td>
+                    <td>â‚¹${r.amount}</td>
                     <td>${r.created_at}</td>
                     <td>${r.notes ?? ""}</td>
                    <td>
@@ -1453,11 +1449,53 @@ $(document).on("click", ".deleteUpad", function () {
 $(document).ready(function () {
 	let currentPage = 1;
 
+	function normalizeDateForInput(rawDate) {
+		if (!rawDate) return "";
+		const str = String(rawDate).trim();
+		if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str;
+		const isoMatch = str.match(/^(\d{4}-\d{2}-\d{2})/);
+		if (isoMatch) return isoMatch[1];
+		const dmy = str.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{4})$/);
+		if (dmy) {
+			const dd = dmy[1].padStart(2, "0");
+			const mm = dmy[2].padStart(2, "0");
+			return `${dmy[3]}-${mm}-${dd}`;
+		}
+		const parsed = new Date(str);
+		if (!isNaN(parsed.getTime())) {
+			const yyyy = parsed.getFullYear();
+			const mm = String(parsed.getMonth() + 1).padStart(2, "0");
+			const dd = String(parsed.getDate()).padStart(2, "0");
+			return `${yyyy}-${mm}-${dd}`;
+		}
+		return "";
+	}
+
+	function formatInr(value) {
+		const num = Number(value || 0);
+		return `₹${num.toLocaleString("en-IN", {
+			minimumFractionDigits: 0,
+			maximumFractionDigits: 2,
+		})}`;
+	}
+
+	function updateExpenseSummary(summary) {
+		const s = summary || {};
+		$("#approvedTotal").text(formatInr(s.approved_amount || 0));
+		$("#approvedCount").text(Number(s.approved_count || 0));
+		$("#pendingTotal").text(formatInr(s.pending_amount || 0));
+		$("#pendingCount").text(Number(s.pending_count || 0));
+		$("#rejectTotal").text(formatInr(s.rejected_amount || 0));
+		$("#rejectCount").text(Number(s.rejected_count || 0));
+	}
+
 	function loadExpenses(page = 1) {
+		currentPage = page;
 		if ($("#expensesTable").length === 0) return;
 
 		let search = $("#serchexp").val();
 		let site_id = $("#siteID").val();
+		let monthFilter = $("#expMonthPicker").val();
 
 		$.ajax({
 			url: site_url + "site/get_expenses",
@@ -1466,9 +1504,19 @@ $(document).ready(function () {
 				page: page,
 				search: search,
 				site_id: site_id,
+				month_filter: monthFilter,
 			},
 			success: function (res) {
-				res = JSON.parse(res);
+				res = typeof res === "string" ? JSON.parse(res) : res;
+				if (!res || res.status !== true) {
+					$("#expensesTable").html(
+						'<tr><td colspan="9" class="text-center text-danger fw-bold py-3">Failed to load records</td></tr>',
+					);
+					buildPagination(0, 10, 1);
+					updateExpenseSummary({});
+					return;
+				}
+				updateExpenseSummary(res.summary || {});
 
 				$("#expensesTable").html("");
 				if (res.records.length === 0) {
@@ -1488,27 +1536,37 @@ $(document).ready(function () {
 				res.records.forEach((row, i) => {
 					let imagesHtml = "";
 					let imagesArr = [];
-					if (row.site_images) {
+					if (row.expense_image) {
+						let imgPath = row.expense_image;
 						try {
-							const imgs = JSON.parse(row.site_images);
-							if (Array.isArray(imgs)) {
-								imagesArr = imgs;
-								imagesHtml = imgs
-									.slice(0, 3)
-									.map((p) => {
-										const fullSrc = `${site_url}${p}`;
-										return `<img src="${fullSrc}" data-full="${fullSrc}" class="siteImgPreview" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;cursor:pointer;" />`;
-									})
-									.join("");
+							const parsed = JSON.parse(row.expense_image);
+							if (Array.isArray(parsed) && parsed.length > 0) {
+								imagesArr = parsed;
+							} else if (typeof parsed === "string" && parsed) {
+								imagesArr = [parsed];
 							}
 						} catch (e) {
-							imagesHtml = "";
+							imagesArr = [imgPath];
 						}
+
+						imagesHtml = imagesArr
+							.slice(0, 3)
+							.map((p) => {
+								const fullSrc = `${site_url}${p}`;
+								return `<img src="${fullSrc}" data-full="${fullSrc}" class="siteImgPreview" style="width:40px;height:40px;object-fit:cover;border-radius:4px;margin-right:4px;cursor:pointer;" />`;
+							})
+							.join("");
+					}
+
+					if (!imagesArr.length) {
+						imagesHtml = `<span class="d-inline-flex align-items-center justify-content-center border rounded bg-light text-secondary" style="width:40px;height:40px;" title="No image"><i class="bx bx-image-alt fs-5"></i></span>`;
 					}
 
 					const fullDesc = row.description || "";
 					const shortDesc =
 						fullDesc.length > 30 ? fullDesc.slice(0, 30) + "..." : fullDesc;
+					const editDateValue = normalizeDateForInput(row.date || "");
+					const currentImagePath = imagesArr.length ? imagesArr[0] : "";
 					const encodedImages = encodeURIComponent(JSON.stringify(imagesArr));
 
 					$("#expensesTable").append(`
@@ -1538,6 +1596,14 @@ $(document).ready(function () {
 
                         <td>
                             <div class="d-flex order-actions">
+                                        <a href="javascript:;" class="editExp" 
+                                           data-id="${row.id}"
+                                           data-amount="${row.amount || ""}"
+                                           data-date="${editDateValue}"
+                                           data-image="${currentImagePath.replace(/"/g, "&quot;")}"
+                                           data-desc="${fullDesc.replace(/"/g, "&quot;")}">
+                                            <i class="bx bxs-edit"></i>
+                                        </a>
                                       
 
                                         <a href="javascript:;" class="ms-3 deleteExp" data-id="${
@@ -1554,10 +1620,28 @@ $(document).ready(function () {
 
 				buildPagination(res.total, res.limit, res.page);
 			},
+			error: function () {
+				$("#expensesTable").html(
+					'<tr><td colspan="9" class="text-center text-danger fw-bold py-3">Failed to load records</td></tr>',
+				);
+				buildPagination(0, 10, 1);
+				updateExpenseSummary({});
+			},
 		});
 	}
 
-	// ➤ Pagination with only 3 pages
+	function setDefaultCurrentMonth() {
+		const $month = $("#expMonthPicker");
+		if ($month.length === 0) return;
+		if ($month.val()) return;
+
+		const now = new Date();
+		const yyyy = now.getFullYear();
+		const mm = String(now.getMonth() + 1).padStart(2, "0");
+		$month.val(`${yyyy}-${mm}`);
+	}
+
+	// Pagination with only 3 pages
 	function buildPagination(total, limit, page) {
 		let totalPages = Math.ceil(total / limit);
 		let pagination = $(".pagination");
@@ -1596,18 +1680,36 @@ $(document).ready(function () {
 		}
 	}
 
-	// ➤ Click pagination
-	$(document).on("click", ".pagination .page-link", function () {
-		let page = $(this).data("page");
-		loadExpenses(page);
-	});
+	// âž¤ Click pagination
+	$(document)
+		.off("click.expensePagination", ".pagination .page-link")
+		.on("click.expensePagination", ".pagination .page-link", function (e) {
+			e.preventDefault();
+			let p = $(this).data("page");
+			if (p) {
+				currentPage = p;
+				loadExpenses(p);
+			}
+		});
 
-	// ➤ Search
+	// âž¤ Search
 	$("#serchexp").keyup(function () {
+		currentPage = 1;
 		loadExpenses(1);
 	});
 
-	// ➤ Delete
+	$("#expMonthPicker").on("change", function () {
+		currentPage = 1;
+		loadExpenses(1);
+	});
+
+	$("#expShowAllBtn").on("click", function () {
+		$("#expMonthPicker").val("");
+		currentPage = 1;
+		loadExpenses(1);
+	});
+
+	// âž¤ Delete
 	$(document).on("click", ".deleteExp", function () {
 		let id = $(this).data("id");
 
@@ -1633,11 +1735,13 @@ $(document).ready(function () {
 		});
 	});
 
-	// ➤ Status change
+	// âž¤ Status change
 	$(document).on("change", ".statusUpdate", function () {
 		let id = $(this).data("id");
 		let newStatus = $(this).val();
 		let element = $(this);
+
+		element.data("old", element.val());
 
 		Swal.fire({
 			title: "Change Status?",
@@ -1661,11 +1765,144 @@ $(document).ready(function () {
 		});
 	});
 
+	$(document).on("click", ".editExp", function () {
+		if ($("#expensesTable").length === 0) return;
+
+		const id = $(this).data("id");
+		const amount = $(this).data("amount");
+		const date = normalizeDateForInput($(this).data("date"));
+		const desc = $(this).data("desc");
+		const currentImage = ($(this).data("image") || "").toString().trim();
+		const currentImageUrl = currentImage ? `${site_url}${currentImage}` : "";
+
+		Swal.fire({
+			title: "Edit Expense",
+			width: 760,
+			html: `
+				<div class="text-start" style="padding:6px 8px 0;">
+					<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+						<div>
+							<label class="form-label mb-1">Amount</label>
+							<input type="number" id="editExpAmount" class="form-control" value="${amount}" min="0">
+						</div>
+						<div>
+							<label class="form-label mb-1">Date</label>
+							<input type="date" id="editExpDate" class="form-control" value="${date}">
+						</div>
+					</div>
+					<div style="margin-top:12px;">
+						<label class="form-label mb-1">Description</label>
+						<textarea id="editExpDesc" class="form-control" rows="3">${desc || ""}</textarea>
+					</div>
+					<div style="margin-top:12px;">
+						<label class="form-label mb-1">Expense Image (optional)</label>
+						<input type="file" id="editExpImage" class="form-control" accept="image/*">
+					</div>
+					<div style="margin-top:12px;display:flex;gap:16px;flex-wrap:wrap;">
+						<div>
+							<div class="text-muted" style="font-size:12px;margin-bottom:6px;">Current image</div>
+							<div id="editExpCurrentWrap" style="width:120px;height:90px;border:1px solid #e6e8eb;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#f8f9fa;overflow:hidden;">
+								${
+									currentImageUrl
+										? `<img src="${currentImageUrl}" id="editExpCurrentImg" style="width:100%;height:100%;object-fit:cover;" alt="Current expense image">`
+										: `<i class="bx bx-image-alt" style="font-size:26px;color:#9aa3af;"></i>`
+								}
+							</div>
+						</div>
+						<div>
+							<div class="text-muted" style="font-size:12px;margin-bottom:6px;">Selected new image</div>
+							<div id="editExpPreviewWrap" style="width:120px;height:90px;border:1px dashed #cfd5db;border-radius:8px;display:flex;align-items:center;justify-content:center;background:#fafbfc;overflow:hidden;">
+								<i class="bx bx-upload" style="font-size:24px;color:#b0b7c3;"></i>
+							</div>
+						</div>
+					</div>
+				</div>
+			`,
+			showCancelButton: true,
+			confirmButtonText: "Update",
+			didOpen: () => {
+				const fileInput = document.getElementById("editExpImage");
+				const previewWrap = document.getElementById("editExpPreviewWrap");
+				if (!fileInput || !previewWrap) return;
+
+				fileInput.addEventListener("change", function () {
+					const file = this.files && this.files[0];
+					if (!file) {
+						previewWrap.innerHTML =
+							'<i class="bx bx-upload" style="font-size:24px;color:#b0b7c3;"></i>';
+						return;
+					}
+					if (!file.type.startsWith("image/")) {
+						Swal.showValidationMessage("Please select a valid image file");
+						this.value = "";
+						previewWrap.innerHTML =
+							'<i class="bx bx-upload" style="font-size:24px;color:#b0b7c3;"></i>';
+						return;
+					}
+
+					const reader = new FileReader();
+					reader.onload = function (event) {
+						previewWrap.innerHTML = `<img src="${event.target.result}" style="width:100%;height:100%;object-fit:cover;" alt="New expense image">`;
+					};
+					reader.readAsDataURL(file);
+				});
+			},
+			preConfirm: () => {
+				const editAmount = $("#editExpAmount").val();
+				const editDate = $("#editExpDate").val();
+				const editDesc = $("#editExpDesc").val();
+
+				if (!editAmount || !editDate || !editDesc) {
+					Swal.showValidationMessage(
+						"Amount, date and description are required",
+					);
+					return false;
+				}
+
+				const formData = new FormData();
+				formData.append("id", id);
+				formData.append("price", editAmount);
+				formData.append("date", editDate);
+				formData.append("description", editDesc);
+
+				const fileInput = document.getElementById("editExpImage");
+				if (fileInput && fileInput.files && fileInput.files[0]) {
+					formData.append("expense_image", fileInput.files[0]);
+				}
+
+				return $.ajax({
+					url: site_url + "site/update_expense",
+					type: "POST",
+					data: formData,
+					processData: false,
+					contentType: false,
+				})
+					.then((res) => {
+						const data = typeof res === "string" ? JSON.parse(res) : res;
+						if (!data.status) {
+							throw new Error(data.message || "Update failed");
+						}
+						return data;
+					})
+					.catch((err) => {
+						Swal.showValidationMessage(err.message || "Update failed");
+						return false;
+					});
+			},
+		}).then((result) => {
+			if (result.isConfirmed) {
+				Swal.fire("Updated!", "Expense updated successfully.", "success");
+				loadExpenses(currentPage);
+			}
+		});
+	});
+
 	// INITIAL LOAD
+	setDefaultCurrentMonth();
 	loadExpenses(1);
 });
 
-// ➤ Show full description modal
+// âž¤ Show full description modal
 $(document).on("click", ".expDesc", function () {
 	const desc = $(this).data("desc") || "";
 	const imagesEncoded = $(this).data("images") || "";
@@ -1695,7 +1932,7 @@ $(document).on("click", ".expDesc", function () {
 	modal.show();
 });
 
-// ➤ Show full image from expense modal
+// âž¤ Show full image from expense modal
 $(document).on("click", ".expImagePreview", function () {
 	const src = $(this).data("full") || $(this).attr("src");
 	$("#siteImageModalImg").attr("src", src || "");
@@ -1709,7 +1946,7 @@ $(document).on("click", ".expImagePreview", function () {
 	modal.show();
 });
 
-// ➤ Show full site image
+// âž¤ Show full site image
 $(document).on("click", ".siteImgPreview", function () {
 	const src = $(this).data("full") || $(this).attr("src");
 	$("#siteImageModalImg").attr("src", src || "");
@@ -2131,7 +2368,7 @@ $(document).ready(function () {
                                 <td>${res.plot?.site_name ?? "-"}</td>
                                 <td>${res.plot?.plot_number ?? "-"}</td>
                                 <td>${log.created_on}</td>
-                                <td>₹${log.paid_amount}</td>
+                                <td>â‚¹${log.paid_amount}</td>
                                  <td>
                             <select class="form-select statuspayment" data-id="${log.id}">
                     <option value="pending" ${log.status == "pending" ? "selected" : ""}>Pending</option>
@@ -2225,7 +2462,7 @@ $("#avatar-img").on("click", function () {
 	$("#avatar-upload").click();
 });
 
-// ✅ Preview selected image instantly
+// âœ… Preview selected image instantly
 $("#avatar-upload").on("change", function () {
 	const file = this.files[0];
 	if (file) {
@@ -2248,7 +2485,7 @@ $(document).on("click", ".update_form", function () {
 
 	let isValid = true;
 
-	// ✅ Name validation
+	// âœ… Name validation
 	if (name === "") {
 		$("#fullName")
 			.closest(".col-sm-9")
@@ -2257,7 +2494,7 @@ $(document).on("click", ".update_form", function () {
 		isValid = false;
 	}
 
-	// ✅ Email validation
+	// âœ… Email validation
 	if (email === "") {
 		$("#email")
 			.closest(".col-sm-9")
@@ -2272,29 +2509,29 @@ $(document).on("click", ".update_form", function () {
 		isValid = false;
 	}
 
-	// ❌ Stop if validation fails
+	// âŒ Stop if validation fails
 	if (!isValid) return;
 
-	// ✅ MUST use FormData for file upload
+	// âœ… MUST use FormData for file upload
 	let formData = new FormData();
 	formData.append("name", name);
 	formData.append("email", email);
 	formData.append("mobile", mobile);
 	formData.append("password", password);
 
-	// ✅ Profile image (optional)
+	// âœ… Profile image (optional)
 	const file = $("#avatar-upload")[0].files[0];
 	if (file) {
 		formData.append("profile_image", file);
 	}
 
-	// ✅ AJAX Request
+	// âœ… AJAX Request
 	$.ajax({
 		url: site_url + "profile/update_profile",
 		type: "POST",
 		data: formData,
-		processData: false, // 🔴 REQUIRED
-		contentType: false, // 🔴 REQUIRED
+		processData: false, // ðŸ”´ REQUIRED
+		contentType: false, // ðŸ”´ REQUIRED
 		dataType: "json",
 
 		beforeSend: function () {
@@ -2332,7 +2569,7 @@ $(document).on("click", ".update_form", function () {
 	});
 });
 
-// ✅ Email validator
+// âœ… Email validator
 function validateEmail(email) {
 	let regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 	return regex.test(email);
@@ -2455,10 +2692,11 @@ $(document).ready(function () {
 		let page = parseInt($link.data("page"), 10);
 		if (page) return page;
 		const text = ($link.text() || "").trim().toLowerCase();
-		const current = parseInt(
-			$(containerId).find("li.active .page-link").first().text(),
-			10,
-		) || 1;
+		const current =
+			parseInt(
+				$(containerId).find("li.active .page-link").first().text(),
+				10,
+			) || 1;
 		if (text === "previous") return current - 1;
 		if (text === "next") return current + 1;
 		return null;
@@ -2795,6 +3033,7 @@ $(document).ready(function () {
 		bootstrap.Modal.getOrCreateInstance(modalEl).show();
 	});
 
+	// âž¤ Edit expense
 	$(document).on("show.bs.modal", "#siteMapUploadModal", function (e) {
 		const trigger = e.relatedTarget;
 		const siteId = trigger ? $(trigger).data("id") : window.lastSiteMapId;
@@ -2948,3 +3187,4 @@ $(document).ready(function () {
 	loadAdmins(adminPage, adminSearch);
 	loadSuperSites(sitePage, siteSearch);
 });
+

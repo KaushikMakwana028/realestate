@@ -26,7 +26,7 @@
                 <div class="form-body mt-4">
                     <div class="row">
                         <div class="col">
-                        <form id="addexpForm" method="post" novalidate>
+                        <form id="addexpForm" method="post" enctype="multipart/form-data" novalidate>
 
     
                         
@@ -43,10 +43,11 @@
         <div class="invalid-feedback">Please select a site name.</div>
     </div>
 
-    <!-- Site Images Preview -->
-    <div class="mb-3">
-        <label class="form-label">Site Images</label>
-        <div id="expenseSiteImages" class="d-flex flex-wrap gap-2"></div>
+    <div class="mb-3 d-none" id="expenseImageFieldWrap">
+        <label for="expenseImage" class="form-label">Expense Image</label>
+        <input type="file" name="expense_image" class="form-control" id="expenseImage" accept="image/*">
+        <div class="form-text">Upload image for this expense (optional).</div>
+        <div id="expenseImagePreview" class="mt-2"></div>
     </div>
 
    

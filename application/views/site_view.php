@@ -68,7 +68,6 @@
 
 
 										<th>Total Plots</th>
-										<th>Images Status</th>
 										<th>Map Status</th>
 										<th>View Plots</th>
 										<th>View Expenses</th>
@@ -284,7 +283,7 @@ document.addEventListener('click', function(e) {
 			const images = data.images || [];
 			const expenses = data.expenses || [];
 			const plots = data.plots || [];
-			const hasMap = data.site?.has_map === true || (!!site.site_map && site.site_map !== 'NULL' && site.site_map !== 'null' && site.site_map !== '');
+			const hasMap = data.site?.has_map === true || Number(site.listed_map || 0) === 1 || (!!site.site_map && site.site_map !== 'NULL' && site.site_map !== 'null' && site.site_map !== '');
 
 			const imageHtml = images.length
 				? images.map((img) => `<img src="<?= base_url(); ?>${img}" alt="Site Image">`).join('')

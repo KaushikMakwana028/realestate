@@ -240,9 +240,13 @@ $data['attendance_approved'] = $this->db->count_all_results('attendance');
         }
         unset($site);
     }
-    // Load views
+    // Load role-wise dashboard view
     $this->load->view('header');
-    $this->load->view('dashboard_view', $data);
+    if (!empty($data['is_superadmin'])) {
+        $this->load->view('superadmin/superadmin_dashboard_view', $data);
+    } else {
+        $this->load->view('dashboard_view', $data);
+    }
     $this->load->view('footer');
 }
 

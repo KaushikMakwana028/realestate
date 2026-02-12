@@ -61,6 +61,7 @@ $route['attedance'] = 'dashboard/attedance';
 
 $route['add_site'] = 'site/add_site';
 $route['add_expenses'] = 'site/add_expenses';
+$route['site/update_expense'] = 'site/update_expense';
 
 $route['edit_site/(:num)'] = 'site/edit_site/$1';
 $route['expenses/(:num)'] = 'site/expenses/$1';
@@ -82,6 +83,7 @@ $route['payment_data/(:num)'] = 'plots/payment_data/$1';
 // $route['profile'] = 'user/add_upad';
 
 $route['superadmin/admins'] = 'superadmin/admins';
+$route['superadmin/dashboard'] = 'dashboard';
 $route['superadmin/sites'] = 'superadmin/sites';
 $route['superadmin/get_admins'] = 'superadmin/get_admins';
 $route['superadmin/get_admin_detail/(:num)'] = 'superadmin/get_admin_detail/$1';
@@ -90,6 +92,9 @@ $route['superadmin/get_site_detail/(:num)'] = 'superadmin/get_site_detail/$1';
 $route['superadmin/upload_site_map'] = 'superadmin/upload_site_map';
 $route['superadmin/site_images_pending'] = 'superadmin/site_images_pending';
 $route['superadmin/site_images_action'] = 'superadmin/site_images_action';
+$route['superadmin/change_admin_status/(:num)'] = 'superadmin/change_admin_status/$1';
+$route['superadmin/admin_sites/(:num)'] = 'superadmin/admin_sites/$1';
+$route['superadmin/admin_plots/(:num)'] = 'superadmin/admin_plots/$1';
 
 
 

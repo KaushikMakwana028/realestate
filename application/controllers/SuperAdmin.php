@@ -14,7 +14,7 @@ class SuperAdmin extends My_Controller
 
     public function admins()
     {
-        $limit = 3;
+        $limit = 5;
         $page = (int) ($this->input->get('page') ?? 1);
         $search = trim($this->input->get('search') ?? '');
 
@@ -24,7 +24,6 @@ class SuperAdmin extends My_Controller
 
         $this->db->from('user_master');
         $this->db->where('role', 'admin');
-        $this->db->where('isActive', 1);
 
         if (!empty($search)) {
             $this->db->group_start()
@@ -48,6 +47,7 @@ class SuperAdmin extends My_Controller
             $admin->users_count = $this->db->where('admin_id', $admin->id)->where('isActive', 1)->count_all_results('users');
         }
 
+        // ✅ FIX: Add these pagination variables to $data
         $data['admins_total_pages'] = (int) ceil($total_records / $limit);
         $data['admins_current_page'] = $page;
         $data['admin_start_index'] = $offset + 1;
@@ -55,6 +55,174 @@ class SuperAdmin extends My_Controller
 
         $this->load->view('header');
         $this->load->view('superadmin/admins_view', $data);
+        $this->load->view('footer');
+    }
+
+    public function change_admin_status($admin_id = null)
+    {
+        header('Content-Type: application/json');
+
+        if (empty($admin_id) || !is_numeric($admin_id)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid admin id']);
+            return;
+        }
+
+        $new_status = (int) $this->input->post('isActive');
+        if (!in_array($new_status, [0, 1], true)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid status']);
+            return;
+        }
+
+        $target_admin = $this->db
+            ->select('id, isActive')
+            ->where('id', (int) $admin_id)
+            ->where('role', 'admin')
+            ->get('user_master')
+            ->row();
+
+        if (!$target_admin) {
+            echo json_encode(['status' => false, 'message' => 'Admin not found']);
+            return;
+        }
+
+        $updated = $this->db
+            ->where('id', (int) $admin_id)
+            ->update('user_master', ['isActive' => $new_status]);
+
+        if (!$updated) {
+            echo json_encode(['status' => false, 'message' => 'Failed to update admin status']);
+            return;
+        }
+
+        echo json_encode([
+            'status' => true,
+            'message' => $new_status === 1 ? 'Admin activated successfully' : 'Admin deactivated successfully'
+        ]);
+    }
+
+    public function admin_sites($admin_id = null)
+    {
+        if (empty($admin_id) || !is_numeric($admin_id)) {
+            $this->session->set_flashdata('error', 'Invalid admin id');
+            redirect('superadmin/admins');
+        }
+
+        $admin = $this->db
+            ->select('id, name, business_name, email, mobile, isActive')
+            ->where('id', (int) $admin_id)
+            ->where('role', 'admin')
+            ->get('user_master')
+            ->row();
+
+        if (!$admin) {
+            $this->session->set_flashdata('error', 'Admin not found');
+            redirect('superadmin/admins');
+        }
+
+        $limit = 5;
+        $page = (int) ($this->input->get('page') ?? 1);
+        $search = trim((string) ($this->input->get('search') ?? ''));
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $limit;
+
+        $this->db->from('sites');
+        $this->db->where('admin_id', (int) $admin_id);
+        $this->db->where('isActive', 1);
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('name', $search)
+                ->or_like('location', $search)
+                ->group_end();
+        }
+        $total_records = $this->db->count_all_results('', false);
+
+        $this->db->select('id, name, location, area, total_plots, site_images, site_map, listed_map, site_images_status');
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit($limit, $offset);
+        $sites = $this->db->get()->result();
+
+        foreach ($sites as &$site) {
+            $images = [];
+            if (!empty($site->site_images)) {
+                $decoded = json_decode($site->site_images, true);
+                if (is_array($decoded)) {
+                    $images = $decoded;
+                }
+            }
+            $site->images = $images;
+            $site->primary_image = !empty($images[0]) ? $images[0] : null;
+            $site->has_map = ((int) ($site->listed_map ?? 0) === 1) || !empty($site->site_map);
+        }
+        unset($site);
+
+        $data['admin_info'] = $admin;
+        $data['admin_sites'] = $sites;
+        $data['admin_sites_current_page'] = $page;
+        $data['admin_sites_total_pages'] = (int) ceil($total_records / $limit);
+        $data['admin_sites_start_index'] = $offset + 1;
+        $data['admin_sites_search'] = $search;
+
+        $this->load->view('header');
+        $this->load->view('superadmin/admin_sites_view', $data);
+        $this->load->view('footer');
+    }
+
+    public function admin_plots($admin_id = null)
+    {
+        if (empty($admin_id) || !is_numeric($admin_id)) {
+            $this->session->set_flashdata('error', 'Invalid admin id');
+            redirect('superadmin/admins');
+        }
+
+        $admin = $this->db
+            ->select('id, name, business_name, email, mobile, isActive')
+            ->where('id', (int) $admin_id)
+            ->where('role', 'admin')
+            ->get('user_master')
+            ->row();
+
+        if (!$admin) {
+            $this->session->set_flashdata('error', 'Admin not found');
+            redirect('superadmin/admins');
+        }
+
+        $limit = 10;
+        $page = (int) ($this->input->get('page') ?? 1);
+        $search = trim((string) ($this->input->get('search') ?? ''));
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $limit;
+
+        $this->db->from('plots p');
+        $this->db->join('sites s', 's.id = p.site_id', 'left');
+        $this->db->where('p.admin_id', (int) $admin_id);
+        $this->db->where('p.isActive', 1);
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('p.plot_number', $search)
+                ->or_like('s.name', $search)
+                ->or_like('p.status', $search)
+                ->group_end();
+        }
+        $total_records = $this->db->count_all_results('', false);
+
+        $this->db->select('p.id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, s.name as site_name');
+        $this->db->order_by('p.id', 'DESC');
+        $this->db->limit($limit, $offset);
+        $plots = $this->db->get()->result();
+
+        $data['admin_info'] = $admin;
+        $data['admin_plots'] = $plots;
+        $data['admin_plots_current_page'] = $page;
+        $data['admin_plots_total_pages'] = (int) ceil($total_records / $limit);
+        $data['admin_plots_start_index'] = $offset + 1;
+        $data['admin_plots_search'] = $search;
+
+        $this->load->view('header');
+        $this->load->view('superadmin/admin_plots_view', $data);
         $this->load->view('footer');
     }
 
@@ -85,7 +253,8 @@ class SuperAdmin extends My_Controller
 
         $total_records = $this->db->count_all_results('', FALSE);
 
-        $this->db->select('s.id, s.name, s.location, s.total_plots, s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.admin_id, um.name as admin_name');
+        $this->db->select('s.id, s.name, s.location, s.total_plots, s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.listed_map, s.admin_id, um.name as admin_name');
+        $this->db->order_by('s.created_at', 'DESC');
         $this->db->order_by('s.id', 'DESC');
         $this->db->limit($limit, $offset);
         $data['super_sites'] = $this->db->get()->result();
@@ -111,6 +280,49 @@ class SuperAdmin extends My_Controller
         $this->load->view('footer');
     }
 
+    public function login_as_admin($admin_id = null)
+    {
+        if (($this->admin['role'] ?? '') !== 'superadmin') {
+            redirect('dashboard');
+        }
+
+        if (empty($admin_id) || !is_numeric($admin_id)) {
+            $this->session->set_flashdata('error', 'Invalid admin id');
+            redirect('superadmin/admins');
+        }
+
+        $target_admin = $this->db
+            ->select('id, name, business_name, profile_image, role, isActive')
+            ->where('id', (int) $admin_id)
+            ->where('role', 'admin')
+            ->where('isActive', 1)
+            ->get('user_master')
+            ->row();
+
+        if (!$target_admin) {
+            $this->session->set_flashdata('error', 'Admin not found or inactive');
+            redirect('superadmin/admins');
+        }
+
+        $adminSession = [
+            'user_id' => (int) $target_admin->id,
+            'user_name' => $target_admin->name,
+            'business_name' => $target_admin->business_name,
+            'profile_image' => $target_admin->profile_image ?? null,
+            'role' => $target_admin->role ?? 'admin',
+            'logged_in' => TRUE
+        ];
+
+        if (!empty($this->admin) && ($this->admin['role'] ?? '') === 'superadmin' && !$this->session->userdata('superadmin_original')) {
+            $this->session->set_userdata('superadmin_original', $this->admin);
+        }
+
+        $this->session->set_userdata('is_impersonating_admin', 1);
+        $this->session->set_userdata('impersonated_admin_id', (int) $target_admin->id);
+        $this->session->set_userdata('admin', $adminSession);
+        redirect('dashboard');
+    }
+
 
 
     public function get_admins()
@@ -128,7 +340,6 @@ class SuperAdmin extends My_Controller
 
         $this->db->from('user_master');
         $this->db->where('role', 'admin');
-        $this->db->where('isActive', 1);
         if (!empty($search)) {
             $this->db->group_start()
                 ->like('name', $search)
@@ -245,7 +456,7 @@ class SuperAdmin extends My_Controller
 
         // -------- GET PAGINATED DATA (new fresh query) --------
         $this->db->select('s.id, s.name, s.location, s.total_plots, 
-                       s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.admin_id, 
+                       s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.listed_map, s.admin_id, 
                        um.name as admin_name');
         $this->db->from('sites s');
         $this->db->join('user_master um', 'um.id = s.admin_id', 'left');
@@ -259,6 +470,7 @@ class SuperAdmin extends My_Controller
                 ->group_end();
         }
 
+        $this->db->order_by('s.created_at', 'DESC');
         $this->db->order_by('s.id', 'DESC');
         $this->db->limit($limit, $offset);
         $sites = $this->db->get()->result();
@@ -299,7 +511,7 @@ class SuperAdmin extends My_Controller
         }
 
         $site = $this->db
-            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.admin_id, um.name as admin_name')
+            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.listed_map, s.admin_id, um.name as admin_name')
             ->from('sites s')
             ->join('user_master um', 'um.id = s.admin_id', 'left')
             ->where('s.id', $site_id)
@@ -312,7 +524,7 @@ class SuperAdmin extends My_Controller
             return;
         }
 
-        $site->has_map = !empty($site->site_map);
+        $site->has_map = ((int) ($site->listed_map ?? 0) === 1) || !empty($site->site_map);
 
         $images = [];
         if (!empty($site->site_images)) {
@@ -364,6 +576,28 @@ class SuperAdmin extends My_Controller
             return;
         }
 
+        $site = $this->db
+            ->select('id, site_images, site_images_status')
+            ->where('id', $site_id)
+            ->where('isActive', 1)
+            ->get('sites')
+            ->row();
+
+        if (!$site) {
+            echo json_encode(['status' => false, 'message' => 'Site not found']);
+            return;
+        }
+
+        $has_images = !empty($site->site_images) && $site->site_images !== 'NULL' && $site->site_images !== 'null';
+        $images_approved = (($site->site_images_status ?? '') === 'approve');
+        if (!$has_images || !$images_approved) {
+            echo json_encode([
+                'status' => false,
+                'message' => 'Image is not uploaded/approved. Please upload and approve site images first.'
+            ]);
+            return;
+        }
+
         if (empty($_FILES['site_map']['name'])) {
             echo json_encode(['status' => false, 'message' => 'Map file is required']);
             return;
@@ -400,7 +634,8 @@ class SuperAdmin extends My_Controller
         $path = 'uploads/sitemap/' . $uploadData['file_name'];
 
         $updated = $this->db->where('id', $site_id)->update('sites', [
-            'site_map' => $path
+            'site_map' => $path,
+            'listed_map' => 1
         ]);
 
         if (!$updated) {
@@ -511,4 +746,48 @@ class SuperAdmin extends My_Controller
 
         echo json_encode(['status' => true, 'message' => 'Images rejected']);
     }
+
+    public function download_site_image($site_id = null)
+    {
+        if (($this->admin['role'] ?? '') !== 'superadmin') {
+            show_error('Unauthorized access', 403);
+        }
+
+        if (empty($site_id) || !is_numeric($site_id)) {
+            show_error('Invalid site id');
+        }
+
+        $site = $this->db
+            ->select('site_images')
+            ->where('id', (int) $site_id)
+            ->get('sites')
+            ->row();
+
+        if (!$site) {
+            show_error('Site not found');
+        }
+
+        $images = [];
+        if (!empty($site->site_images)) {
+            $decoded = json_decode($site->site_images, true);
+            if (is_array($decoded)) {
+                $images = $decoded;
+            }
+        }
+
+        if (empty($images[0])) {
+            show_error('Image not found');
+        }
+
+        $file_path = FCPATH . $images[0];
+
+        if (!file_exists($file_path)) {
+            show_error('File does not exist');
+        }
+
+        $this->load->helper('download');
+        force_download($file_path, NULL);
+    }
+
 }
+
