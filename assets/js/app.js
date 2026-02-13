@@ -1,7 +1,7 @@
 $(function () {
 	"use strict";
 
-	new PerfectScrollbar(".app-container"),
+	(new PerfectScrollbar(".app-container"),
 		new PerfectScrollbar(".header-message-list"),
 		new PerfectScrollbar(".header-notifications-list"),
 		$(".mobile-toggle-icon").on("click", function () {
@@ -13,9 +13,9 @@ $(function () {
 			$("html").attr("data-bs-theme", function (i, v) {
 				return v === "dark" ? "light" : "dark";
 			});
-		});
+		}));
 
-	$(".dark-mode").on("click", function () {
+	($(".dark-mode").on("click", function () {
 		if ($(".dark-mode-icon i").attr("class") == "bx bx-sun") {
 			$(".dark-mode-icon i").attr("class", "bx bx-moon");
 		} else {
@@ -25,20 +25,20 @@ $(function () {
 		$(".mobile-toggle-menu").click(function () {
 			$(".wrapper").hasClass("toggled")
 				? ($(".wrapper").removeClass("toggled"),
-				  $(".sidebar-wrapper").unbind("hover"))
+					$(".sidebar-wrapper").unbind("hover"))
 				: ($(".wrapper").addClass("toggled"),
-				  $(".sidebar-wrapper").hover(
+					$(".sidebar-wrapper").hover(
 						function () {
 							$(".wrapper").addClass("sidebar-hovered");
 						},
 						function () {
 							$(".wrapper").removeClass("sidebar-hovered");
-						}
-				  ));
+						},
+					));
 		}),
 		// back to top button
 		$(document).ready(function () {
-			$(window).on("scroll", function () {
+			($(window).on("scroll", function () {
 				$(this).scrollTop() > 300
 					? $(".back-to-top").fadeIn()
 					: $(".back-to-top").fadeOut();
@@ -49,11 +49,11 @@ $(function () {
 							{
 								scrollTop: 0,
 							},
-							600
+							600,
 						),
 						!1
 					);
-				});
+				}));
 		}),
 		// menu
 		$(function () {
@@ -71,7 +71,6 @@ $(function () {
 						.parent()
 						.addClass("mm-active");
 				o.is("li");
-
 			)
 				o = o.parent("").addClass("mm-show").parent("").addClass("mm-active");
 		}),
@@ -108,99 +107,105 @@ $(function () {
 		}),
 		$("#BoderedTheme").on("click", function () {
 			$("html").attr("data-bs-theme", "bodered-theme");
-		});
+		}));
 
-	$(".switcher-btn").on("click", function () {
+	($(".switcher-btn").on("click", function () {
 		$(".switcher-wrapper").toggleClass("switcher-toggled");
 	}),
 		$(".close-switcher").on("click", function () {
 			$(".switcher-wrapper").removeClass("switcher-toggled");
-		});
+		}));
 });
 
-$("#submit_product_form").click(function (e) {
-	e.preventDefault();
+if ($("#submit_product_form").length > 0) {
+	$("#submit_product_form").click(function (e) {
+		e.preventDefault();
 
-	var isValid = true;
+		var isValid = true;
 
-	// Validate all inputs (text, number) and textarea
-	$(
-		"#productForm input[type='text'], #productForm input[type='number'], #productForm textarea"
-	).each(function () {
-		var input = $(this);
-		if (!input.val().trim()) {
-			input.addClass("is-invalid");
-			isValid = false;
-		} else {
-			input.removeClass("is-invalid").addClass("is-valid");
-		}
-	});
-
-	// Validate image input
-	var imageInput = $("#image-uploadify");
-	var file = imageInput.get(0).files[0];
-
-	if (!file) {
-		imageInput.addClass("is-invalid");
-		isValid = false;
-	} else {
-		// Validate file type
-		var allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
-		if ($.inArray(file.type, allowedTypes) === -1) {
-			imageInput.addClass("is-invalid");
-			Swal.fire(
-				"Invalid file type",
-				"Only JPG, JPEG, and PNG files are allowed.",
-				"error"
-			);
-			isValid = false;
-		}
-		// Validate file size (2MB = 2 * 1024 * 1024)
-		else if (file.size > 2 * 1024 * 1024) {
-			imageInput.addClass("is-invalid");
-			Swal.fire("File too large", "Image size must be less than 2MB.", "error");
-			isValid = false;
-		} else {
-			imageInput.removeClass("is-invalid").addClass("is-valid");
-		}
-	}
-
-	if (!isValid) {
-		return; // Stop form submission
-	}
-
-	var form = $("#productForm")[0];
-	var formData = new FormData(form);
-
-	$.ajax({
-		url: site_url + "admin/products/new_product",
-		type: "POST",
-		data: formData,
-		contentType: false,
-		processData: false,
-		dataType: "json",
-		success: function (response) {
-			if (response.status == "success") {
-				Swal.fire({
-					title: "Success!",
-					text: "Product added successfully",
-					icon: "success",
-					timer: 3000,
-				});
-				$("#productForm")[0].reset();
-				$("#productForm input, #productForm textarea").removeClass(
-					"is-valid is-invalid"
-				);
+		// Validate all inputs (text, number) and textarea
+		$(
+			"#productForm input[type='text'], #productForm input[type='number'], #productForm textarea",
+		).each(function () {
+			var input = $(this);
+			if (!input.val().trim()) {
+				input.addClass("is-invalid");
+				isValid = false;
 			} else {
-				Swal.fire({
-					title: "Error!",
-					text: response.message || "An error occurred.",
-					icon: "error",
-				});
+				input.removeClass("is-invalid").addClass("is-valid");
 			}
-		},
+		});
+
+		// Validate image input
+		var imageInput = $("#image-uploadify");
+		var file = imageInput.get(0).files[0];
+
+		if (!file) {
+			imageInput.addClass("is-invalid");
+			isValid = false;
+		} else {
+			// Validate file type
+			var allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
+			if ($.inArray(file.type, allowedTypes) === -1) {
+				imageInput.addClass("is-invalid");
+				Swal.fire(
+					"Invalid file type",
+					"Only JPG, JPEG, and PNG files are allowed.",
+					"error",
+				);
+				isValid = false;
+			}
+			// Validate file size (2MB = 2 * 1024 * 1024)
+			else if (file.size > 2 * 1024 * 1024) {
+				imageInput.addClass("is-invalid");
+				Swal.fire(
+					"File too large",
+					"Image size must be less than 2MB.",
+					"error",
+				);
+				isValid = false;
+			} else {
+				imageInput.removeClass("is-invalid").addClass("is-valid");
+			}
+		}
+
+		if (!isValid) {
+			return; // Stop form submission
+		}
+
+		var form = $("#productForm")[0];
+		var formData = new FormData(form);
+
+		$.ajax({
+			url: site_url + "admin/products/new_product",
+			type: "POST",
+			data: formData,
+			contentType: false,
+			processData: false,
+			dataType: "json",
+			success: function (response) {
+				if (response.status == "success") {
+					Swal.fire({
+						title: "Success!",
+						text: "Product added successfully",
+						icon: "success",
+						timer: 3000,
+					});
+					$("#productForm")[0].reset();
+					$("#productForm input, #productForm textarea").removeClass(
+						"is-valid is-invalid",
+					);
+				} else {
+					Swal.fire({
+						title: "Error!",
+						text: response.message || "An error occurred.",
+						icon: "error",
+					});
+				}
+			},
+		});
 	});
-});
+}
 let limit = 5;
 let offset = 0;
 let currentPage = 1;
@@ -277,74 +282,78 @@ function renderPagination(total, currentPage) {
 	$(".pagination").html(html);
 }
 
-
 // Initial fetch
 $(document).ready(function () {
-	fetchProducts();
+	if ($("#search-results").length > 0) {
+		fetchProducts();
 
-	$("#product-search").on("input", function () {
-		fetchProducts(1, $(this).val());
-	});
+		$("#product-search").on("input", function () {
+			fetchProducts(1, $(this).val());
+		});
+	}
 });
-$(document).ready(function() {
-    // Handle delete button click
-    $(document).on('click', '.delete-product', function() {
-        let productId = $(this).data('id');
-        let row = $(this).closest('tr');
 
-        // Show SweetAlert confirmation
-        Swal.fire({
-            title: 'Are you sure?',
-            text: "You won't be able to revert this!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#3085d6',
-            cancelButtonColor: '#d33',
-            confirmButtonText: 'Yes, delete it!'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Make AJAX request to delete product
-                $.ajax({
-                    url: site_url + "admin/products/delete_product",
-                    type: 'POST',
-                    data: { product_id: productId },
-                    dataType: 'json',
-                    success: function(response) {
-                        if (response.success) {
-                            // Show success message
-                            Swal.fire(
-                                'Deleted!',
-                                'Product has been deleted successfully.',
-                                'success'
-                            );
-                            // Remove the row from the table
-                            row.remove();
-                            location.reload();
-                        } else {
-                            // Show error message
-                            Swal.fire(
-                                'Error!',
-                                response.message || 'Failed to delete product.',
-                                'error'
-                            );
-                        }
-                    },
-                    error: function(xhr, status, error) {
-                        console.error('Error:', error);
-                        Swal.fire(
-                            'Error!',
-                            'An error occurred while deleting the product.',
-                            'error'
-                        );
-                    }
-                });
-            }
-        });
-    });
+$(document).ready(function () {
+	// Handle delete button click
+	$(document).on("click", ".delete-product", function () {
+		let productId = $(this).data("id");
+		let row = $(this).closest("tr");
+
+		// Show SweetAlert confirmation
+		Swal.fire({
+			title: "Are you sure?",
+			text: "You won't be able to revert this!",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonColor: "#3085d6",
+			cancelButtonColor: "#d33",
+			confirmButtonText: "Yes, delete it!",
+		}).then((result) => {
+			if (result.isConfirmed) {
+				// Make AJAX request to delete product
+				$.ajax({
+					url: site_url + "admin/products/delete_product",
+					type: "POST",
+					data: { product_id: productId },
+					dataType: "json",
+					success: function (response) {
+						if (response.success) {
+							// Show success message
+							Swal.fire(
+								"Deleted!",
+								"Product has been deleted successfully.",
+								"success",
+							);
+							// Remove the row from the table
+							row.remove();
+							location.reload();
+						} else {
+							// Show error message
+							Swal.fire(
+								"Error!",
+								response.message || "Failed to delete product.",
+								"error",
+							);
+						}
+					},
+					error: function (xhr, status, error) {
+						console.error("Error:", error);
+						Swal.fire(
+							"Error!",
+							"An error occurred while deleting the product.",
+							"error",
+						);
+					},
+				});
+			}
+		});
+	});
 });
 (function () {
 	"use strict";
 	const form = document.querySelector("#user-register");
+
+	if (!form) return;
 
 	form.addEventListener(
 		"submit",
@@ -395,7 +404,6 @@ $(document).ready(function() {
 				});
 			}
 		},
-		false
+		false,
 	);
 })();
-

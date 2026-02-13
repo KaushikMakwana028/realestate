@@ -13,156 +13,52 @@
 
         <div class="card border-0 shadow-sm radius-10">
             <div class="card-body">
-                <div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+                <input type="hidden" id="admin_id" value="<?= $admin_info->id; ?>">
+                <div class="d-flex flex-column flex-md-row align-items-start align-md-items-center justify-content-between mb-4 gap-2">
                     <div>
-                        <h5 class="mb-1 fw-bold">Sites - <?= htmlspecialchars($admin_info->name ?? 'Admin'); ?></h5>
+                        <h5 class="card-title mb-1 fw-bold">📍 Sites - <?= htmlspecialchars($admin_info->name ?? 'Admin'); ?></h5>
                         <small class="text-muted"><?= htmlspecialchars($admin_info->business_name ?? '-'); ?></small>
                     </div>
-                    <a href="<?= base_url('superadmin/admins'); ?>" class="btn btn-sm btn-outline-secondary">Back</a>
+                    <a href="<?= base_url('superadmin/admins'); ?>" class="btn btn-sm btn-outline-secondary">← Back to Admins</a>
                 </div>
 
-                <form method="GET" action="<?= base_url('superadmin/admin_sites/' . (int) ($admin_info->id ?? 0)); ?>"
-                    class="d-lg-flex align-items-center mb-3 gap-3">
-                    <div class="position-relative flex-grow-1">
-                        <input type="text" name="search" class="form-control ps-5 radius-30" placeholder="Search site"
-                            value="<?= htmlspecialchars($admin_sites_search ?? ''); ?>">
-                        <span class="position-absolute top-50 translate-middle-y ms-3"><i
-                                class="bx bx-search"></i></span>
+                <div class="mb-4">
+                    <div class="row g-3">
+                        <div class="col-12 col-md-8 col-lg-9">
+                            <div class="position-relative">
+                                <input type="text" id="adminSiteSearch" class="form-control ps-5 radius-6"
+                                    placeholder="Search site by name or location" value="">
+                                <span class="position-absolute top-50 translate-middle-y ms-3"><i
+                                        class="bx bx-search"></i></span>
+                            </div>
+                        </div>
+                        <div class="col-12 col-md-4 col-lg-3">
+                            <button type="button" id="adminSiteSearchBtn" class="btn btn-primary radius-6 w-100">Search</button>
+                        </div>
                     </div>
-                    <button type="submit" class="btn btn-primary radius-30 px-4">Search</button>
-                </form>
+                </div>
 
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0 modern-table">
-                        <thead>
+                <div class="table-responsive mb-4">
+                    <table class="table align-middle table-hover table-sm">
+                        <thead class="table-light">
                             <tr>
-                                <th>#</th>
-                                <th class="text-center">Site</th>
-                                <th class="text-center">Location</th>
-                                <th class="text-center">Total Plots</th>
-                                <th class="text-center">Image</th>
-                                <th class="text-center">Map</th>
+                                <th width="8%">#</th>
+                                <th width="30%">Site</th>
+                                <th width="25%">Location</th>
+                                <th width="12%" class="text-center">Plots</th>
+                                <th width="12%" class="text-center">Image</th>
+                                <th width="12%" class="text-center">Map</th>
                             </tr>
                         </thead>
-                        <tbody>
-
-
-                            <?php if (!empty($admin_sites)): ?>
-                                <?php $i = $admin_sites_start_index; ?>
-                                <?php foreach ($admin_sites as $site): ?>
-                                    <tr>
-                                        <td><?= $i++; ?></td>
-                                        <td class="text-center">
-                                            <?= htmlspecialchars($site->name ?? '-'); ?>
-                                        </td>
-
-                                        <td class="text-center">
-                                            <?= htmlspecialchars($site->location ?? '-'); ?>
-                                        </td>
-
-                                        <td class="text-center">
-                                            <?= (int) ($site->total_plots ?? 0); ?>
-                                        </td>
-
-                                        <td class="text-center">
-                                            <?php if (!empty($site->primary_image)): ?>
-
-                                                <div class="d-flex flex-column align-items-center">
-
-                                                    <!-- Image -->
-                                                    <a href="<?= base_url($site->primary_image); ?>" target="_blank">
-                                                        <img src="<?= base_url($site->primary_image); ?>" alt="Site Image"
-                                                            class="img-thumbnail border-0 shadow-sm"
-                                                            style="width:75px;height:75px;object-fit:cover;">
-                                                    </a>
-
-                                                    <!-- Small Download Link -->
-                                                    <a href="<?= base_url('superadmin/download_site_image/' . (int) $site->id); ?>"
-                                                        class="text-primary small mt-1 text-decoration-none">
-                                                        <i class="bx bx-download"></i> Download
-                                                    </a>
-
-                                                </div>
-
-                                            <?php else: ?>
-                                                <span class="badge bg-light text-secondary">No Image</span>
-                                            <?php endif; ?>
-                                        </td>
-
-
-
-                                        <td class="text-center">
-
-                                            <?php if (!empty($site->site_map)): ?>
-
-                                                <a href="<?= base_url($site->site_map); ?>" target="_blank"
-                                                    class="btn btn-sm btn-outline-success">
-                                                    <i class="bx bx-map"></i> View Map
-                                                </a>
-
-                                            <?php else: ?>
-
-                                                <?php if (!empty($site->primary_image)): ?>
-
-                                                    <!-- Image exists → Allow Upload -->
-                                                    <button type="button" class="btn btn-sm btn-outline-primary uploadMapBtn"
-                                                        data-site-id="<?= $site->id; ?>">
-                                                        <i class="bx bx-upload"></i> Upload Map
-                                                    </button>
-
-                                                <?php else: ?>
-
-                                                    <!-- Image NOT exists → Disable -->
-                                                    <button type="button" class="btn btn-sm btn-outline-secondary" disabled
-                                                        title="Upload image first">
-                                                        <i class="bx bx-block"></i> Upload Map
-                                                    </button>
-
-                                                    <div class="text-danger small mt-1">
-                                                        Image required
-                                                    </div>
-
-                                                <?php endif; ?>
-
-                                            <?php endif; ?>
-
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php else: ?>
-                                <tr>
-                                    <td colspan="6" class="text-center text-muted py-4">No sites found</td>
-                                </tr>
-                            <?php endif; ?>
+                        <tbody id="adminSitesTable">
                         </tbody>
+
+
                     </table>
                 </div>
 
-                <?php $searchParam = !empty($admin_sites_search) ? '&search=' . urlencode($admin_sites_search) : ''; ?>
                 <nav class="mt-3">
-                    <ul class="pagination justify-content-center">
-                        <li class="page-item <?= ($admin_sites_current_page <= 1) ? 'disabled' : ''; ?>">
-                            <a class="page-link"
-                                href="<?= base_url('superadmin/admin_sites/' . (int) ($admin_info->id ?? 0) . '?page=' . ($admin_sites_current_page - 1) . $searchParam); ?>">
-                                Previous
-                            </a>
-                        </li>
-                        <?php for ($p = 1; $p <= $admin_sites_total_pages; $p++): ?>
-                            <li class="page-item <?= ($p == $admin_sites_current_page) ? 'active' : ''; ?>">
-                                <a class="page-link"
-                                    href="<?= base_url('superadmin/admin_sites/' . (int) ($admin_info->id ?? 0) . '?page=' . $p . $searchParam); ?>">
-                                    <?= $p; ?>
-                                </a>
-                            </li>
-                        <?php endfor; ?>
-                        <li
-                            class="page-item <?= ($admin_sites_current_page >= $admin_sites_total_pages) ? 'disabled' : ''; ?>">
-                            <a class="page-link"
-                                href="<?= base_url('superadmin/admin_sites/' . (int) ($admin_info->id ?? 0) . '?page=' . ($admin_sites_current_page + 1) . $searchParam); ?>">
-                                Next
-                            </a>
-                        </li>
-                    </ul>
+                    <ul class="pagination justify-content-center" id="adminSitesPagination"></ul>
                 </nav>
             </div>
         </div>
@@ -202,30 +98,240 @@
 
 
 <style>
-    .modern-table thead th {
-        background: #ffffff;
+    /* ===== PAGE LAYOUT ===== */
+    .page-wrapper {
+        background: #f9fafb;
+        padding-bottom: 40px;
+    }
+
+    .page-content {
+        padding-top: 20px;
+    }
+
+    /* ===== CARD STYLING ===== */
+    .card {
+        border-radius: 10px;
+        margin-bottom: 30px;
+        overflow: hidden;
+    }
+
+    .card-body {
+        padding: 24px;
+    }
+
+    .card-title {
+        font-weight: 700;
+        font-size: 18px;
+        color: #1f2937;
+    }
+
+    /* ===== TABLE STYLING ===== */
+    .table {
+        margin-bottom: 0;
+    }
+
+    .table thead th {
+        background-color: #f9fafb;
+        border-bottom: 2px solid #e5e7eb;
+        font-size: 13px;
         font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #374151;
+        padding: 12px 8px;
+    }
+
+    .table tbody td {
+        padding: 12px 8px;
+        vertical-align: middle;
+        border-bottom: 1px solid #f3f4f6;
+    }
+
+    .table tbody tr:hover {
+        background-color: #f9fafb !important;
+    }
+
+    .table-sm tbody td {
+        padding: 10px 8px;
+        font-size: 13px;
+    }
+
+    /* ===== BADGE STYLING ===== */
+    .badge {
+        padding: 5px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 6px;
+    }
+
+    .badge.bg-warning-light {
+        background-color: #fef3c7 !important;
+        color: #d97706 !important;
+    }
+
+    .badge.bg-success-light {
+        background-color: #d1fae5 !important;
+        color: #059669 !important;
+    }
+
+    .badge.bg-danger-light {
+        background-color: #fee2e2 !important;
+        color: #dc2626 !important;
+    }
+
+    .badge.bg-secondary-light {
+        background-color: #e5e7eb !important;
+        color: #6b7280 !important;
+    }
+
+    .badge.bg-info {
+        background-color: #dbeafe !important;
+        color: #0284c7 !important;
+    }
+
+    /* ===== BUTTON STYLING ===== */
+    .btn {
+        border-radius: 6px;
+        font-weight: 500;
+        font-size: 13px;
+        padding: 6px 12px;
+    }
+
+    /* ===== SEARCH BAR ===== */
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #e5e7eb;
+        padding: 8px 14px;
         font-size: 14px;
-        color: #6c757d;
-        border-bottom: 1px solid #e9ecef;
-        padding: 14px 18px;
     }
 
-    .modern-table td {
-        padding: 18px;
-        font-size: 14px;
-        border-bottom: 1px solid #f1f3f5;
+    .form-control:focus {
+        border-color: #0d6efd;
+        box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
     }
 
-    .modern-table tbody tr:last-child td {
-        border-bottom: none;
+    .form-control.ps-5 {
+        padding-left: 38px;
     }
 
-    .modern-table tbody tr:hover {
-        background-color: #f8f9fa;
-        transition: 0.2s ease;
+    /* ===== PAGINATION ===== */
+    .pagination {
+        gap: 4px;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+        color: white;
+    }
+
+    .pagination .page-link {
+        color: #0d6efd;
+        border-radius: 6px;
+        padding: 6px 12px;
+        margin: 0 2px;
+        text-decoration: none;
+        border: 1px solid transparent;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #f3f4f6;
+        border-color: #0d6efd;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #d1d5db;
+        pointer-events: none;
+        cursor: not-allowed;
+    }
+
+    /* ===== MODAL STYLING ===== */
+    .modal-content {
+        border-radius: 10px;
+    }
+
+    .modal-header {
+        padding: 16px 24px;
+        background-color: #f9fafb;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .modal-body {
+        padding: 24px;
+    }
+
+    .modal-footer {
+        padding: 16px 24px;
+        background-color: #f9fafb;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 768px) {
+        .card-body {
+            padding: 16px;
+        }
+
+        .btn {
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .table thead th,
+        .table tbody td {
+            padding: 8px 6px;
+            font-size: 12px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .page-content {
+            padding: 10px;
+        }
+
+        .card-body {
+            padding: 12px;
+        }
+
+        .table thead th,
+        .table tbody td {
+            padding: 6px 4px;
+            font-size: 11px;
+        }
+
+        .badge {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        .btn {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+    }
+
+    /* ===== CUSTOM UTILITIES ===== */
+    .radius-6 {
+        border-radius: 6px;
+    }
+
+    .radius-10 {
+        border-radius: 10px;
+    }
+
+    .fw-bold {
+        font-weight: 700;
+    }
+
+    .fw-semibold {
+        font-weight: 600;
     }
 </style>
+
+<script>
+    const currentAdminId = <?= (int) ($admin_info->id ?? 0); ?>;
+</script>
+
 
 <script>
     document.addEventListener("DOMContentLoaded", function () {

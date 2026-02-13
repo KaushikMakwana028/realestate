@@ -127,21 +127,39 @@ class SuperAdmin extends My_Controller
         }
         $offset = ($page - 1) * $limit;
 
+        // COUNT QUERY
         $this->db->from('sites');
         $this->db->where('admin_id', (int) $admin_id);
         $this->db->where('isActive', 1);
+
         if ($search !== '') {
             $this->db->group_start()
                 ->like('name', $search)
                 ->or_like('location', $search)
                 ->group_end();
         }
-        $total_records = $this->db->count_all_results('', false);
 
+        $total_records = $this->db->count_all_results();
+
+
+        // DATA QUERY (REBUILD FROM AGAIN)
         $this->db->select('id, name, location, area, total_plots, site_images, site_map, listed_map, site_images_status');
+        $this->db->from('sites');   // 🔥 IMPORTANT
+        $this->db->where('admin_id', (int) $admin_id);
+        $this->db->where('isActive', 1);
+
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('name', $search)
+                ->or_like('location', $search)
+                ->group_end();
+        }
+
         $this->db->order_by('id', 'DESC');
         $this->db->limit($limit, $offset);
+
         $sites = $this->db->get()->result();
+
 
         foreach ($sites as &$site) {
             $images = [];
@@ -196,23 +214,39 @@ class SuperAdmin extends My_Controller
         }
         $offset = ($page - 1) * $limit;
 
+        $this->db->from('plots');
+        $this->db->where('admin_id', (int) $admin_id);
+        $this->db->where('isActive', 1);
+
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('plot_number', $search)
+                ->or_like('status', $search)
+                ->group_end();
+        }
+
+        $total_records = $this->db->count_all_results();
+
+
+        $this->db->select('p.id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, s.name as site_name');
         $this->db->from('plots p');
         $this->db->join('sites s', 's.id = p.site_id', 'left');
         $this->db->where('p.admin_id', (int) $admin_id);
         $this->db->where('p.isActive', 1);
+
         if ($search !== '') {
             $this->db->group_start()
                 ->like('p.plot_number', $search)
-                ->or_like('s.name', $search)
                 ->or_like('p.status', $search)
+                ->or_like('s.name', $search)
                 ->group_end();
         }
-        $total_records = $this->db->count_all_results('', false);
 
-        $this->db->select('p.id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, s.name as site_name');
         $this->db->order_by('p.id', 'DESC');
         $this->db->limit($limit, $offset);
+
         $plots = $this->db->get()->result();
+
 
         $data['admin_info'] = $admin;
         $data['admin_plots'] = $plots;
@@ -500,6 +534,133 @@ class SuperAdmin extends My_Controller
         ]);
     }
 
+    public function get_admin_sites($admin_id = null)
+    {
+        header('Content-Type: application/json');
+
+        if (empty($admin_id) || !is_numeric($admin_id)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid admin id']);
+            return;
+        }
+
+        $limit = 5;
+        $page = (int) ($this->input->get('page') ?? 1);
+        $search = trim((string) ($this->input->get('search') ?? ''));
+
+        if ($page < 1) {
+            $page = 1;
+        }
+
+        $offset = ($page - 1) * $limit;
+
+        /* ---------------- COUNT QUERY ---------------- */
+
+        $this->db->from('sites');
+        $this->db->where('admin_id', (int) $admin_id);
+        $this->db->where('isActive', 1);
+
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('name', $search)
+                ->or_like('location', $search)
+                ->group_end();
+        }
+
+        $total_records = $this->db->count_all_results();
+
+        /* ---------------- DATA QUERY ---------------- */
+
+        $this->db->select('id, name, location, area, total_plots, site_images, site_map, listed_map, site_images_status');
+        $this->db->from('sites');
+        $this->db->where('admin_id', (int) $admin_id);
+        $this->db->where('isActive', 1);
+
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('name', $search)
+                ->or_like('location', $search)
+                ->group_end();
+        }
+
+        $this->db->order_by('id', 'DESC');
+        $this->db->limit($limit, $offset);
+
+        $sites = $this->db->get()->result();
+
+
+        /* ---------------- RESPONSE ---------------- */
+
+        echo json_encode([
+            'status' => true,
+            'data' => $sites,
+            'pagination' => [
+                'total_pages' => (int) ceil($total_records / $limit),
+                'current_page' => $page
+            ]
+        ]);
+    }
+
+
+    public function get_admin_plots($admin_id = null)
+    {
+        header('Content-Type: application/json');
+
+        if (empty($admin_id) || !is_numeric($admin_id)) {
+            echo json_encode(['status' => false, 'message' => 'Invalid admin id']);
+            return;
+        }
+
+        $limit = 10;
+        $page = (int) ($this->input->get('page') ?? 1);
+        $search = trim((string) ($this->input->get('search') ?? ''));
+
+        if ($page < 1) {
+            $page = 1;
+        }
+        $offset = ($page - 1) * $limit;
+
+        $this->db->from('plots p');
+        $this->db->join('sites s', 's.id = p.site_id', 'left');
+        $this->db->where('s.admin_id', (int) $admin_id);
+        $this->db->where('p.isActive', 1);
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('p.plot_number', $search)
+                ->or_like('s.name', $search)
+                ->or_like('p.status', $search)
+                ->group_end();
+        }
+        $total_records = $this->db->count_all_results('', false);
+
+        $this->db->select('p.plot_id as id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, s.name as site_name');
+        $this->db->from('plots p');
+        $this->db->join('sites s', 's.id = p.site_id', 'left');
+        $this->db->where('s.admin_id', (int) $admin_id);
+        $this->db->where('p.isActive', 1);
+        if ($search !== '') {
+            $this->db->group_start()
+                ->like('p.plot_number', $search)
+                ->or_like('s.name', $search)
+                ->or_like('p.status', $search)
+                ->group_end();
+        }
+        $this->db->order_by('p.plot_id', 'DESC');
+        $this->db->limit($limit, $offset);
+        $plots = $this->db->get()->result();
+
+        $total_pages = (int) ceil($total_records / $limit);
+
+        echo json_encode([
+            'status' => true,
+            'data' => $plots,
+            'pagination' => [
+                'total_pages' => $total_pages,
+                'current_page' => $page
+            ]
+        ]);
+
+
+    }
 
     public function get_site_detail($site_id = null)
     {

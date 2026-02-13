@@ -21,10 +21,10 @@ $(document).ready(function () {
 });
 
 // Image preview
-const profileImageInput = document.getElementById("profileImage");
+const profileImage = document.getElementById("profileImage");
 
-if (profileImageInput) {
-	profileImageInput.addEventListener("change", function (event) {
+if (profileImage) {
+	profileImage.addEventListener("change", function () {
 		const file = event.target.files[0];
 		const preview = document.getElementById("previewImage");
 
@@ -396,29 +396,12 @@ $(document).ready(function () {
 						let startIndex = (page - 1) * 10 + 1;
 
 						res.data.forEach((site, i) => {
-							const imgStatus = site.site_images_status || "";
-							const hasImages =
-								!!site.site_images &&
-								site.site_images !== "NULL" &&
-								site.site_images !== "null" &&
-								site.site_images !== "";
-							let hasApprovedImages = hasImages && imgStatus === "approve";
 							const hasMap = !!site.site_map;
 							const mapOk = hasMap;
 
-							let imgBadge = `<span class="badge bg-secondary">No Images</span>`;
-							if (imgStatus === "pending") {
-								imgBadge = `<span class="badge bg-warning">Pending</span>`;
-							} else if (imgStatus === "reject") {
-								imgBadge = `<span class="badge bg-danger">Reject</span>`;
-							} else if (hasApprovedImages) {
-								imgBadge = `<span class="badge bg-success">Approve</span>`;
-							}
-
 							const mapBadge = mapOk
-								? `<span class="badge bg-success">Yes</span>`
-								: `<span class="badge bg-secondary">No</span>`;
-
+								? `<span class="badge bg-success" style="font-size: 12px; padding: 8px 12px;">Live</span>`
+								: `<span class="badge bg-warning" style="font-size: 12px; padding: 8px 12px;">Pending</span>`;
 							tbody += `
                             <tr>
                                 <td>${startIndex + i}</td>
@@ -428,7 +411,6 @@ $(document).ready(function () {
                                 <td>${site.collected_value}</td>                       
                                <td>${site.total_expenses}</td>
                                <td>${site.total_plots}</td>
-                               <td>${imgBadge}</td>
                                <td>${mapBadge}</td>
                                 
                                <td>
@@ -449,9 +431,6 @@ $(document).ready(function () {
 
 <td>
                                     <div class="d-flex order-actions">
-                                       <a href="javascript:;" class="viewSiteDetail" data-id="${site.id}" title="View">
-                                            <i class="bx bx-show"></i>
-                                        </a>
                                        <a href="edit_site/${
 																					site.id
 																				}" class="editSite">
@@ -2575,44 +2554,52 @@ function validateEmail(email) {
 	return regex.test(email);
 }
 
-document.getElementById("printBtn").addEventListener("click", function () {
-	let buyer_id = document.getElementById("buyer_id").value;
+const printBtn = document.getElementById("printBtn");
 
-	if (!buyer_id) {
-		Swal.fire({
-			icon: "warning",
-			title: "Buyer not selected",
-			text: "Please select a buyer first",
-		});
-		return;
-	}
+if (printBtn) {
+	printBtn.addEventListener("click", function () {
+		let buyerInput = document.getElementById("buyer_id");
 
-	fetch(site_url + "plots/download_pdf/" + buyer_id, {
-		method: "GET",
-	})
-		.then((response) => response.blob())
-		.then((blob) => {
-			const url = window.URL.createObjectURL(blob);
-			const a = document.createElement("a");
+		if (!buyerInput) return;
 
-			a.style.display = "none";
-			a.href = url;
-			a.download = "Buyer_Statement_" + buyer_id + ".pdf";
+		let buyer_id = buyerInput.value;
 
-			document.body.appendChild(a);
-			a.click();
-
-			window.URL.revokeObjectURL(url);
-			a.remove();
-		})
-		.catch(() => {
+		if (!buyer_id) {
 			Swal.fire({
-				icon: "error",
-				title: "Download failed",
-				text: "Unable to generate PDF",
+				icon: "warning",
+				title: "Buyer not selected",
+				text: "Please select a buyer first",
 			});
-		});
-});
+			return;
+		}
+
+		fetch(site_url + "plots/download_pdf/" + buyer_id, {
+			method: "GET",
+		})
+			.then((response) => response.blob())
+			.then((blob) => {
+				const url = window.URL.createObjectURL(blob);
+				const a = document.createElement("a");
+
+				a.style.display = "none";
+				a.href = url;
+				a.download = "Buyer_Statement_" + buyer_id + ".pdf";
+
+				document.body.appendChild(a);
+				a.click();
+
+				window.URL.revokeObjectURL(url);
+				a.remove();
+			})
+			.catch(() => {
+				Swal.fire({
+					icon: "error",
+					title: "Download failed",
+					text: "Unable to generate PDF",
+				});
+			});
+	});
+}
 
 $(document).ready(function () {
 	let adminPage = 1;
@@ -2713,28 +2700,56 @@ $(document).ready(function () {
 				if (res.status && res.data && res.data.length > 0) {
 					let rows = "";
 					res.data.forEach((admin, i) => {
+						const isActive = parseInt(admin.isActive || 0) === 1;
+						const statusBadge = isActive 
+							? '<span class="badge bg-success-light text-success">✓ Active</span>'
+							: '<span class="badge bg-danger-light text-danger">✗ Inactive</span>';
+						
+						const sitesBtn = `
+							<a class="btn btn-sm btn-outline-info" href="${site_url}superadmin/admin_sites/${admin.id}" title="View sites">
+								<i class="bx bx-map"></i> <span class="badge bg-info">${admin.sites_count || 0}</span>
+							</a>
+						`;
+						
+						const plotsBtn = `
+							<a class="btn btn-sm btn-outline-warning" href="${site_url}superadmin/admin_plots/${admin.id}" title="View plots">
+								<i class="bx bx-grid-alt"></i> <span class="badge bg-warning">${admin.plots_count || 0}</span>
+							</a>
+						`;
+						
+						const actionBtns = `
+							<div class="btn-group btn-group-sm" role="group">
+								<button type="button" class="btn ${isActive ? 'btn-outline-danger' : 'btn-outline-success'} toggleAdminStatus" 
+									data-id="${admin.id}" data-next-status="${isActive ? 0 : 1}" 
+									title="${isActive ? 'Deactivate' : 'Activate'}">
+									<i class="bx ${isActive ? 'bx-x' : 'bx-check'}"></i>
+								</button>
+								<a class="btn btn-outline-primary ${isActive ? '' : 'disabled'}" href="${site_url}superadmin/login_as_admin/${admin.id}" 
+									target="_blank" title="Login as admin">
+									<i class="bx bx-log-in"></i>
+								</a>
+							</div>
+						`;
+						
 						rows += `
-              <tr>
-                <td>${i + 1}</td>
-                <td>${admin.name || "-"}</td>
-                <td>${admin.business_name || "-"}</td>
-                <td>${admin.mobile || "-"}</td>
-                <td>${admin.email || "-"}</td>
-                <td>${admin.sites_count || 0}</td>
-                <td>${admin.plots_count || 0}</td>
-                <td>${admin.users_count || 0}</td>
-                <td>
-                  <button class="btn btn-sm btn-primary viewAdmin" data-id="${admin.id}">View</button>
-                </td>
-              </tr>
-            `;
+							<tr>
+								<td class="fw-semibold">${i + 1}</td>
+								<td class="fw-semibold">${admin.name || "-"}</td>
+								<td><small>${admin.business_name || "-"}</small></td>
+								<td><small>${admin.mobile || "-"}</small></td>
+								<td class="text-center">${statusBadge}</td>
+								<td class="text-center">${sitesBtn}</td>
+								<td class="text-center">${plotsBtn}</td>
+								<td class="text-center">${actionBtns}</td>
+							</tr>
+						`;
 					});
 					$("#superAdminTable").html(rows);
 					renderPagination("#adminPagination", res.pagination);
-					applyTableFilter("#superAdminTable", search, 9);
+					applyTableFilter("#superAdminTable", search, 8);
 				} else {
 					$("#superAdminTable").html(
-						'<tr><td colspan="9" class="text-center text-muted">No admins found</td></tr>',
+						'<tr><td colspan="8" class="text-center text-muted">No admins found</td></tr>',
 					);
 					renderPagination("#adminPagination", {
 						total_pages: 0,
@@ -2744,7 +2759,7 @@ $(document).ready(function () {
 			},
 			error: function () {
 				$("#superAdminTable").html(
-					'<tr><td colspan="9" class="text-center text-danger">Failed to load admins</td></tr>',
+					'<tr><td colspan="8" class="text-center text-danger">Failed to load admins</td></tr>',
 				);
 				renderPagination("#adminPagination", {
 					total_pages: 0,
@@ -2765,28 +2780,55 @@ $(document).ready(function () {
 				if (res.status && res.data && res.data.length > 0) {
 					let rows = "";
 					res.data.forEach((site, i) => {
-						const mapBadge = site.site_map
-							? '<span class="badge bg-success">Yes</span>'
-							: '<span class="badge bg-secondary">No</span>';
+						const imgStatus = site.site_images_status || '';
+						const hasImages = site.site_images && site.site_images !== 'NULL' && site.site_images !== 'null';
+						const hasApprovedImages = (imgStatus === 'approve') && hasImages;
+						const hasMap = site.site_map && site.site_map !== 'NULL' && site.site_map !== 'null';
+						const listedMap = (parseInt(site.listed_map || 0) === 1) || hasMap;
+
+						let imageBadge = '';
+						if (imgStatus === 'pending') {
+							imageBadge = '<span class="badge bg-warning-light text-warning">Pending</span>';
+						} else if (imgStatus === 'reject') {
+							imageBadge = '<span class="badge bg-danger-light text-danger">Rejected</span>';
+						} else if (hasApprovedImages) {
+							let images = [];
+							try {
+								images = JSON.parse(site.site_images) || [];
+							} catch (e) { }
+							if (images.length > 0) {
+								imageBadge = '<div style="text-align:center;"><img src="' + site_url + images[0] + '" style="width:100px;height:100px;object-fit:cover;border-radius:6px;"></div>';
+							} else {
+								imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+							}
+						} else {
+							imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+						}
+
+						const mapBadge = listedMap
+							? '<span class="badge bg-success-light text-success">✓ Yes</span>'
+							: '<span class="badge bg-secondary-light text-secondary">✗ No</span>';
+
+						const viewBtn = `<button class="btn btn-sm btn-primary viewSiteDetail" data-id="${site.id}" title="View Details"><i class="bx bx-show"></i></button>`;
+						const uploadBtn = `<button type="button" class="btn btn-sm btn-success uploadSiteMap" data-id="${site.id}" data-has-images="${hasApprovedImages ? '1' : '0'}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map"><i class="bx bx-upload"></i></button>`;
+
 						rows += `
-              <tr>
-                <td>${i + 1}</td>
-                <td>${site.name || "-"}</td>
-                <td>${site.admin_name || "-"}</td>
-                <td>${site.location || "-"}</td>
-                <td>${site.total_plots || 0}</td>
-                <td>${mapBadge}</td>
-                <td>
-                  <button class="btn btn-sm btn-primary viewSiteDetail" data-id="${site.id}">View</button>
-                </td>
-                <td>
-                  <button type="button" class="btn btn-sm btn-success uploadSiteMap"
-                    data-id="${site.id}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal">
-                    Upload Map
-                  </button>
-                </td>
-              </tr>
-            `;
+							<tr>
+								<td class="fw-semibold">${i + 1}</td>
+								<td class="fw-semibold">${site.name || "-"}</td>
+								<td><small>${site.admin_name || "-"}</small></td>
+								<td><small>${site.location || "-"}</small></td>
+								<td class="text-center"><span class="badge bg-info">${site.total_plots || 0}</span></td>
+								<td class="text-center">${imageBadge}</td>
+								<td class="text-center">${mapBadge}</td>
+								<td class="text-center">
+									<div class="btn-group btn-group-sm" role="group">
+										${viewBtn}
+										${uploadBtn}
+									</div>
+								</td>
+							</tr>
+						`;
 					});
 					$("#superAdminSitesTable").html(rows);
 					renderPagination("#sitePagination", res.pagination);
@@ -2806,6 +2848,147 @@ $(document).ready(function () {
 					'<tr><td colspan="8" class="text-center text-danger">Failed to load sites</td></tr>',
 				);
 				renderPagination("#sitePagination", {
+					total_pages: 0,
+					current_page: 1,
+				});
+			},
+		});
+	}
+
+	function loadAdminSites(adminId, page = 1, search = "") {
+		if (!adminId || !$("#adminSitesTable").length) return;
+		$.ajax({
+			url: site_url + "superadmin/get_admin_sites/" + adminId,
+			method: "GET",
+			data: { page: page, search: search },
+			dataType: "json",
+			success: function (res) {
+				if (res.status && res.data && res.data.length > 0) {
+					let rows = "";
+					let startIndex = (page - 1) * 5 + 1;
+					res.data.forEach((site, i) => {
+						const imgStatus = site.site_images_status || '';
+						const hasImages = site.site_images && site.site_images !== 'NULL' && site.site_images !== 'null';
+						const hasApprovedImages = (imgStatus === 'approve') && hasImages;
+						const hasMap = site.site_map && site.site_map !== 'NULL' && site.site_map !== 'null';
+
+						let imageBadge = '';
+						if (imgStatus === 'pending') {
+							imageBadge = '<span class="badge bg-warning-light text-warning">Pending</span>';
+						} else if (imgStatus === 'reject') {
+							imageBadge = '<span class="badge bg-danger-light text-danger">Rejected</span>';
+						} else if (hasApprovedImages) {
+							let images = [];
+							try {
+								images = JSON.parse(site.site_images) || [];
+							} catch (e) { }
+							if (images.length > 0) {
+								imageBadge = '<div style="text-align:center;"><img src="' + site_url + images[0] + '" style="width:100px;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;"><br><a href="' + site_url + 'superadmin/download_site_image/' + site.id + '" class="btn btn-sm btn-outline-success"><i class="bx bx-download"></i> Download</a></div>';
+							} else {
+								imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+							}
+						} else {
+							imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+						}
+
+						const mapBtn = hasMap
+							? `<a href="${site_url}${site.site_map}" target="_blank" class="btn btn-sm btn-outline-success">
+									<i class="bx bx-map"></i> View Map
+								</a>`
+							: hasApprovedImages
+								? `<button type="button" class="btn btn-sm btn-outline-primary uploadMapBtn" data-site-id="${site.id}">
+									<i class="bx bx-upload"></i> Upload Map
+								</button>`
+								: `<button type="button" class="btn btn-sm btn-outline-secondary" disabled title="Upload images first">
+									<i class="bx bx-lock"></i> Upload Map
+								</button>`;
+
+						rows += `
+							<tr>
+								<td class="fw-semibold">${startIndex + i}</td>
+								<td class="fw-semibold">${site.name || "-"}</td>
+								<td><small>${site.location || "-"}</small></td>
+								<td class="text-center"><span class="badge bg-info">${site.total_plots || 0}</span></td>
+								<td class="text-center">${imageBadge}</td>
+								<td class="text-center">${mapBtn}</td>
+							</tr>
+						`;
+					});
+					$("#adminSitesTable").html(rows);
+					renderPagination("#adminSitesPagination", res.pagination);
+				} else {
+					$("#adminSitesTable").html(
+						'<tr><td colspan="6" class="text-center text-muted py-4">No sites found</td></tr>',
+					);
+					renderPagination("#adminSitesPagination", {
+						total_pages: 0,
+						current_page: 1,
+					});
+				}
+			},
+			error: function () {
+				$("#adminSitesTable").html(
+					'<tr><td colspan="6" class="text-center text-danger">Failed to load sites</td></tr>',
+				);
+				renderPagination("#adminSitesPagination", {
+					total_pages: 0,
+					current_page: 1,
+				});
+			},
+		});
+	}
+
+	function loadAdminPlots(adminId, page = 1, search = "") {
+		if (!adminId || !$("#adminPlotsTable").length) return;
+		$.ajax({
+			url: site_url + "superadmin/get_admin_plots/" + adminId,
+			method: "GET",
+			data: { page: page, search: search },
+			dataType: "json",
+			success: function (res) {
+				if (res.status && res.data && res.data.length > 0) {
+					let rows = "";
+					let startIndex = (page - 1) * 10 + 1;
+					res.data.forEach((plot, i) => {
+						let statusBadge = "Available";
+						let statusColor = "bg-success";
+						if (plot.status && plot.status.toLowerCase() === "sold") {
+							statusBadge = "Sold";
+							statusColor = "bg-danger";
+						} else if (plot.status && plot.status.toLowerCase() === "pending") {
+							statusBadge = "Pending";
+							statusColor = "bg-warning text-dark";
+						}
+						rows += `
+              <tr>
+                <td>${startIndex + i}</td>
+                <td>${plot.site_name || "-"}</td>
+                <td>${plot.plot_number || "-"}</td>
+                <td>${plot.size || "-"}</td>
+                <td>${plot.dimension || "-"}</td>
+                <td>${plot.facing || "-"}</td>
+                <td>${plot.price || "-"}</td>
+                <td><span class="badge ${statusColor}">${statusBadge}</span></td>
+              </tr>
+            `;
+					});
+					$("#adminPlotsTable").html(rows);
+					renderPagination("#adminPlotsPagination", res.pagination);
+				} else {
+					$("#adminPlotsTable").html(
+						'<tr><td colspan="8" class="text-center text-muted py-4">No plots found</td></tr>',
+					);
+					renderPagination("#adminPlotsPagination", {
+						total_pages: 0,
+						current_page: 1,
+					});
+				}
+			},
+			error: function () {
+				$("#adminPlotsTable").html(
+					'<tr><td colspan="8" class="text-center text-danger">Failed to load plots</td></tr>',
+				);
+				renderPagination("#adminPlotsPagination", {
 					total_pages: 0,
 					current_page: 1,
 				});
@@ -3130,14 +3313,14 @@ $(document).ready(function () {
 		if (e.key === "Enter") {
 			adminSearch = $(this).val();
 			adminPage = 1;
-			applyTableFilter("#superAdminTable", adminSearch, 9);
+			applyTableFilter("#superAdminTable", adminSearch, 8);
 			loadAdmins(adminPage, adminSearch);
 		}
 	});
 	$(document).on("input", "#adminSearch", function () {
 		adminSearch = $(this).val();
 		adminPage = 1;
-		applyTableFilter("#superAdminTable", adminSearch, 9);
+		applyTableFilter("#superAdminTable", adminSearch, 8);
 		if (adminSearchTimer) clearTimeout(adminSearchTimer);
 		adminSearchTimer = setTimeout(() => {
 			loadAdmins(adminPage, adminSearch);
@@ -3146,8 +3329,36 @@ $(document).ready(function () {
 	$(document).on("click", "#adminSearchBtn", function () {
 		adminSearch = $("#adminSearch").val();
 		adminPage = 1;
-		applyTableFilter("#superAdminTable", adminSearch, 9);
+		applyTableFilter("#superAdminTable", adminSearch, 8);
 		loadAdmins(adminPage, adminSearch);
+	});
+
+	// Toggle Admin Status
+	$(document).on("click", ".toggleAdminStatus", function () {
+		const adminId = $(this).data("id");
+		const nextStatus = $(this).data("next-status");
+		const actionText = nextStatus === 1 ? "activate" : "deactivate";
+
+		if (!confirm("Are you sure you want to " + actionText + " this admin?")) {
+			return;
+		}
+
+		$.ajax({
+			url: site_url + "superadmin/change_admin_status/" + adminId,
+			method: "POST",
+			data: { isActive: nextStatus },
+			dataType: "json",
+			success: function (res) {
+				if (res.status) {
+					loadAdmins(adminPage, adminSearch);
+				} else {
+					alert(res.message || "Failed to update admin status");
+				}
+			},
+			error: function () {
+				alert("Error while updating admin status");
+			},
+		});
 	});
 
 	// Site pagination + search
@@ -3184,7 +3395,140 @@ $(document).ready(function () {
 		loadSuperSites(1, siteSearch);
 	});
 
+	// Admin Sites pagination + search
+	// Admin Sites pagination + search
+
+	// Get admin id from URL
+	// Get admin id safely from URL
+	const urlParts = window.location.pathname.split("/");
+	let adminIdFromUrl = urlParts[urlParts.length - 1];
+
+	// If last part is empty (trailing slash), take previous
+	if (!adminIdFromUrl || isNaN(adminIdFromUrl)) {
+		adminIdFromUrl = urlParts[urlParts.length - 2];
+	}
+
+	console.log("Admin ID from URL:", adminIdFromUrl);
+
+	let adminSitePage = 1;
+	let adminSiteSearch = "";
+	let adminSiteSearchTimer = null;
+	let currentAdminIdForSites = null;
+
+	function initAdminSitesPagination() {
+		if (typeof currentAdminId !== "undefined" && currentAdminId > 0) {
+			currentAdminIdForSites = currentAdminId;
+
+			console.log("Loading sites for:", currentAdminId);
+
+			loadAdminSites(currentAdminId, 1, "");
+		}
+	}
+
+	$(document).on("click", "#adminSitesPagination .page-link", function (e) {
+		e.preventDefault();
+		const page = getPageFromLink($(this), "#adminSitesPagination");
+		if (!page || $(this).closest("li").hasClass("disabled")) return;
+		adminSitePage = page;
+		adminSiteSearch = $("#adminSiteSearch").val() || "";
+		if (currentAdminIdForSites) {
+			loadAdminSites(currentAdminIdForSites, adminSitePage, adminSiteSearch);
+		}
+	});
+
+	$(document).on("keyup", "#adminSiteSearch", function (e) {
+		if (e.key === "Enter") {
+			adminSiteSearch = $(this).val();
+			adminSitePage = 1;
+			if (currentAdminIdForSites) {
+				loadAdminSites(currentAdminIdForSites, adminSitePage, adminSiteSearch);
+			}
+		}
+	});
+
+	$(document).on("input", "#adminSiteSearch", function () {
+		adminSiteSearch = $(this).val();
+		adminSitePage = 1;
+		if (adminSiteSearchTimer) clearTimeout(adminSiteSearchTimer);
+		adminSiteSearchTimer = setTimeout(() => {
+			if (currentAdminIdForSites) {
+				loadAdminSites(currentAdminIdForSites, adminSitePage, adminSiteSearch);
+			}
+		}, 300);
+	});
+
+	$(document).on("click", "#adminSiteSearchBtn", function () {
+		adminSiteSearch = $("#adminSiteSearch").val();
+		adminSitePage = 1;
+		if (currentAdminIdForSites) {
+			loadAdminSites(currentAdminIdForSites, 1, adminSiteSearch);
+		}
+	});
+
+	// Admin Plots pagination + search
+	let adminPlotPage = 1;
+	let adminPlotSearch = "";
+	let adminPlotSearchTimer = null;
+	let currentAdminIdForPlots = null;
+
+	function initAdminPlotsPagination() {
+		if (typeof currentAdminId !== "undefined" && currentAdminId > 0) {
+			currentAdminIdForPlots = currentAdminId;
+
+			console.log("Loading plots for:", currentAdminId);
+
+			loadAdminPlots(currentAdminId, 1, "");
+		}
+	}
+
+	$(document).on("click", "#adminPlotsPagination .page-link", function (e) {
+		e.preventDefault();
+		const page = getPageFromLink($(this), "#adminPlotsPagination");
+		if (!page || $(this).closest("li").hasClass("disabled")) return;
+		adminPlotPage = page;
+		adminPlotSearch = $("#adminPlotSearch").val() || "";
+		if (currentAdminIdForPlots) {
+			loadAdminPlots(currentAdminIdForPlots, adminPlotPage, adminPlotSearch);
+		}
+	});
+
+	$(document).on("keyup", "#adminPlotSearch", function (e) {
+		if (e.key === "Enter") {
+			adminPlotSearch = $(this).val();
+			adminPlotPage = 1;
+			if (currentAdminIdForPlots) {
+				loadAdminPlots(currentAdminIdForPlots, adminPlotPage, adminPlotSearch);
+			}
+		}
+	});
+
+	$(document).on("input", "#adminPlotSearch", function () {
+		adminPlotSearch = $(this).val();
+		adminPlotPage = 1;
+		if (adminPlotSearchTimer) clearTimeout(adminPlotSearchTimer);
+		adminPlotSearchTimer = setTimeout(() => {
+			if (currentAdminIdForPlots) {
+				loadAdminPlots(currentAdminIdForPlots, adminPlotPage, adminPlotSearch);
+			}
+		}, 300);
+	});
+
+	$(document).on("click", "#adminPlotSearchBtn", function () {
+		adminPlotSearch = $("#adminPlotSearch").val();
+		adminPlotPage = 1;
+		if (currentAdminIdForPlots) {
+			loadAdminPlots(currentAdminIdForPlots, 1, adminPlotSearch);
+		}
+	});
+
 	loadAdmins(adminPage, adminSearch);
 	loadSuperSites(sitePage, siteSearch);
-});
+	// Auto initialize if table exists
+	if ($("#adminSitesTable").length) {
+		initAdminSitesPagination();
+	}
 
+	if ($("#adminPlotsTable").length) {
+		initAdminPlotsPagination();
+	}
+});
