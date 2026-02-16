@@ -1,4 +1,4 @@
-﻿// user form js
+// user form js
 
 $(document).ready(function () {
 	const toggleLink = document.querySelector("#show_hide_password a");
@@ -398,24 +398,30 @@ $(document).ready(function () {
 						res.data.forEach((site, i) => {
 							const hasMap = !!site.site_map;
 							const mapOk = hasMap;
+							const formatInr = (v) => {
+								const n = Number(v || 0);
+								return Number.isFinite(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0";
+							};
+							const siteName = site.name || "-";
+							const siteLocation = site.location || "-";
 
 							const mapBadge = mapOk
-								? `<span class="badge bg-success" style="font-size: 12px; padding: 8px 12px;">Live</span>`
-								: `<span class="badge bg-warning" style="font-size: 12px; padding: 8px 12px;">Pending</span>`;
+								? `<span class="badge badge-animated-live d-inline-flex align-items-center gap-2" style="background: rgba(16, 185, 129, 0.1); color: #059669; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.78rem;"><span class="badge-dot-live"></span>Live</span>`
+								: `<span class="badge badge-animated-pending d-inline-flex align-items-center gap-2" style="background: rgba(245, 158, 11, 0.1); color: #d97706; padding: 6px 14px; border-radius: 20px; font-weight: 600; font-size: 0.78rem;"><span class="badge-dot-pending"></span>Pending</span>`;
 							tbody += `
                             <tr>
                                 <td>${startIndex + i}</td>
-                                <td>${site.name}</td>
-                                 <td>${site.location}</td>
-                                <td>${site.site_value}</td>
-                                <td>${site.collected_value}</td>                       
-                               <td>${site.total_expenses}</td>
-                               <td>${site.total_plots}</td>
+                                <td><span class="site-name-chip"><i class='bx bx-building-house'></i>${siteName}</span></td>
+                                <td>${siteLocation}</td>
+                                <td><span class="value-cell">${formatInr(site.site_value)}</span></td>
+                                <td><span class="value-cell">${formatInr(site.collected_value)}</span></td>                       
+                                <td><span class="value-cell">${formatInr(site.total_expenses)}</span></td>
+                                <td><span class="count-pill">${site.total_plots || 0}</span></td>
                                <td>${mapBadge}</td>
-                                
+                                 
                                <td>
     <a href="${site_url}plots/${site.id}" 
-       class="text-dark fs-4" 
+       class="quick-link-btn" 
        title="View Plots">
         <i class='bx bx-grid-alt'></i>
     </a>
@@ -423,26 +429,26 @@ $(document).ready(function () {
 
 <td>
     <a href="${site_url}expenses/${site.id}" 
-       class="text-dark fs-4" 
+       class="quick-link-btn" 
        title="View Expenses">
         <i class='bx bx-receipt'></i>
     </a>
 </td>
 
 <td>
-                                    <div class="d-flex order-actions">
+                                    <div class="site-action-group">
                                        <a href="edit_site/${
 																					site.id
-																				}" class="editSite">
+																				}" class="site-action-btn site-action-edit editSite">
                                             <i class="bx bxs-edit"></i>
                                         </a>
 
-                                        <a href="javascript:;" class="ms-3 deleteSite" data-id="${
+                                        <a href="javascript:;" class="site-action-btn site-action-delete deleteSite" data-id="${
 																					site.id
 																				}">
                                             <i class="bx bxs-trash"></i>
                                         </a>
-                                        <a href="javascript:;" class="ms-3 assignSite" data-admin="${
+                                        <a href="javascript:;" class="site-action-btn site-action-assign assignSite" data-admin="${
 																					site.admin_id
 																				}" data-id="${site.id}">
                                             <i class="bx bxs-user-plus"></i>
@@ -458,7 +464,7 @@ $(document).ready(function () {
 						$("#customerTableBody").html(
 							'<tr><td colspan="12" class="text-center">No data found</td></tr>',
 						);
-						$(".pagination").html("");
+						$("#sitePaginationList").html("");
 					}
 				},
 				error: function () {
@@ -505,11 +511,11 @@ $(document).ready(function () {
 										}">Next</a>
                  </li>`;
 
-			$(".pagination").html(html);
+			$("#sitePaginationList").html(html);
 		}
 
 		// ðŸ”¹ Pagination click
-		$(document).on("click", ".pagination a.page-link", function (e) {
+		$(document).on("click", "#sitePaginationList a.page-link", function (e) {
 			e.preventDefault();
 			let page = $(this).data("page");
 			if (page) {
@@ -591,11 +597,10 @@ $(document).ready(function () {
 						: '<tr><td colspan="6" class="text-muted">No plots</td></tr>';
 
 					const hasMap =
-						site.has_map === true ||
-						(!!site.site_map &&
-							site.site_map !== "NULL" &&
-							site.site_map !== "null" &&
-							site.site_map !== "");
+						!!site.site_map &&
+						site.site_map !== "NULL" &&
+						site.site_map !== "null" &&
+						site.site_map !== "";
 					const mapBadge = hasMap
 						? `<span class="badge bg-success">Map Uploaded</span>`
 						: `<span class="badge bg-secondary">No Map</span>`;
@@ -943,6 +948,100 @@ $(document).ready(function () {
 		let currentPage = 1;
 		let searchQuery = "";
 
+		function normalizePlotStatus(rawStatus) {
+			const status = String(rawStatus || "").toLowerCase();
+			if (status === "sold") return "sold";
+			if (status === "booked" || status === "reserved" || status === "pending") {
+				return "booked";
+			}
+			return "available";
+		}
+
+		function escapeHtml(text) {
+			return String(text ?? "")
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#039;");
+		}
+
+		function formatPrice(price) {
+			const num = Number(price || 0);
+			if (!Number.isFinite(num)) return "&#8377;0";
+			return `&#8377;${num.toLocaleString("en-IN")}`;
+		}
+
+		function getBuyerInitials(name) {
+			const cleaned = String(name || "").trim();
+			if (!cleaned) return "?";
+			const words = cleaned.split(/\s+/);
+			if (words.length >= 2) {
+				return (words[0][0] + words[1][0]).toUpperCase();
+			}
+			return cleaned.substring(0, 2).toUpperCase();
+		}
+
+		function buildStatusBadge(statusKey) {
+			if (statusKey === "sold") {
+				return '<span class="status-badge status-sold"><i class="bx bx-radio-circle-marked"></i>Sold</span>';
+			}
+			if (statusKey === "booked") {
+				return '<span class="status-badge status-booked"><i class="bx bx-radio-circle-marked"></i>Booked</span>';
+			}
+			return '<span class="status-badge status-available"><i class="bx bx-radio-circle-marked"></i>Available</span>';
+		}
+
+		function updatePlotSummary(res) {
+			const data = Array.isArray(res.data) ? res.data : [];
+			const pagination = res.pagination || {};
+			const serverCounts = res.status_counts || null;
+			const totalRecords = Number(pagination.total_records || data.length || 0);
+			const start = data.length ? (currentPage - 1) * 10 + 1 : 0;
+			const end = data.length ? (currentPage - 1) * 10 + data.length : 0;
+
+			const counts = { available: 0, booked: 0, sold: 0 };
+			if (serverCounts) {
+				counts.available = Number(serverCounts.available || 0);
+				counts.booked = Number(serverCounts.booked || 0);
+				counts.sold = Number(serverCounts.sold || 0);
+			} else {
+				data.forEach((plot) => {
+					const key = normalizePlotStatus(plot.status);
+					counts[key] += 1;
+				});
+			}
+
+			if ($("#statTotalPlots").length) $("#statTotalPlots").text(totalRecords);
+			if ($("#statAvailable").length) $("#statAvailable").text(counts.available);
+			if ($("#statBooked").length) $("#statBooked").text(counts.booked);
+			if ($("#statSold").length) $("#statSold").text(counts.sold);
+
+			if ($("#countAll").length) $("#countAll").text(totalRecords);
+			if ($("#countAvailable").length) $("#countAvailable").text(counts.available);
+			if ($("#countBooked").length) $("#countBooked").text(counts.booked);
+			if ($("#countSold").length) $("#countSold").text(counts.sold);
+
+			const safeTotal = totalRecords > 0 ? totalRecords : 1;
+			const availablePct = Math.round((counts.available / safeTotal) * 100);
+			const bookedPct = Math.round((counts.booked / safeTotal) * 100);
+			const soldPct = Math.round((counts.sold / safeTotal) * 100);
+
+			if ($("#ringAvailable").length) {
+				$("#ringAvailable").attr("stroke-dasharray", `${availablePct}, 100`);
+			}
+			if ($("#ringBooked").length) {
+				$("#ringBooked").attr("stroke-dasharray", `${bookedPct}, 100`);
+			}
+			if ($("#ringSold").length) {
+				$("#ringSold").attr("stroke-dasharray", `${soldPct}, 100`);
+			}
+
+			if ($("#pagStart").length) $("#pagStart").text(start);
+			if ($("#pagEnd").length) $("#pagEnd").text(end);
+			if ($("#pagTotal").length) $("#pagTotal").text(totalRecords);
+		}
+
 		function loadPlots(page = 1, search = "") {
 			let site_id = $("#site_id").val();
 
@@ -960,67 +1059,213 @@ $(document).ready(function () {
 
 					if (res.status && res.data.length > 0) {
 						let rows = "";
+						let gridCards = "";
 
 						$.each(res.data, function (i, plot) {
-							let statusBadge = "";
-
-							const status = String(plot.status || "").toLowerCase();
-							if (status === "available") {
-								statusBadge =
-									'<div class="badge rounded-pill text-success bg-light-success p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Available</div>';
-							} else if (status === "sold") {
-								statusBadge =
-									'<div class="badge rounded-pill text-danger bg-light-danger p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Sold</div>';
-							} else if (status === "pending") {
-								statusBadge =
-									'<div class="badge rounded-pill text-warning bg-light-warning p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Pending</div>';
-							} else if (plot.isActive == 0) {
-								statusBadge =
-									'<div class="badge rounded-pill text-secondary bg-light-secondary p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Inactive</div>';
-							}
+							const statusKey = normalizePlotStatus(plot.status);
+							const statusBadge = buildStatusBadge(statusKey);
+							const rowNo = (page - 1) * 10 + i + 1;
+							const buyerName = String(plot.name || "").trim();
+							const hasBuyer = statusKey === "sold" && buyerName.length > 0;
+							const safeBuyerName = escapeHtml(buyerName || "-");
+							const buyerHtml = hasBuyer
+								? `<div class="buyer-cell">
+										<div class="buyer-avatar" style="background:#4f46e5;">${escapeHtml(getBuyerInitials(buyerName))}</div>
+										<div class="buyer-name">${safeBuyerName}</div>
+								   </div>`
+								: '<span class="no-buyer">-</span>';
+							const safePlotNumber = escapeHtml(plot.plot_number || "-");
+							const safeSize = escapeHtml(plot.size || "-");
+							const safeDimension = escapeHtml(plot.dimension || "-");
+							const safeFacing = escapeHtml(plot.facing || "-");
+							const safePrice = formatPrice(plot.price);
 
 							rows += `
-                        <tr>
-                          <td>${(page - 1) * 10 + i + 1}</td>
-                          <td>${plot.site_name || "-"}</td>
-                          <td>${plot.plot_number || "-"}</td>
-                          <td>${plot.size || "-"}</td>
-                          <td>${plot.dimension || "-"}</td>
-                          <td>${plot.facing || "-"}</td>
-                          <td>${plot.price || "-"}</td>
-                          <td>${statusBadge}</td>
-                       <td>${status === "sold" ? plot.name || "-" : "-"}</td>
-                          <td>
-                            <div class="d-flex order-actions">
-                              <a href="${site_url}plot/edit_plot/${plot.id}" class="text"><i class="bx bxs-edit"></i></a>
-                              <a href="javascript:;" class="ms-3 text deletePlot" data-id="${plot.id}"><i class="bx bxs-trash"></i></a>
-                              ${
-																status === "sold" && plot.buyer_id
-																	? `<a href="${site_url}plots/buyer_details/${plot.id}" class="ms-3 text checkBuyer" data-id="${plot.id}" title="Check Buyer">
-                    <i class="bx bxs-user-check"></i>
-                 </a>`
-																	: ""
-															}
-                              
-                            </div>
-                          </td>
-                        </tr>
-                    `;
+								<tr data-status="${statusKey}">
+									<td>${rowNo}</td>
+									<td><strong>${safePlotNumber}</strong></td>
+									<td><span class="dimension-display">${safeSize}</span></td>
+									<td><span class="dimension-display">${safeDimension}</span></td>
+									<td><span class="facing-badge" data-facing="${String(plot.facing || "").toLowerCase()}"><i class="bx bx-compass"></i>${safeFacing}</span></td>
+									<td class="text-end"><span class="money-cell">${safePrice}</span></td>
+									<td class="text-center">${statusBadge}</td>
+									<td>${buyerHtml}</td>
+									<td class="text-center">
+										<div class="action-group">
+											<a href="${site_url}plot/edit_plot/${plot.id}" class="btn-action btn-action-edit" data-tooltip="Edit Plot">
+												<i class="bx bx-edit-alt"></i>
+											</a>
+											<a href="javascript:;" class="btn-action btn-action-delete deletePlot" data-id="${plot.id}" data-tooltip="Delete Plot">
+												<i class="bx bx-trash"></i>
+											</a>
+											${
+												statusKey === "sold" && plot.buyer_id
+													? `<a href="${site_url}plots/buyer_details/${plot.id}" class="btn-action btn-action-view checkBuyer" data-id="${plot.id}" data-tooltip="Buyer Details">
+													<i class="bx bx-user-check"></i>
+											   </a>`
+													: ""
+											}
+										</div>
+									</td>
+								</tr>
+							`;
+
+							gridCards += `
+								<div class="col-md-6 col-lg-4" data-status="${statusKey}">
+									<div class="plot-grid-card">
+										<div class="plot-grid-card-status">${statusBadge}</div>
+										<div class="plot-grid-card-header">
+											<div class="plot-grid-number ${statusKey}">${safePlotNumber}</div>
+											<div class="text-muted small mt-1">Facing: ${safeFacing}</div>
+										</div>
+										<div class="plot-grid-card-body">
+											<div class="plot-grid-detail">
+												<span class="plot-grid-detail-label">Size</span>
+												<span class="plot-grid-detail-value">${safeSize}</span>
+											</div>
+											<div class="plot-grid-detail">
+												<span class="plot-grid-detail-label">Dimension</span>
+												<span class="plot-grid-detail-value">${safeDimension}</span>
+											</div>
+											<div class="plot-grid-detail">
+												<span class="plot-grid-detail-label">Buyer</span>
+												<span class="plot-grid-detail-value">${hasBuyer ? safeBuyerName : "-"}</span>
+											</div>
+										</div>
+										<div class="plot-grid-card-footer">
+											<span class="plot-grid-price">${safePrice}</span>
+											<div class="action-group">
+												<a href="${site_url}plot/edit_plot/${plot.id}" class="btn-action btn-action-edit" data-tooltip="Edit Plot">
+													<i class="bx bx-edit-alt"></i>
+												</a>
+												<a href="javascript:;" class="btn-action btn-action-delete deletePlot" data-id="${plot.id}" data-tooltip="Delete Plot">
+													<i class="bx bx-trash"></i>
+												</a>
+											</div>
+										</div>
+									</div>
+								</div>
+							`;
 						});
 
 						$("#plotTable").html(rows);
+						$("#gridView").html(gridCards);
+						const plotTableWrap = document.getElementById("tableView");
+						if (plotTableWrap && window.innerWidth >= 1200) {
+							plotTableWrap.scrollLeft = 0;
+						}
 						renderPagination(
 							res.pagination.total_pages,
 							res.pagination.current_page,
 						);
+						$("#emptyState").addClass("d-none");
+						updatePlotSummary(res);
+						if (typeof enhanceStatusBadges === "function") {
+							enhanceStatusBadges();
+						}
 					} else {
 						$("#plotTable").html(
 							`<tr><td colspan="9" class="text-center text-muted">No plots found</td></tr>`,
 						);
-						$(".pagination").html("");
+						$("#gridView").html("");
+						$("#paginationList").html("");
+						$("#emptyState").removeClass("d-none");
+						updatePlotSummary({ data: [], pagination: { total_records: 0 } });
 					}
 				},
 			});
+		}
+
+		function normalizeImportedValue(value) {
+			if (value === undefined || value === null) return null;
+			const cleaned = String(value).trim();
+			if (!cleaned) return null;
+			const lowered = cleaned.toLowerCase();
+			if (lowered === "null" || lowered === "na" || lowered === "n/a" || lowered === "-") {
+				return null;
+			}
+			return cleaned;
+		}
+
+		function normalizeImportedPrice(value) {
+			const cleaned = normalizeImportedValue(value);
+			if (cleaned === null) return null;
+			const numberLike = cleaned.replace(/[^0-9.\-]/g, "");
+			if (!numberLike || numberLike === "-" || numberLike === "." || numberLike === "-.") {
+				return null;
+			}
+			const n = Number(numberLike);
+			return Number.isFinite(n) ? n : null;
+		}
+
+		function normalizeImportedStatus(value) {
+			const cleaned = normalizeImportedValue(value);
+			if (!cleaned) return "available";
+			const status = cleaned.toLowerCase();
+			if (status === "sold") return "sold";
+			if (status === "booked" || status === "reserved" || status === "pending") {
+				return "booked";
+			}
+			return "available";
+		}
+
+		function getMappedImportRow(rawRow) {
+			const mapped = {
+				plot_number: null,
+				size: null,
+				dimension: null,
+				facing: null,
+				price: null,
+				status: "available",
+			};
+
+			const headerMap = {
+				plotnumber: "plot_number",
+				plotno: "plot_number",
+				plot: "plot_number",
+				number: "plot_number",
+				size: "size",
+				plotsize: "size",
+				area: "size",
+				dimension: "dimension",
+				dimensions: "dimension",
+				plotdimension: "dimension",
+				facing: "facing",
+				face: "facing",
+				direction: "facing",
+				price: "price",
+				amount: "price",
+				rate: "price",
+				cost: "price",
+				status: "status",
+				state: "status",
+			};
+
+			Object.keys(rawRow || {}).forEach((key) => {
+				const normalizedHeader = String(key || "")
+					.toLowerCase()
+					.replace(/[^a-z0-9]/g, "");
+				const target = headerMap[normalizedHeader];
+				if (!target) return;
+				if (target === "price") {
+					mapped.price = normalizeImportedPrice(rawRow[key]);
+					return;
+				}
+				if (target === "status") {
+					mapped.status = normalizeImportedStatus(rawRow[key]);
+					return;
+				}
+				mapped[target] = normalizeImportedValue(rawRow[key]);
+			});
+
+			const hasAnyValue =
+				mapped.plot_number !== null ||
+				mapped.size !== null ||
+				mapped.dimension !== null ||
+				mapped.facing !== null ||
+				mapped.price !== null;
+
+			return hasAnyValue ? mapped : null;
 		}
 
 		// âœ… Pagination Rendering
@@ -1062,11 +1307,11 @@ $(document).ready(function () {
         </li>
       `;
 
-			$(".pagination").html(paginationHTML);
+			$("#paginationList").html(paginationHTML);
 		}
 
 		// âœ… Pagination click (delegate)
-		$(document).on("click", ".pagination .page-link", function (e) {
+		$(document).on("click", "#paginationList .page-link", function (e) {
 			e.preventDefault();
 			const page = parseInt($(this).data("page"), 10);
 			if (!page || $(this).closest("li").hasClass("disabled")) return;
@@ -1078,6 +1323,106 @@ $(document).ready(function () {
 		$("#serchPlot").on("keyup", function () {
 			searchQuery = $(this).val();
 			loadPlots(1, searchQuery);
+		});
+
+		$("#importPlotsBtn").on("click", function () {
+			$("#importPlotsFile").trigger("click");
+		});
+
+		$("#importPlotsFile").on("change", function () {
+			const file = this.files && this.files[0];
+			if (!file) return;
+
+			if (typeof XLSX === "undefined") {
+				Swal.fire("Error", "Excel library is not loaded. Please refresh and try again.", "error");
+				$(this).val("");
+				return;
+			}
+
+			const siteId = $("#site_id").val();
+			if (!siteId) {
+				Swal.fire("Error", "Site id is missing.", "error");
+				$(this).val("");
+				return;
+			}
+
+			const reader = new FileReader();
+			reader.onload = function (e) {
+				try {
+					const workbook = XLSX.read(e.target.result, { type: "array" });
+					const firstSheetName = workbook.SheetNames[0];
+					if (!firstSheetName) {
+						Swal.fire("Error", "No sheet found in file.", "error");
+						return;
+					}
+
+					const worksheet = workbook.Sheets[firstSheetName];
+					const rawRows = XLSX.utils.sheet_to_json(worksheet, { defval: null });
+
+					if (!Array.isArray(rawRows) || rawRows.length === 0) {
+						Swal.fire("Error", "Excel file is empty.", "error");
+						return;
+					}
+
+					const rows = [];
+					rawRows.forEach((rawRow) => {
+						const mapped = getMappedImportRow(rawRow);
+						if (mapped) rows.push(mapped);
+					});
+
+					if (rows.length === 0) {
+						Swal.fire(
+							"Error",
+							"No valid rows found. Use headers like plot_number, size, dimension, facing, price, status.",
+							"error",
+						);
+						return;
+					}
+
+					$.ajax({
+						url: site_url + "plots/import_plots",
+						type: "POST",
+						dataType: "json",
+						data: {
+							site_id: siteId,
+							rows: JSON.stringify(rows),
+						},
+						beforeSend: function () {
+							Swal.fire({
+								title: "Importing...",
+								text: "Please wait while plots are imported.",
+								allowOutsideClick: false,
+								didOpen: () => Swal.showLoading(),
+							});
+						},
+						success: function (res) {
+							Swal.close();
+							if (res.status === "success") {
+								const msg = `Inserted: ${res.inserted || 0}\nSkipped Duplicates: ${
+									res.skipped_duplicates || 0
+								}\nSkipped Empty: ${res.skipped_empty || 0}`;
+								Swal.fire("Success", msg, "success");
+								currentPage = 1;
+								loadPlots(currentPage, searchQuery);
+							} else {
+								Swal.fire("Error", res.message || "Import failed.", "error");
+							}
+						},
+						error: function () {
+							Swal.close();
+							Swal.fire("Error", "Something went wrong while importing.", "error");
+						},
+						complete: function () {
+							$("#importPlotsFile").val("");
+						},
+					});
+				} catch (err) {
+					Swal.fire("Error", "Invalid or unsupported file format.", "error");
+					$("#importPlotsFile").val("");
+				}
+			};
+
+			reader.readAsArrayBuffer(file);
 		});
 
 		// âœ… Delete plot with confirmation
@@ -1549,48 +1894,50 @@ $(document).ready(function () {
 					const encodedImages = encodeURIComponent(JSON.stringify(imagesArr));
 
 					$("#expensesTable").append(`
-                    <tr>
-                        <td>${indexStart + i}</td>
-                        <td>${row.site_name}</td>
-                        <td>${imagesHtml || ""}</td>
-                        <td>${row.user_name}</td>
+                    <tr class="expense-row">
+                        <td class="table-td">${indexStart + i}</td>
+                        <td class="table-td"><span class="expense-site-chip"><i class="bx bx-building-house"></i>${row.site_name || "-"}</span></td>
+                        <td class="table-td">${imagesHtml || ""}</td>
+                        <td class="table-td"><span class="expense-user-chip"><span class="expense-user-dot"></span>${row.user_name || "-"}</span></td>
 
-                        <td>
+                        <td class="table-td">
                             <a href="javascript:;" class="expDesc text-decoration-none"
                                data-desc="${fullDesc.replace(/"/g, "&quot;")}"
                                data-images="${encodedImages}">
-                               ${shortDesc || "-"}
+                                ${shortDesc || "-"}
                             </a>
                         </td>
-                        <td>${row.date}</td>
-                        <td>${row.amount}</td>
+                        <td class="table-td">${row.date || "-"}</td>
+                        <td class="table-td"><span class="expense-amount-text">${formatInr(
+													row.amount || 0,
+												)}</span></td>
 
-                        <td>
-                            <select class="form-select statusUpdate" data-id="${row.id}">
+                        <td class="table-td">
+                            <select class="form-select statusUpdate expense-status-select" data-id="${row.id}">
                                 <option value="pending" ${row.status == "pending" ? "selected" : ""}>Pending</option>
                                 <option value="approve" ${row.status == "approve" ? "selected" : ""}>Approve</option>
                                 <option value="reject" ${row.status == "reject" ? "selected" : ""}>Reject</option>
                             </select>
                         </td>
 
-                        <td>
-                            <div class="d-flex order-actions">
-                                        <a href="javascript:;" class="editExp" 
+                        <td class="table-td">
+                            <div class="d-flex gap-1 justify-content-center">
+                                        <a href="javascript:;" class="action-btn action-btn-edit editExp" 
                                            data-id="${row.id}"
                                            data-amount="${row.amount || ""}"
                                            data-date="${editDateValue}"
                                            data-image="${currentImagePath.replace(/"/g, "&quot;")}"
-                                           data-desc="${fullDesc.replace(/"/g, "&quot;")}">
+                                           data-desc="${fullDesc.replace(/"/g, "&quot;")}" title="Edit">
                                             <i class="bx bxs-edit"></i>
                                         </a>
                                       
 
-                                        <a href="javascript:;" class="ms-3 deleteExp" data-id="${
+                                        <a href="javascript:;" class="action-btn action-btn-delete deleteExp" data-id="${
 																					row.id
-																				}">
+																				}" title="Delete">
                                             <i class="bx bxs-trash"></i>
                                         </a>
-                                       
+                                        
                                     </div>
                         </td>
                     </tr>
@@ -1623,7 +1970,7 @@ $(document).ready(function () {
 	// Pagination with only 3 pages
 	function buildPagination(total, limit, page) {
 		let totalPages = Math.ceil(total / limit);
-		let pagination = $(".pagination");
+		let pagination = $("#expensePaginationList");
 
 		// Hide pagination if only 1 page
 		if (totalPages <= 1) {
@@ -1661,8 +2008,8 @@ $(document).ready(function () {
 
 	// âž¤ Click pagination
 	$(document)
-		.off("click.expensePagination", ".pagination .page-link")
-		.on("click.expensePagination", ".pagination .page-link", function (e) {
+		.off("click.expensePagination", "#expensePaginationList .page-link")
+		.on("click.expensePagination", "#expensePaginationList .page-link", function (e) {
 			e.preventDefault();
 			let p = $(this).data("page");
 			if (p) {
@@ -2701,36 +3048,36 @@ $(document).ready(function () {
 					let rows = "";
 					res.data.forEach((admin, i) => {
 						const isActive = parseInt(admin.isActive || 0) === 1;
-						const statusBadge = isActive 
+						const statusBadge = isActive
 							? '<span class="badge bg-success-light text-success">✓ Active</span>'
 							: '<span class="badge bg-danger-light text-danger">✗ Inactive</span>';
-						
+
 						const sitesBtn = `
 							<a class="btn btn-sm btn-outline-info" href="${site_url}superadmin/admin_sites/${admin.id}" title="View sites">
 								<i class="bx bx-map"></i> <span class="badge bg-info">${admin.sites_count || 0}</span>
 							</a>
 						`;
-						
+
 						const plotsBtn = `
 							<a class="btn btn-sm btn-outline-warning" href="${site_url}superadmin/admin_plots/${admin.id}" title="View plots">
 								<i class="bx bx-grid-alt"></i> <span class="badge bg-warning">${admin.plots_count || 0}</span>
 							</a>
 						`;
-						
+
 						const actionBtns = `
 							<div class="btn-group btn-group-sm" role="group">
-								<button type="button" class="btn ${isActive ? 'btn-outline-danger' : 'btn-outline-success'} toggleAdminStatus" 
+								<button type="button" class="btn ${isActive ? "btn-outline-danger" : "btn-outline-success"} toggleAdminStatus" 
 									data-id="${admin.id}" data-next-status="${isActive ? 0 : 1}" 
-									title="${isActive ? 'Deactivate' : 'Activate'}">
-									<i class="bx ${isActive ? 'bx-x' : 'bx-check'}"></i>
+									title="${isActive ? "Deactivate" : "Activate"}">
+									<i class="bx ${isActive ? "bx-x" : "bx-check"}"></i>
 								</button>
-								<a class="btn btn-outline-primary ${isActive ? '' : 'disabled'}" href="${site_url}superadmin/login_as_admin/${admin.id}" 
+								<a class="btn btn-outline-primary ${isActive ? "" : "disabled"}" href="${site_url}superadmin/login_as_admin/${admin.id}" 
 									target="_blank" title="Login as admin">
 									<i class="bx bx-log-in"></i>
 								</a>
 							</div>
 						`;
-						
+
 						rows += `
 							<tr>
 								<td class="fw-semibold">${i + 1}</td>
@@ -2780,37 +3127,50 @@ $(document).ready(function () {
 				if (res.status && res.data && res.data.length > 0) {
 					let rows = "";
 					res.data.forEach((site, i) => {
-						const imgStatus = site.site_images_status || '';
-						const hasImages = site.site_images && site.site_images !== 'NULL' && site.site_images !== 'null';
-						const hasApprovedImages = (imgStatus === 'approve') && hasImages;
-						const hasMap = site.site_map && site.site_map !== 'NULL' && site.site_map !== 'null';
-						const listedMap = (parseInt(site.listed_map || 0) === 1) || hasMap;
+						const imgStatus = site.site_images_status || "";
+						const hasImages =
+							site.site_images &&
+							site.site_images !== "NULL" &&
+							site.site_images !== "null";
+						const hasApprovedImages = imgStatus === "approve" && hasImages;
+						const hasMap =
+							site.site_map &&
+							site.site_map !== "NULL" &&
+							site.site_map !== "null";
 
-						let imageBadge = '';
-						if (imgStatus === 'pending') {
-							imageBadge = '<span class="badge bg-warning-light text-warning">Pending</span>';
-						} else if (imgStatus === 'reject') {
-							imageBadge = '<span class="badge bg-danger-light text-danger">Rejected</span>';
+						let imageBadge = "";
+						if (imgStatus === "pending") {
+							imageBadge =
+								'<span class="badge bg-warning-light text-warning">Pending</span>';
+						} else if (imgStatus === "reject") {
+							imageBadge =
+								'<span class="badge bg-danger-light text-danger">Rejected</span>';
 						} else if (hasApprovedImages) {
 							let images = [];
 							try {
 								images = JSON.parse(site.site_images) || [];
-							} catch (e) { }
+							} catch (e) {}
 							if (images.length > 0) {
-								imageBadge = '<div style="text-align:center;"><img src="' + site_url + images[0] + '" style="width:100px;height:100px;object-fit:cover;border-radius:6px;"></div>';
+								imageBadge =
+									'<div style="text-align:center;"><img src="' +
+									site_url +
+									images[0] +
+									'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;"></div>';
 							} else {
-								imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+								imageBadge =
+									'<span class="badge bg-secondary-light text-secondary">No Images</span>';
 							}
 						} else {
-							imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+							imageBadge =
+								'<span class="badge bg-secondary-light text-secondary">No Images</span>';
 						}
 
-						const mapBadge = listedMap
+						const mapBadge = hasMap
 							? '<span class="badge bg-success-light text-success">✓ Yes</span>'
 							: '<span class="badge bg-secondary-light text-secondary">✗ No</span>';
 
 						const viewBtn = `<button class="btn btn-sm btn-primary viewSiteDetail" data-id="${site.id}" title="View Details"><i class="bx bx-show"></i></button>`;
-						const uploadBtn = `<button type="button" class="btn btn-sm btn-success uploadSiteMap" data-id="${site.id}" data-has-images="${hasApprovedImages ? '1' : '0'}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map"><i class="bx bx-upload"></i></button>`;
+						const uploadBtn = `<button type="button" class="btn btn-sm btn-success uploadSiteMap" data-id="${site.id}" data-has-images="${hasApprovedImages ? "1" : "0"}" data-has-map="${hasMap ? "1" : "0"}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map"><i class="bx bx-upload"></i></button>`;
 
 						rows += `
 							<tr>
@@ -2867,28 +3227,46 @@ $(document).ready(function () {
 					let rows = "";
 					let startIndex = (page - 1) * 5 + 1;
 					res.data.forEach((site, i) => {
-						const imgStatus = site.site_images_status || '';
-						const hasImages = site.site_images && site.site_images !== 'NULL' && site.site_images !== 'null';
-						const hasApprovedImages = (imgStatus === 'approve') && hasImages;
-						const hasMap = site.site_map && site.site_map !== 'NULL' && site.site_map !== 'null';
+						const imgStatus = site.site_images_status || "";
+						const hasImages =
+							site.site_images &&
+							site.site_images !== "NULL" &&
+							site.site_images !== "null";
+						const hasApprovedImages = imgStatus === "approve" && hasImages;
+						const hasMap =
+							site.site_map &&
+							site.site_map !== "NULL" &&
+							site.site_map !== "null";
 
-						let imageBadge = '';
-						if (imgStatus === 'pending') {
-							imageBadge = '<span class="badge bg-warning-light text-warning">Pending</span>';
-						} else if (imgStatus === 'reject') {
-							imageBadge = '<span class="badge bg-danger-light text-danger">Rejected</span>';
+						let imageBadge = "";
+						if (imgStatus === "pending") {
+							imageBadge =
+								'<span class="badge bg-warning-light text-warning">Pending</span>';
+						} else if (imgStatus === "reject") {
+							imageBadge =
+								'<span class="badge bg-danger-light text-danger">Rejected</span>';
 						} else if (hasApprovedImages) {
 							let images = [];
 							try {
 								images = JSON.parse(site.site_images) || [];
-							} catch (e) { }
+							} catch (e) {}
 							if (images.length > 0) {
-								imageBadge = '<div style="text-align:center;"><img src="' + site_url + images[0] + '" style="width:100px;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;"><br><a href="' + site_url + 'superadmin/download_site_image/' + site.id + '" class="btn btn-sm btn-outline-success"><i class="bx bx-download"></i> Download</a></div>';
+								imageBadge =
+									'<div style="text-align:center;"><img src="' +
+									site_url +
+									images[0] +
+									'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;"><br><a href="' +
+									site_url +
+									"superadmin/download_site_image/" +
+									site.id +
+									'" class="btn btn-sm btn-outline-success"><i class="bx bx-download"></i> Download</a></div>';
 							} else {
-								imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+								imageBadge =
+									'<span class="badge bg-secondary-light text-secondary">No Images</span>';
 							}
 						} else {
-							imageBadge = '<span class="badge bg-secondary-light text-secondary">No Images</span>';
+							imageBadge =
+								'<span class="badge bg-secondary-light text-secondary">No Images</span>';
 						}
 
 						const mapBtn = hasMap
@@ -2950,14 +3328,17 @@ $(document).ready(function () {
 					let rows = "";
 					let startIndex = (page - 1) * 10 + 1;
 					res.data.forEach((plot, i) => {
-						let statusBadge = "Available";
-						let statusColor = "bg-success";
+						let statusLabel = "Available";
+						let statusClass = "plot-status-available";
+						let statusIconClass = "text-success";
 						if (plot.status && plot.status.toLowerCase() === "sold") {
-							statusBadge = "Sold";
-							statusColor = "bg-danger";
+							statusLabel = "Sold";
+							statusClass = "plot-status-sold";
+							statusIconClass = "text-danger";
 						} else if (plot.status && plot.status.toLowerCase() === "pending") {
-							statusBadge = "Pending";
-							statusColor = "bg-warning text-dark";
+							statusLabel = "Pending";
+							statusClass = "plot-status-pending";
+							statusIconClass = "text-warning";
 						}
 						rows += `
               <tr>
@@ -2968,7 +3349,12 @@ $(document).ready(function () {
                 <td>${plot.dimension || "-"}</td>
                 <td>${plot.facing || "-"}</td>
                 <td>${plot.price || "-"}</td>
-                <td><span class="badge ${statusColor}">${statusBadge}</span></td>
+                <td>
+					<span class="plot-status-badge ${statusClass}">
+						<i class="bx bx-radio-circle-marked bx-burst bx-rotate-90 ${statusIconClass}"></i>
+						${statusLabel}
+					</span>
+				</td>
               </tr>
             `;
 					});
@@ -3200,20 +3586,6 @@ $(document).ready(function () {
 				Swal.fire("Error", "Unable to load site details", "error");
 			},
 		});
-	});
-
-	$(document).on("click", ".uploadSiteMap", function (e) {
-		e.preventDefault();
-		const siteId = $(this).data("id");
-		if (siteId) {
-			$("#siteMapSiteId").val(siteId);
-			window.lastSiteMapId = siteId;
-		}
-		$("#siteMapFile").val("");
-
-		const modalEl = document.getElementById("siteMapUploadModal");
-		if (!modalEl || !window.bootstrap) return;
-		bootstrap.Modal.getOrCreateInstance(modalEl).show();
 	});
 
 	// âž¤ Edit expense
@@ -3527,7 +3899,7 @@ $(document).ready(function () {
 	if ($("#adminSitesTable").length) {
 		initAdminSitesPagination();
 	}
-
+ 
 	if ($("#adminPlotsTable").length) {
 		initAdminPlotsPagination();
 	}

@@ -131,6 +131,37 @@
         border-radius: 6px;
     }
 
+    /* ===== PLOT STATUS ANIMATION (like attendance) ===== */
+    .plot-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 12px;
+        letter-spacing: 0.2px;
+    }
+
+    .plot-status-badge i {
+        font-size: 14px;
+    }
+
+    .plot-status-available {
+        background: rgba(16, 185, 129, 0.12);
+        color: #059669;
+    }
+
+    .plot-status-sold {
+        background: rgba(239, 68, 68, 0.12);
+        color: #dc2626;
+    }
+
+    .plot-status-pending {
+        background: rgba(245, 158, 11, 0.16);
+        color: #b45309;
+    }
+
     /* ===== BUTTON STYLING ===== */
     .btn {
         border-radius: 6px;

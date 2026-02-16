@@ -69,8 +69,9 @@
                                         $site->site_images !== 'null';
 
                                     $has_approved_images = ($img_status === 'approve') && $has_images;
-                                    $has_map = !empty($site->site_map);
-                                    $listed_map = ((int) ($site->listed_map ?? 0) === 1) || $has_map;
+                                    $has_map = !empty($site->site_map) &&
+                                        $site->site_map !== 'NULL' &&
+                                        $site->site_map !== 'null';
 
                                     $reason_text = !$has_map ? 'Map not uploaded' : '';
                                     ?>
@@ -101,7 +102,7 @@
                                         </td>
 
                                         <td class="text-center">
-                                            <?php if ($listed_map): ?>
+                                            <?php if ($has_map): ?>
                                                 <span class="badge bg-success-light text-success">✓ Yes</span>
                                             <?php else: ?>
                                                 <span class="badge bg-secondary-light text-secondary mapReason"
@@ -119,6 +120,7 @@
                                                 <button type="button" class="btn btn-success uploadSiteMap"
                                                     data-id="<?= $site->id; ?>"
                                                     data-has-images="<?= $has_approved_images ? '1' : '0'; ?>"
+                                                    data-has-map="<?= $has_map ? '1' : '0'; ?>"
                                                     data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map">
                                                     <i class="bx bx-upload"></i>
                                                 </button>
@@ -864,10 +866,12 @@
                     `).join('')
                     : '<tr><td colspan="6" class="text-muted">No plots</td></tr>';
 
-                const hasMap =
-                    site.has_map === true ||
-                    Number(site.listed_map || 0) === 1 ||
-                    (site.site_map && site.site_map !== "NULL" && site.site_map !== "null" && site.site_map !== "");
+                const hasMap = !!(
+                    site.site_map &&
+                    site.site_map !== "NULL" &&
+                    site.site_map !== "null" &&
+                    site.site_map !== ""
+                );
                 const mapBadge = hasMap
                     ? `<span class="badge bg-success">Map Uploaded</span>`
                     : `<span class="badge bg-secondary">No Map</span>`;

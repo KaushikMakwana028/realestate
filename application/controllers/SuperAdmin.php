@@ -385,7 +385,7 @@ class SuperAdmin extends My_Controller
         $total_records = $this->db->count_all_results('', FALSE);
 
         $this->db->select('id, name, business_name, email, mobile, profile_image, created_on, isActive');
-        $this->db->order_by('id', 'DESC');
+        $this->db->order_by('id', 'DESC'); 
         $this->db->limit($limit, $offset);
         $admins = $this->db->get()->result();
 
@@ -621,7 +621,7 @@ class SuperAdmin extends My_Controller
 
         $this->db->from('plots p');
         $this->db->join('sites s', 's.id = p.site_id', 'left');
-        $this->db->where('s.admin_id', (int) $admin_id);
+        $this->db->where('p.admin_id', (int) $admin_id);
         $this->db->where('p.isActive', 1);
         if ($search !== '') {
             $this->db->group_start()
@@ -630,12 +630,12 @@ class SuperAdmin extends My_Controller
                 ->or_like('p.status', $search)
                 ->group_end();
         }
-        $total_records = $this->db->count_all_results('', false);
+        $total_records = $this->db->count_all_results();
 
-        $this->db->select('p.plot_id as id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, s.name as site_name');
+        $this->db->select('p.id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, s.name as site_name');
         $this->db->from('plots p');
         $this->db->join('sites s', 's.id = p.site_id', 'left');
-        $this->db->where('s.admin_id', (int) $admin_id);
+        $this->db->where('p.admin_id', (int) $admin_id);
         $this->db->where('p.isActive', 1);
         if ($search !== '') {
             $this->db->group_start()
@@ -644,7 +644,7 @@ class SuperAdmin extends My_Controller
                 ->or_like('p.status', $search)
                 ->group_end();
         }
-        $this->db->order_by('p.plot_id', 'DESC');
+        $this->db->order_by('p.id', 'DESC');
         $this->db->limit($limit, $offset);
         $plots = $this->db->get()->result();
 
@@ -951,4 +951,3 @@ class SuperAdmin extends My_Controller
     }
 
 }
-
