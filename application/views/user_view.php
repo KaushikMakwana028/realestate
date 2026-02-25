@@ -125,23 +125,28 @@
 										<i class="bx bx-envelope"></i> Email
 									</div>
 								</th>
+								<th>
+									<div class="usr-th-content">
+										<i class="bx bx-envelope"></i> Profile
+									</div>
+								</th>
 								<th class="text-center">
 									<div class="usr-th-content justify-content-center">
 										<i class="bx bx-toggle-right"></i> Status
 									</div>
 								</th>
-								<th class="text-end">
-									<div class="usr-th-content justify-content-end">
+								<th class="text-center">
+									<div class="usr-th-content justify-content-center">
 										<i class="bx bx-rupee"></i> Salary
 									</div>
 								</th>
-								<th class="text-end">
-									<div class="usr-th-content justify-content-end">
+								<th class="text-center">
+									<div class="usr-th-content justify-content-center">
 										<i class="bx bx-money"></i> Upad
 									</div>
 								</th>
-								<th class="text-end">
-									<div class="usr-th-content justify-content-end">
+								<th class="text-center">
+									<div class="usr-th-content justify-content-center">
 										<i class="bx bx-wallet"></i> Payable
 									</div>
 								</th>

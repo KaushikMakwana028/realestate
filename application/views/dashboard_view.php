@@ -562,8 +562,15 @@
         <div class="greeting-banner fade-in-up">
             <div class="d-flex align-items-center justify-content-between">
                 <div>
-                    <h2>👋 Welcome back, <?= !empty($is_superadmin) ? 'Super Admin' : 'Admin' ?>!</h2>
-                    <p>Here's what's happening with your dashboard today.</p>
+                    <h2>
+👋 Welcome back, 
+<?= !empty($this->admin['user_name']) 
+        ? htmlspecialchars($this->admin['user_name']) 
+        : 'Admin'; ?>!
+</h2>
+
+<p>Here's what's happening with your dashboard today.</p>
+
                 </div>
                 <div class="d-none d-md-block">
                     <span class="live-indicator">

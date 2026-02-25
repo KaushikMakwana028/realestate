@@ -64,7 +64,7 @@ $route['add_expenses'] = 'site/add_expenses';
 $route['site/update_expense'] = 'site/update_expense';
 
 $route['edit_site/(:num)'] = 'site/edit_site/$1';
-$route['expenses/(:num)'] = 'site/expenses/$1';
+$route['expenses'] = 'site/expenses';
 
 
 $route['plots'] = 'plots/index';

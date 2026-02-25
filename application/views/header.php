@@ -104,7 +104,7 @@
 
 				<div>
 
-					<h4 class="logo-text fw-bold ms-5"> <?php
+					<h4 class="logo-text fw-bold"> <?php
 					if (isset($this->session->userdata('admin')['business_name'])) {
 						echo $this->session->userdata('admin')['business_name'];
 					} else {
@@ -146,65 +146,108 @@
 					</li>
 				<?php else: ?>
 					<!-- Dashboard -->
-					<li>
-						<a href="<?= base_url('dashboard'); ?>" class="">
-							<div class="parent-icon"><i class='bx bx-home-alt'></i></div>
-							<div class="menu-title">Dashboard</div>
-						</a>
-					</li>
+<li>
+    <a href="<?= base_url('dashboard'); ?>" class="">
+        <div class="parent-icon"><i class='bx bx-home-circle'></i></div>
+        <div class="menu-title">Dashboard</div>
+    </a>
+</li>
 
-					<!-- Sites -->
-					<li>
-						<a href="javascript:;" class="has-arrow">
-							<div class="parent-icon"><i class='bx bx-globe'></i></div>
-							<div class="menu-title">Sites</div>
-						</a>
-						<ul>
-							<li><a href="<?= base_url('site'); ?>"><i class='bx bx-list-ul'></i>All Sites</a></li>
-							<li><a href="<?= base_url('add_site'); ?>"><i class='bx bx-plus-circle'></i>Add New</a></li>
-							<li><a href="<?= base_url('add_expenses'); ?>"><i class='bx bx-plus-circle'></i>Add Expenses</a>
-							</li>
+<!-- Sites -->
+<li>
+    <a href="javascript:;" class="has-arrow">
+        <div class="parent-icon"><i class='bx bx-buildings'></i></div>
+        <div class="menu-title">Sites</div>
+    </a>
+    <ul>
+        <li>
+            <a href="<?= base_url('site'); ?>">
+                <i class='bx bx-list-ul'></i>All Sites
+            </a>
+        </li>
 
-						</ul>
-					</li>
+        <li>
+            <a href="<?= base_url('add_site'); ?>">
+                <i class='bx bx-building-house'></i>Add Site
+            </a>
+        </li>
 
-					<!-- Plot -->
-					<li>
-						<a href="javascript:;" class="has-arrow">
-							<div class="parent-icon"><i class='bx bx-map-alt'></i></div>
-							<div class="menu-title">Plot</div>
-						</a>
-						<ul>
-							<li><a href="<?= base_url('plots'); ?>"><i class='bx bx-list-ul'></i>All Plots</a></li>
-							<li><a href="<?= base_url('add_plot'); ?>"><i class='bx bx-plus-circle'></i>Add New</a></li>
-						</ul>
-					</li>
+        <li>
+            <a href="<?= base_url('add_plot'); ?>">
+                <i class='bx bx-map'></i>Add Plots
+            </a>
+        </li>
+    </ul>
+</li>
 
-					<!-- Users -->
-					<li>
-						<a href="javascript:;" class="has-arrow">
-							<div class="parent-icon"><i class='bx bx-user'></i></div>
-							<div class="menu-title">User</div>
-						</a>
-						<ul>
-							<li><a href="<?= base_url('users'); ?>"><i class='bx bx-group'></i>All Users</a></li>
-							<li><a href="<?= base_url('add_user'); ?>"><i class='bx bx-user-plus'></i>Add New</a></li>
-							<li><a href="<?= base_url('add_upad'); ?>"><i class='bx bx-user-plus'></i>Add Upad</a></li>
+<!-- Expenses -->
+<li>
+    <a href="javascript:;" class="has-arrow">
+        <div class="parent-icon"><i class='bx bx-wallet'></i></div>
+        <div class="menu-title">Expenses</div>
+    </a>
+    <ul>
+        <li>
+            <a href="<?= base_url('expenses'); ?>">
+                <i class='bx bx-receipt'></i>All Expenses
+            </a>
+        </li>
 
-						</ul>
-					</li>
-					<li>
-						<a href="<?= base_url('inquiry'); ?>" class="">
-							<div class="parent-icon"><i class='bx bx-message-square-dots'></i></div>
-							<div class="menu-title">Inquiry</div>
-						</a>
-					</li>
-					<li>
-						<a href="<?= base_url('attedance'); ?>" class="">
-							<div class="parent-icon"><i class='bx bx-time-five'></i></div>
-							<div class="menu-title">Attedance</div>
-						</a>
-					</li>
+        <li>
+            <a href="<?= base_url('add_expenses'); ?>">
+                <i class='bx bx-plus-medical'></i>Add Expenses
+            </a>
+        </li>
+    </ul>
+</li>
+
+<!-- Users -->
+<li>
+    <a href="javascript:;" class="has-arrow">
+        <div class="parent-icon"><i class='bx bx-user-circle'></i></div>
+        <div class="menu-title">User</div>
+    </a>
+    <ul>
+        <li>
+            <a href="<?= base_url('users'); ?>">
+                <i class='bx bx-group'></i>All Users
+            </a>
+        </li>
+
+        <li>
+            <a href="<?= base_url('add_user'); ?>">
+                <i class='bx bx-user-plus'></i>Add New
+            </a>
+        </li>
+
+        <li>
+            <a href="<?= base_url('add_upad'); ?>">
+                <i class='bx bx-id-card'></i>Add Upad
+            </a>
+        </li>
+    </ul>
+</li>
+
+<!-- Inquiry -->
+<li>
+    <a href="<?= base_url('inquiry'); ?>" class="">
+        <div class="parent-icon">
+            <i class='bx bx-chat'></i>
+        </div>
+        <div class="menu-title">Inquiry</div>
+    </a>
+</li>
+
+<!-- Attendance -->
+<li>
+    <a href="<?= base_url('attedance'); ?>" class="">
+        <div class="parent-icon">
+            <i class='bx bx-calendar-check'></i>
+        </div>
+        <div class="menu-title">Attedance</div>
+    </a>
+</li>
+
 				<?php endif; ?>
 
 

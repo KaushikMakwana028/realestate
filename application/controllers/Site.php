@@ -125,14 +125,12 @@ class Site extends My_Controller
 
 
 
-    public function expenses($id)
+    public function expenses()
     {
-        $site_id = $id;
-
-        $data['site_id'] = $site_id; // ← Pass to view
+       
 
         $this->load->view('header');
-        $this->load->view('expenses_view', $data); // ← Send it here
+        $this->load->view('expenses_view'); // ← Send it here
         $this->load->view('footer');
     }
 
@@ -388,11 +386,27 @@ class Site extends My_Controller
     }
 
     public function get_users()
-    {
-        header('Content-Type: application/json');
-        $users = $this->db->select('id, name')->from('users')->where('isActive', 1)->get()->result();
-        echo json_encode(['status' => true, 'data' => $users]);
+{
+    header('Content-Type: application/json');
+
+    $admin_id = $this->input->get('admin_id'); // get admin id from ajax
+
+    $this->db->select('id, name');
+    $this->db->from('users');
+    $this->db->where('isActive', 1);
+
+    if (!empty($admin_id)) {
+        $this->db->where('admin_id', $admin_id); // filter by admin
     }
+
+    $users = $this->db->get()->result();
+
+    echo json_encode([
+        'status' => true,
+        'data'   => $users
+    ]);
+}
+
 
     public function get_site_images()
     {

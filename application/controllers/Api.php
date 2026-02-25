@@ -541,260 +541,362 @@ class Api extends CI_Controller
 
 
 
-    public function get_plots($site_id = null)
-    {
-        header('Content-Type: application/json');
+   public function get_plots($site_id = null)
+{
+    header('Content-Type: application/json');
 
-        // 1️⃣ Check site_id
-        if (empty($site_id) || !is_numeric($site_id)) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Missing or invalid site_id in URL',
-                    'data' => []
-                ]));
-        }
-
-        // 2️⃣ Validate Token
-        $authHeader = $this->input->get_request_header('Authorization', TRUE);
-        $token = null;
-
-        if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            $token = $matches[1];
-        }
-
-        $decoded = $this->verify_jwt($token);
-        if (!$decoded || empty($decoded->data->id)) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Invalid token or user ID missing',
-                    'data' => null
-                ]));
-        }
-
-        $user_id = (int) $decoded->data->id;
-
-        // 3️⃣ Get admin_id of user
-        $user = $this->db->select('admin_id')->where('id', $user_id)->get('users')->row();
-        if (!$user) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'User not found',
-                    'data' => []
-                ]));
-        }
-
-        $admin_id = (int) $user->admin_id;
-
-        // 4️⃣ Fetch plots for this site (assigned to user)
-        $this->db->select('p.id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status, p.isActive, p.created_at, s.name AS site_name');
-        $this->db->from('plots p');
-        $this->db->join('sites s', 's.id = p.site_id', 'inner');
-        $this->db->join('site_assignments sa', 'sa.site_id = s.id', 'inner');
-        $this->db->where([
-            'sa.user_id' => $user_id,
-            'p.site_id' => $site_id,
-            'p.admin_id' => $admin_id,
-            's.admin_id' => $admin_id,
-            'sa.admin_id' => $admin_id,
-            'p.isActive' => 1
-        ]);
-        $this->db->order_by('p.id', 'DESC');
-        $plots = $this->db->get()->result();
-
-        // 5️⃣ Fetch site details
-        $this->db->select('s.id, s.name, s.location, s.area, s.isActive, s.site_map, s.listed_map, s.created_at');
-        $this->db->from('sites s');
-        $this->db->join('site_assignments sa', 'sa.site_id = s.id', 'inner');
-        $this->db->where([
-            's.id' => $site_id,
-            'sa.user_id' => $user_id,
-            's.admin_id' => $admin_id,
-            'sa.admin_id' => $admin_id
-        ]);
-        $site_row = $this->db->get()->row();
-
-        // 6️⃣ Build dynamic plot counts for this site
-        $site = null;
-        if ($site_row) {
-
-            // TOTAL PLOTS (available + sold)
-            $this->db->where('site_id', $site_id)
-                ->where('admin_id', $admin_id)
-                ->where_in('status', ['available', 'sold']);
-            $total_plots = (int) $this->db->count_all_results('plots');
-
-            // SOLD
-            $this->db->where('site_id', $site_id)
-                ->where('admin_id', $admin_id)
-                ->where('status', 'sold');
-            $sold_plots = (int) $this->db->count_all_results('plots');
-
-            // AVAILABLE
-            $this->db->where('site_id', $site_id)
-                ->where('admin_id', $admin_id)
-                ->where('status', 'available');
-            $available_plots = (int) $this->db->count_all_results('plots');
-
-            $listed_map = ((int) ($site_row->listed_map ?? 0) === 1) || !empty($site_row->site_map);
-
-            $site = [
-                'id' => $site_row->id,
-                'name' => $site_row->name,
-                'location' => $site_row->location,
-                'area' => $site_row->area,
-                'isActive' => $site_row->isActive,
-                'created_at' => $site_row->created_at,
-                'total_plots' => $total_plots,
-                'available_plots' => $available_plots,
-                'sold_plots' => $sold_plots,
-                'listed_map' => $listed_map ? 1 : 0,
-                'site_map' => !empty($site_row->site_map)
-                    ? base_url($site_row->site_map)
-                    : null
-            ];
-        }
-
-        // 7️⃣ Return response
-        if (!empty($plots)) {
-            return $this->output
-                ->set_status_header(200)
-                ->set_output(json_encode([
-                    'status' => true,
-                    'code' => 200,
-                    'message' => 'Plots fetched successfully',
-                    'site' => $site,
-                    'data' => $plots
-                ]));
-        } else {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'No plots found for this site',
-                    'site' => $site,
-                    'data' => []
-                ]));
-        }
+    // 1️⃣ Check site_id
+    if (empty($site_id) || !is_numeric($site_id)) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Missing or invalid site_id in URL',
+                'data' => []
+            ]));
     }
 
+    // 2️⃣ Validate Token
+    $authHeader = $this->input->get_request_header('Authorization', TRUE);
+    $token = null;
 
-    public function plot_details($plot_id = null)
-    {
-        header('Content-Type: application/json');
+    if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        $token = $matches[1];
+    }
 
-        // ----------------- 1. Validate plot_id -----------------
-        if (empty($plot_id) || !is_numeric($plot_id)) {
-            return $this->output->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Missing or invalid plot_id in URL',
-                    'data' => []
-                ]));
-        }
+    $decoded = $this->verify_jwt($token);
+    if (!$decoded || empty($decoded->data->id)) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Invalid token or user ID missing',
+                'data' => null
+            ]));
+    }
 
-        // ----------------- 2. Verify Token ----------------------
-        $authHeader = $this->input->get_request_header('Authorization', TRUE);
-        $token = null;
+    $user_id = (int) $decoded->data->id;
 
-        if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-            $token = $matches[1];
-        }
+    // 3️⃣ Get admin_id of user
+    $user = $this->db->select('admin_id')
+        ->where('id', $user_id)
+        ->get('users')
+        ->row();
 
-        $decoded = $this->verify_jwt($token);
-        if (!$decoded || empty($decoded->data->id)) {
-            return $this->output->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Invalid or missing token',
-                    'data' => null
-                ]));
-        }
+    if (!$user) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'User not found',
+                'data' => []
+            ]));
+    }
 
-        $user_id = (int) $decoded->data->id;
+    $admin_id = (int) $user->admin_id;
 
-        // ----------------- 3. Get Admin ID -----------------------
-        $user = $this->db->select('admin_id')->where('id', $user_id)->get('users')->row();
-        if (!$user) {
-            return $this->output->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'User not found',
-                    'data' => []
-                ]));
-        }
+    // 4️⃣ Fetch plots
+    $this->db->select('
+        p.id,
+        p.plot_number,
+        p.size,
+        p.dimension,
+        p.facing,
+        p.price,
+        p.status,
+        p.isActive,
+        p.created_at,
+        s.name AS site_name
+    ');
+    $this->db->from('plots p');
+    $this->db->join('sites s', 's.id = p.site_id', 'inner');
+    $this->db->join('site_assignments sa', 'sa.site_id = s.id', 'inner');
+    $this->db->where([
+        'sa.user_id' => $user_id,
+        'p.site_id' => $site_id,
+        'p.admin_id' => $admin_id,
+        's.admin_id' => $admin_id,
+        'sa.admin_id' => $admin_id,
+        'p.isActive' => 1
+    ]);
+    $this->db->order_by('p.id', 'DESC');
 
-        $admin_id = (int) $user->admin_id;
+    $plots = $this->db->get()->result_array();
 
-        // ----------------- 4. Fetch Plot Details -----------------
-        $this->db->select('p.*, s.name AS site_name');
-        $this->db->from('plots p');
-        $this->db->join('sites s', 's.id = p.site_id', 'inner');
-        $this->db->join('site_assignments sa', 'sa.site_id = s.id', 'inner');
-        $this->db->where('p.id', $plot_id);
-        $this->db->where('p.admin_id', $admin_id);
-        $this->db->where('s.admin_id', $admin_id);
-        $this->db->where('sa.admin_id', $admin_id);
-        $this->db->where('sa.user_id', $user_id);
-        $this->db->where('p.isActive', 1);
+    // ---------------- NEW LOGIC START ----------------
+    foreach ($plots as &$plot) {
 
-        $plot = $this->db->get()->row_array();
+        // Default values
+        $plot['is_sold_by_login_user'] = false;
+        $plot['sold_by_user_name'] = null;
 
-        if (!$plot) {
-            return $this->output->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'No plot found with this ID or access denied',
-                    'data' => []
-                ]));
-        }
-
-        // ----------------- 5. If Plot SOLD → Fetch Buyer Info -------------
         if (strtolower($plot['status']) === 'sold') {
 
-            // Get buyer
-            $buyer = $this->db->where('plot_id', $plot_id)->where('isActive', 1)->get('buyer')->row_array();
+            // Fetch buyer
+            $buyer = $this->db
+                ->where('plot_id', $plot['id'])
+                ->where('isActive', 1)
+                ->get('buyer')
+                ->row_array();
 
-            // Get payment details
-            $payment = $this->db->where('plot_id', $plot_id)->get('payment_details')->row_array();
+            if (!empty($buyer)) {
 
-            $emi_logs = [];
-            if (!empty($payment) && $payment['payment_mode'] === "EMI") {
-                // Get all EMI rows
-                $emi_logs = $this->db->where('payment_id', $payment['id'])
+                // Check sold by login user
+                if ((int)$buyer['user_id'] === $user_id) {
+                    $plot['is_sold_by_login_user'] = true;
+                } else {
+
+                    // Fetch user name who sold
+                    $sold_user = $this->db
+                        ->select('name')
+                        ->where('id', $buyer['user_id'])
+                        ->get('users')
+                        ->row();
+
+                    $plot['sold_by_user_name'] = $sold_user->name ?? 'Unknown';
+                }
+            }
+        }
+    }
+    // ---------------- NEW LOGIC END ----------------
+
+    // 5️⃣ Fetch site details
+    $this->db->select('s.id, s.name, s.location, s.area, s.isActive, s.site_map, s.listed_map, s.created_at');
+    $this->db->from('sites s');
+    $this->db->join('site_assignments sa', 'sa.site_id = s.id', 'inner');
+    $this->db->where([
+        's.id' => $site_id,
+        'sa.user_id' => $user_id,
+        's.admin_id' => $admin_id,
+        'sa.admin_id' => $admin_id
+    ]);
+    $site_row = $this->db->get()->row();
+
+    // 6️⃣ Build site counts
+    $site = null;
+    if ($site_row) {
+
+        $this->db->where('site_id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where_in('status', ['available', 'sold']);
+        $total_plots = (int) $this->db->count_all_results('plots');
+
+        $this->db->where('site_id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('status', 'sold');
+        $sold_plots = (int) $this->db->count_all_results('plots');
+
+        $this->db->where('site_id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('status', 'available');
+        $available_plots = (int) $this->db->count_all_results('plots');
+
+        $listed_map = ((int) ($site_row->listed_map ?? 0) === 1) || !empty($site_row->site_map);
+
+        $site = [
+            'id' => $site_row->id,
+            'name' => $site_row->name,
+            'location' => $site_row->location,
+            'area' => $site_row->area,
+            'isActive' => $site_row->isActive,
+            'created_at' => $site_row->created_at,
+            'total_plots' => $total_plots,
+            'available_plots' => $available_plots,
+            'sold_plots' => $sold_plots,
+            'listed_map' => $listed_map ? 1 : 0,
+            'site_map' => !empty($site_row->site_map)
+                ? base_url($site_row->site_map)
+                : null
+        ];
+    }
+
+    // 7️⃣ Response
+    if (!empty($plots)) {
+        return $this->output
+            ->set_status_header(200)
+            ->set_output(json_encode([
+                'status' => true,
+                'code' => 200,
+                'message' => 'Plots fetched successfully',
+                'site' => $site,
+                'data' => $plots
+            ]));
+    } else {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'No plots found for this site',
+                'site' => $site,
+                'data' => []
+            ]));
+    }
+}
+
+
+
+   public function plot_details($plot_id = null)
+{
+    header('Content-Type: application/json');
+
+    // ----------------- 1. Validate plot_id -----------------
+    if (empty($plot_id) || !is_numeric($plot_id)) {
+        return $this->output->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Missing or invalid plot_id in URL',
+                'data' => []
+            ]));
+    }
+
+    // ----------------- 2. Verify Token ----------------------
+    $authHeader = $this->input->get_request_header('Authorization', TRUE);
+    $token = null;
+
+    if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        $token = $matches[1];
+    }
+
+    $decoded = $this->verify_jwt($token);
+    if (!$decoded || empty($decoded->data->id)) {
+        return $this->output->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Invalid or missing token',
+                'data' => null
+            ]));
+    }
+
+    $user_id = (int) $decoded->data->id;
+
+    // ----------------- 3. Get Admin ID -----------------------
+    $user = $this->db->select('admin_id')
+        ->where('id', $user_id)
+        ->get('users')
+        ->row();
+
+    if (!$user) {
+        return $this->output->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'User not found',
+                'data' => []
+            ]));
+    }
+
+    $admin_id = (int) $user->admin_id;
+
+    // ----------------- 4. Fetch Plot Details -----------------
+    $this->db->select('p.*, s.name AS site_name');
+    $this->db->from('plots p');
+    $this->db->join('sites s', 's.id = p.site_id', 'inner');
+    $this->db->join('site_assignments sa', 'sa.site_id = s.id', 'inner');
+    $this->db->where('p.id', $plot_id);
+    $this->db->where('p.admin_id', $admin_id);
+    $this->db->where('s.admin_id', $admin_id);
+    $this->db->where('sa.admin_id', $admin_id);
+    $this->db->where('sa.user_id', $user_id);
+    $this->db->where('p.isActive', 1);
+
+    $plot = $this->db->get()->row_array();
+
+    if (!$plot) {
+        return $this->output->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'No plot found with this ID or access denied',
+                'data' => []
+            ]));
+    }
+
+    // Default boolean
+    $plot['is_sold_by_login_user'] = false;
+    // $plot['sold_by_user_name'] = null;
+
+    // ----------------- 5. If Plot SOLD -----------------
+    if (strtolower($plot['status']) === 'sold') {
+
+        // -------- Buyer Details --------
+        $buyer = $this->db
+            ->where('plot_id', $plot_id)
+            ->where('isActive', 1)
+            ->get('buyer')
+            ->row_array();
+
+        if (!empty($buyer)) {
+
+            // Check sold by login user
+            if ((int)$buyer['user_id'] === $user_id) {
+                $plot['is_sold_by_login_user'] = true;
+            }
+
+            // Get Sold By User Name
+            $sold_user = $this->db
+                ->select('name')
+                ->where('id', $buyer['user_id'])
+                ->get('users')
+                ->row();
+
+          
+        }
+
+        // -------- Payment Details --------
+        $payment = $this->db
+            ->where('plot_id', $plot_id)
+            ->get('payment_details')
+            ->row_array();
+
+        $cash_logs = [];
+        $emi_logs  = [];
+
+        if (!empty($payment)) {
+
+            // ===== CASH MODE =====
+            if ($payment['payment_mode'] === "CASH") {
+
+                $cash_logs = $this->db
+                    ->where('plot_id', $plot_id)
+                    ->order_by('id', 'ASC')
+                    ->get('cash_payment_logs')
+                    ->result_array();
+            }
+
+            // ===== EMI MODE =====
+            if ($payment['payment_mode'] === "EMI") {
+
+                $emi_logs = $this->db
+                    ->where('payment_id', $payment['id'])
                     ->order_by('month_no', 'ASC')
                     ->get('emi_logs')
                     ->result_array();
             }
-
-            // Attach to response
-            $plot['buyer_details'] = $buyer ?? null;
-            $plot['payment_details'] = $payment ?? null;
-            // $plot['emi_logs']        = $emi_logs ?? []; 
         }
 
-        // ----------------- 6. Success Response -----------------
-        return $this->output->set_status_header(200)
-            ->set_output(json_encode([
-                'status' => true,
-                'code' => 200,
-                'message' => 'Plot details fetched successfully',
-                'data' => $plot
-            ]));
+        // Attach data (keep your structure)
+        $plot['buyer_details'] = $buyer ?? null;
+        $plot['payment_details'] = $payment ?? null;
+        $plot['cash_payment_logs'] = $cash_logs ?? [];
+        $plot['emi_logs'] = $emi_logs ?? [];
     }
+
+    // ----------------- 6. Success Response -----------------
+    return $this->output->set_status_header(200)
+        ->set_output(json_encode([
+            'status' => true,
+            'code' => 200,
+            'message' => 'Plot details fetched successfully',
+            'data' => $plot
+        ]));
+}
+
 
 
     public function change_plot_status()
@@ -1015,90 +1117,96 @@ class Api extends CI_Controller
 
         // --------------------- 6. INSERT PAYMENT DETAILS ------
         $paymentData = [
-            'user_id' => $user_id,
-            'buyer_id' => $buyer_id,
-            'plot_id' => $input['plot_id'],
-            'admin_id' => $admin_id,
-            'total_price' => $input['total_price'],
-            'down_payment' => $payment['down_payment'],
-            'remaining_amount' => $payment['remaining_amount'],
-            'payment_mode' => $payment['payment_mode'], // CASH or EMI
-            'notes' => $payment['notes'] ?? null,
-            // 'sold_at'        => $input['sold_at'] ?? date('Y-m-d H:i:s'),
+    'user_id'          => $user_id,
+    'buyer_id'         => $buyer_id,
+    'plot_id'          => $input['plot_id'],
+    'admin_id'         => $admin_id,
+    'total_price'      => $input['total_price'],
+    'payment_mode'     => $payment['payment_mode'], // cash or emi
+    'down_payment'     => $payment['down_payment']      ?? 0,
+    'remaining_amount' => $payment['remaining_amount']  ?? 0,
+    'notes'            => $payment['notes']             ?? null,
+    'created_on'       => date('Y-m-d H:i:s'),
+];
+
+// Add EMI-specific fields only if EMI mode
+if (strtolower($payment['payment_mode']) === 'emi') {
+    $paymentData['emi_duration']        = $payment['emi_duration']        ?? null; // e.g. 12
+    $paymentData['emi_start_date']      = date('Y-m-d', strtotime($payment['emi_start_date']));
+    $paymentData['installment_amount']  = $payment['insatallment_amount'] ?? null; // fix typo in DB col name
+}
+
+$this->db->insert('payment_details', $paymentData);
+$payment_id = $this->db->insert_id();
+
+if (!$payment_id) {
+    return $this->respond(false, 400, "Failed to insert payment details");
+}
+
+// --------------------- CASH LOG -------------------------
+if (strtolower($payment['payment_mode']) === 'cash') {
+    $cashLog = [
+      
+        'buyer_id'         => $buyer_id,
+        'plot_id'          => $input['plot_id'],
+        'paid_amount'      => $payment['down_payment'],
+        'remaining_amount' => $payment['remaining_amount'],
+        'total_price'      => $input['total_price'],
+        'status'           => 'pending',
+        'notes'            => $payment['notes'] ?? null,
+        'created_on'       => date('Y-m-d H:i:s'),
+    ];
+    $this->db->insert('cash_payment_logs', $cashLog);
+}
+
+// --------------------- EMI LOGS -------------------------
+$emiRows = [];
+
+if (strtolower($payment['payment_mode']) === 'emi') {
+
+    // Validate required EMI fields
+    if (
+        empty($payment['emi_start_date']) ||
+        empty($payment['emi_duration']) ||
+        empty($payment['insatallment_amount'])
+    ) {
+        return $this->respond(false, 400, "emi_start_date, emi_duration and insatallment_amount are required for EMI mode");
+    }
+
+    $start_date   = date('Y-m-d', strtotime($payment['emi_start_date']));
+    $months       = (int) $payment['emi_duration'];        // e.g. 12
+    $monthly_emi  = (float) $payment['insatallment_amount']; // e.g. 1000
+
+    for ($i = 1; $i <= $months; $i++) {
+        // Each EMI date is i months after start date
+        $emi_date = date('Y-m-d', strtotime("+$i month", strtotime($start_date)));
+
+        $emiRows[] = [
+            'payment_id' => $payment_id,
+            'buyer_id'   => $buyer_id,
+            'plot_id'    => $input['plot_id'],
+            // 'admin_id'   => $admin_id,
+            'month_no'   => $i,
+            'emi_date'   => $emi_date,
+            'emi_amount' => $monthly_emi,
+            'status'     => 'pending',
             'created_on' => date('Y-m-d H:i:s'),
         ];
+    }
 
-        $this->db->insert('payment_details', $paymentData);
-        $payment_id = $this->db->insert_id();
-        // echo "<pre>";
-        // print_r($payment['payment_mode']);
-        // die;
+    $this->db->insert_batch('emi_logs', $emiRows);
+}
 
-        if ($payment['payment_mode'] === "cash") {
-            // echo "h";
-// die;
-            $cashLog = [
-                'admin_id' => $admin_id,
-                'user_id' => $user_id,
-                'buyer_id' => $buyer_id,
-                'plot_id' => $input['plot_id'],
-                'paid_amount' => $payment['down_payment'],
-                'remaining_amount' => $payment['remaining_amount'],
-                'total_price' => $input['total_price'],
-                'status' => 'pending',
+// --------------------- UPDATE PLOT STATUS → SOLD --------
+$this->db->where('id', $input['plot_id']);
+$this->db->update('plots', ['status' => 'sold']);
 
-                'notes' => $payment['notes'] ?? null,
-                'created_on' => date('Y-m-d H:i:s'),
-            ];
-
-            $this->db->insert('cash_payment_logs', $cashLog);
-        }
-
-
-        // --------------------- 7. IF EMI → MULTIPLE ROW INSERT -----
-        $emiRows = [];
-
-        if ($payment['payment_mode'] === "EMI") {
-
-            $start_date = date("Y-m-d", strtotime($payment['emi_start_date']));
-            $months = (int) $payment['emi_duration_months'];
-            $monthly_emi = $payment['monthly_emi'];
-
-            for ($i = 1; $i <= $months; $i++) {
-
-                $emi_date = date("Y-m-d", strtotime("+$i month", strtotime($start_date)));
-
-                $row = [
-                    'payment_id' => $payment_id,
-                    'buyer_id' => $buyer_id,
-                    'plot_id' => $input['plot_id'],
-                    'month_no' => $i,
-                    'emi_date' => $emi_date,
-                    'emi_amount' => $monthly_emi,
-                    'status' => 'pending',
-                    'created_on' => date('Y-m-d H:i:s'),
-                ];
-
-                $emiRows[] = $row;
-            }
-
-            // INSERT MULTIPLE EMI ROWS
-            $this->db->insert_batch('emi_logs', $emiRows);
-        }
-
-        // --------------------- 8. UPDATE PLOT STATUS → SOLD ----
-        $this->db->where('id', $input['plot_id']);
-        $this->db->update('plots', [
-            'status' => 'sold',
-            // 'sold_at'  => date('Y-m-d H:i:s')
-        ]);
-
-        // --------------------- 9. SUCCESS RETURN --------------
-        return $this->respond(true, 200, "Buyer & payment saved successfully", [
-            "buyer" => $buyerData,
-            "payment" => $paymentData,
-            // "emi_rows" => $emiRows
-        ]);
+// --------------------- SUCCESS --------------------------
+return $this->respond(true, 200, "Buyer & payment saved successfully", [
+    "buyer"     => $buyerData,
+    "payment"   => $paymentData,
+    "emi_rows"  => $emiRows,
+]);
     }
 
 

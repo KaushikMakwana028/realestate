@@ -19,15 +19,25 @@ class Plots extends My_Controller
 
 
 
-    public function index($id = null)
-    {
-        $this->data['id'] = $id ?? '';
-        $this->load->view('header');
+   public function index($id = null)
+{
+    $this->data['id'] = $id ?? '';
 
-        $this->load->view('plot_view', $this->data);
+    // ✅ Fetch site details using site id
+    if (!empty($id)) {
+        $site = $this->general_model->getOne('sites', ['id' => $id]);
 
-        $this->load->view('footer');
+        // Pass site name to view
+        $this->data['site_name'] = $site->name ?? '';
+    } else {
+        $this->data['site_name'] = '';
     }
+
+    $this->load->view('header');
+    $this->load->view('plot_view', $this->data);
+    $this->load->view('footer');
+}
+
 
     public function add_plot()
     {
@@ -429,115 +439,104 @@ class Plots extends My_Controller
         return 'available';
     }
 
-    public function get_plots_ajax()
-    {
-        header('Content-Type: application/json');
+   public function get_plots_ajax()
+{
+    header('Content-Type: application/json');
 
-        $limit = 10;
-        $page = (int) $this->input->get('page');
-        $search = trim($this->input->get('search'));
-        $site_id = (int) $this->input->get('site_id');
+    $limit   = 10;
+    $page    = (int) $this->input->get('page');
+    $search  = trim($this->input->get('search'));
+    $site_id = (int) $this->input->get('site_id');
 
-        if ($page < 1)
-            $page = 1;
-        $offset = ($page - 1) * $limit;
+    if ($page < 1) $page = 1;
+    $offset = ($page - 1) * $limit;
 
-        // ---- FETCH PLOTS ----
-        $this->db->select('p.id, p.plot_number, p.size, p.dimension, p.facing, p.price, p.status');
-        $this->db->from('plots p');
-        $this->db->join('sites s', 's.id = p.site_id', 'left');
-        $this->db->where('p.isActive', 1);
+    // -------------------------------
+    // MAIN QUERY (WITH BUYER)
+    // -------------------------------
+    $this->db->select('
+        p.id,
+        p.plot_number,
+        p.size,
+        p.dimension,
+        p.facing,
+        p.price,
+        p.status,
+        s.name AS site_name,
+        b.id   AS buyer_id,
+        b.name AS buyer_name
+    ');
 
-        if ($site_id > 0) {
-            $this->db->where('p.site_id', $site_id);
-        }
+    $this->db->from('plots p');
+    $this->db->join('sites s', 's.id = p.site_id', 'left');
+    $this->db->join('buyer b', 'b.plot_id = p.id AND b.isActive = 1', 'left');
 
-        if (!empty($search)) {
-            $this->db->group_start();
-            $this->db->like('p.plot_number', $search);
-            $this->db->or_like('s.name', $search);
-            $this->db->group_end();
-        }
+    $this->db->where('p.isActive', 1);
 
-        $total_records = $this->db->count_all_results('', FALSE);
-
-        $this->db->order_by('p.id', 'DESC');
-        $this->db->limit($limit, $offset);
-        $plots = $this->db->get()->result();
-
-        // ---- STATUS COUNTS (FOR SUMMARY CARDS) ----
-        $this->db->select('LOWER(TRIM(p.status)) as status_key, COUNT(*) as total_count');
-        $this->db->from('plots p');
-        $this->db->join('sites s', 's.id = p.site_id', 'left');
-        $this->db->where('p.isActive', 1);
-
-        if ($site_id > 0) {
-            $this->db->where('p.site_id', $site_id);
-        }
-
-        if (!empty($search)) {
-            $this->db->group_start();
-            $this->db->like('p.plot_number', $search);
-            $this->db->or_like('s.name', $search);
-            $this->db->group_end();
-        }
-
-        $this->db->group_by('LOWER(TRIM(p.status))');
-        $status_rows = $this->db->get()->result();
-
-        $status_counts = [
-            'available' => 0,
-            'booked' => 0,
-            'sold' => 0
-        ];
-
-        foreach ($status_rows as $row) {
-            $status_key = strtolower(trim($row->status_key ?? ''));
-            $count_val = (int) ($row->total_count ?? 0);
-
-            if ($status_key === 'sold') {
-                $status_counts['sold'] += $count_val;
-            } elseif ($status_key === 'booked' || $status_key === 'reserved' || $status_key === 'pending') {
-                $status_counts['booked'] += $count_val;
-            } else {
-                $status_counts['available'] += $count_val;
-            }
-        }
-
-        // ---- ADD BUYER NAME IF SOLD ----
-        $this->db->select('
-            p.id,
-            p.plot_number,
-            p.size,
-            p.dimension,
-            p.facing,
-            p.price,
-            p.status,
-            s.name as site_name,
-            b.id as buyer_id,
-            b.name as buyer_name
-        ');
-
-        $this->db->from('plots p');
-        $this->db->join('sites s', 's.id = p.site_id', 'left');
-        $this->db->join('buyer b', 'b.plot_id = p.id AND b.isActive = 1', 'left');
-        $this->db->where('p.isActive', 1);
-
-
-        // ---- PAGINATION ----
-        $total_pages = ceil($total_records / $limit);
-
-        echo json_encode([
-            'status' => true,
-            'data' => $plots,
-            'status_counts' => $status_counts,
-            'pagination' => [
-                'current_page' => $page,
-                'total_pages' => $total_pages,
-                'total_records' => $total_records
-            ]
-        ]);
+    if ($site_id > 0) {
+        $this->db->where('p.site_id', $site_id);
     }
+
+    if (!empty($search)) {
+        $this->db->group_start();
+        $this->db->like('p.plot_number', $search);
+        $this->db->or_like('s.name', $search);
+        $this->db->or_like('b.name', $search); // search buyer also
+        $this->db->group_end();
+    }
+
+    // Count
+    $total_records = $this->db->count_all_results('', FALSE);
+
+    // Pagination
+    $this->db->order_by('p.id', 'DESC');
+    $this->db->limit($limit, $offset);
+
+    $plots = $this->db->get()->result();
+
+    // -------------------------------
+    // STATUS COUNTS
+    // -------------------------------
+    $this->db->select('LOWER(TRIM(status)) as status_key, COUNT(*) as total_count');
+    $this->db->from('plots');
+    $this->db->where('isActive', 1);
+
+    if ($site_id > 0) {
+        $this->db->where('site_id', $site_id);
+    }
+
+    $this->db->group_by('LOWER(TRIM(status))');
+    $status_rows = $this->db->get()->result();
+
+    $status_counts = [
+        'available' => 0,
+        'booked'    => 0,
+        'sold'      => 0
+    ];
+
+    foreach ($status_rows as $row) {
+        $key = strtolower(trim($row->status_key));
+        if ($key == 'sold') $status_counts['sold'] += $row->total_count;
+        elseif ($key == 'booked') $status_counts['booked'] += $row->total_count;
+        else $status_counts['available'] += $row->total_count;
+    }
+
+    // -------------------------------
+    // RESPONSE
+    // -------------------------------
+    echo json_encode([
+        'status' => true,
+        'data'   => $plots,
+        'status_counts' => $status_counts,
+        'pagination' => [
+            'current_page'  => $page,
+            'total_pages'  => ceil($total_records / $limit),
+            'total_records'=> $total_records
+        ]
+    ]);
+}
+
+
 
 
     public function delete_plot($id)
@@ -779,52 +778,66 @@ class Plots extends My_Controller
     }
 
 
-    public function download_pdf($buyer_id)
-    {
-        if (!$buyer_id) {
-            show_error('Invalid Buyer');
-        }
-        // echo "hi";
-        // die;
-        $admin_id = $this->session->userdata('admin')['user_id'];
+   public function download_pdf($buyer_id)
+{
 
-        $buyer = $this->db->get_where('buyer', ['id' => $buyer_id])->row();
-
-        $user = $this->db->select('business_name,email,mobile,profile_image')
-            ->from('user_master')
-            ->where('id', $admin_id)
-            ->get()->row();
-
-        $logs = $this->db->where('buyer_id', $buyer_id)
-            ->where('status', 'approve')
-            ->order_by('created_on', 'ASC')
-            ->get('cash_payment_logs')
-            ->result();
-
-        $data = [
-            'buyer' => $buyer,
-            'user' => $user,
-            'logs' => $logs
-        ];
-
-        log_message('pdf_data', print_r($data, true));
-
-        $html = $this->load->view('buyer_statement', $data, true);
-
-        // Dompdf setup
-        $options = new Options();
-        $options->set('isRemoteEnabled', true);
-        $options->set('defaultFont', 'DejaVu Sans');
-
-        $dompdf = new Dompdf($options);
-        $dompdf->loadHtml($html);
-        $dompdf->setPaper('A4', 'portrait');
-        $dompdf->render();
-
-        // Force download
-        $dompdf->stream(
-            "Buyer_Statement_{$buyer_id}.pdf",
-            ["Attachment" => true]
-        );
+    if (!$buyer_id) {
+        log_message('error', 'Invalid Buyer ID');
+        show_error('Invalid Buyer');
     }
+
+    $admin_id = $this->session->userdata('admin')['user_id'];
+
+    // ---- Buyer ----
+    $buyer = $this->db->get_where('buyer', ['id' => $buyer_id])->row();
+
+    // ---- User ----
+    $user = $this->db->select('business_name,email,mobile,profile_image')
+        ->from('user_master')
+        ->where('id', $admin_id)
+        ->get()->row();
+
+
+    // ---- Payment Logs ----
+    $logs = $this->db->where('buyer_id', $buyer_id)
+        ->where('status', 'approve')
+        ->order_by('created_on', 'ASC')
+        ->get('cash_payment_logs')
+        ->result();
+
+
+    $data = [
+        'buyer' => $buyer,
+        'user' => $user,
+        'logs' => $logs
+    ];
+
+
+    // ---- Load View ----
+    $html = $this->load->view('buyer_statement', $data, true);
+
+   
+
+    $options = new Options();
+    $options->set('isRemoteEnabled', true);
+    $options->set('defaultFont', 'DejaVu Sans');
+
+    $dompdf = new Dompdf($options);
+    $dompdf->loadHtml($html);
+    $dompdf->setPaper('A4', 'portrait');
+
+    
+
+    $dompdf->render();
+
+  
+
+    $dompdf->stream(
+        "Buyer_Statement_{$buyer_id}.pdf",
+        ["Attachment" => true]
+    );
+
+  
+}
+
 }

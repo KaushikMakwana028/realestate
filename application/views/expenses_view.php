@@ -107,20 +107,17 @@
 					<!-- Search -->
 					<div class="col-lg-4 col-md-6">
 						<div class="position-relative">
-							<i class="bx bx-search position-absolute"
-								style="left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem;"></i>
+							
 							<input type="text" id="serchexp" class="form-control ps-5 enhanced-input"
 								placeholder="Search expenses by name, site, amount...">
-							<input type="hidden" id="siteID" value="<?= $site_id ?>">
+							<input type="hidden" id="siteID" value="">
 						</div>
 					</div>
 
 					<!-- Month Filter -->
 					<div class="col-lg-2 col-md-4">
 						<div class="position-relative">
-							<i class="bx bx-calendar position-absolute"
-								style="left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem; pointer-events: none;"></i>
-							<input type="month" id="expMonthPicker" class="form-control ps-5 enhanced-input">
+												<input type="month" id="expMonthPicker" class="form-control ps-5 enhanced-input">
 						</div>
 					</div>
 
@@ -152,37 +149,7 @@
 								<i class="bx bx-refresh" style="font-size: 1.1rem;"></i>
 								<span class="d-none d-xl-inline">Refresh</span>
 							</button>
-							<div class="btn-group">
-								<button class="btn btn-sm d-flex align-items-center gap-1 text-white"
-									style="border-radius: 10px 0 0 10px; padding: 9px 18px; background: linear-gradient(135deg, #6366f1, #818cf8); border: none;"
-									onclick="exportExpenses('csv')">
-									<i class="bx bx-download" style="font-size: 1.1rem;"></i>
-									<span class="d-none d-xl-inline">Export</span>
-								</button>
-								<button class="btn btn-sm dropdown-toggle dropdown-toggle-split text-white"
-									data-bs-toggle="dropdown"
-									style="border-radius: 0 10px 10px 0; padding: 9px 12px; background: linear-gradient(135deg, #818cf8, #6366f1); border: none; border-left: 1px solid rgba(255,255,255,0.2);">
-								</button>
-								<ul class="dropdown-menu dropdown-menu-end shadow-lg border-0"
-									style="border-radius: 12px; padding: 8px;">
-									<li><a class="dropdown-item rounded-2 py-2" href="javascript:;"
-											onclick="exportExpenses('csv')"><i class="bx bx-file me-2"
-												style="color: #10b981;"></i>CSV</a></li>
-									<li><a class="dropdown-item rounded-2 py-2" href="javascript:;"
-											onclick="exportExpenses('excel')"><i class="bx bx-spreadsheet me-2"
-												style="color: #6366f1;"></i>Excel</a>
-									</li>
-									<li><a class="dropdown-item rounded-2 py-2" href="javascript:;"
-											onclick="exportExpenses('pdf')"><i class="bx bx-file-blank me-2"
-												style="color: #ef4444;"></i>PDF</a></li>
-									<li>
-										<hr class="dropdown-divider my-1">
-									</li>
-									<li><a class="dropdown-item rounded-2 py-2" href="javascript:;"
-											onclick="window.print()"><i class="bx bx-printer me-2"
-												style="color: #f59e0b;"></i>Print</a></li>
-								</ul>
-							</div>
+							
 						</div>
 					</div>
 				</div>
@@ -198,7 +165,8 @@
 								<th class="table-th"><i class="bx bx-building me-1"></i>Site Name</th>
 								<th class="table-th"><i class="bx bx-image me-1"></i>Receipt</th>
 								<th class="table-th"><i class="bx bx-user me-1"></i>User</th>
-								<th class="table-th"><i class="bx bx-category me-1"></i>Category</th>
+								<th class="table-th"><i class="bx bx-message me-1"></i>Description</th>
+
 								<th class="table-th"><i class="bx bx-calendar me-1"></i>Date</th>
 								<th class="table-th"><i class="bx bx-rupee me-1"></i>Amount</th>
 								<th class="table-th">Status</th>
@@ -208,259 +176,8 @@
 						<tbody id="expensesTable">
 
 							<!-- Sample Row 1 - Approved -->
-							<tr class="expense-row">
-								<td class="table-td">
-									<span class="fw-semibold text-muted">1</span>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-2">
-										<div class="rounded d-flex align-items-center justify-content-center"
-											style="width: 36px; height: 36px; background: linear-gradient(135deg, #dbeafe, #bfdbfe); flex-shrink: 0; border-radius: 10px !important;">
-											<i class="bx bx-building" style="color: #3b82f6; font-size: 1.1rem;"></i>
-										</div>
-										<div>
-											<h6 class="mb-0 fw-semibold" style="color: #1e293b; font-size: 0.88rem;">
-												Site Alpha Tower</h6>
-											<small class="text-muted" style="font-size: 0.72rem;">ID: SITE-001</small>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="exp-receipt-thumb" onclick="openImageModal(this)">
-										<img src="https://via.placeholder.com/60x60/f0f4ff/6366f1?text=📄" alt="Receipt"
-											class="rounded-3 shadow-sm"
-											style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s;">
-										<div class="exp-receipt-overlay">
-											<i class="bx bx-zoom-in text-white"></i>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-2">
-										<div class="rounded-circle d-flex align-items-center justify-content-center"
-											style="width: 34px; height: 34px; background: linear-gradient(135deg, #6366f1, #818cf8); flex-shrink: 0;">
-											<span class="text-white fw-bold" style="font-size: 0.75rem;">RS</span>
-										</div>
-										<div>
-											<h6 class="mb-0 fw-semibold" style="color: #1e293b; font-size: 0.85rem;">
-												Rahul Sharma</h6>
-											<small class="text-muted" style="font-size: 0.72rem;">Supervisor</small>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<span class="category-badge" style="background: #eff6ff; color: #2563eb;">
-										<i class="bx bx-package me-1"></i>Materials
-									</span>
-								</td>
-								<td class="table-td">
-									<div>
-										<div class="fw-semibold" style="color: #334155; font-size: 0.88rem;">
-											25 Dec 2024
-										</div>
-										<small class="text-muted">
-											<i class="bx bx-time me-1"></i>2 days ago
-										</small>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-1">
-										<span class="fw-bold" style="color: #1e293b; font-size: 1rem;">₹12,500</span>
-									</div>
-								</td>
-								<td class="table-td">
-									<span class="status-badge status-approved">
-										<span class="status-dot" style="background: #10b981;"></span>
-										Approved
-									</span>
-								</td>
-								<td class="table-td" style="text-align: center;">
-									<div class="d-flex gap-1 justify-content-center">
-										<button class="action-btn action-btn-view" title="View Details">
-											<i class="bx bx-show"></i>
-										</button>
-										<button class="action-btn action-btn-edit" title="Edit">
-											<i class="bx bx-edit"></i>
-										</button>
-										<button class="action-btn action-btn-approve" title="Approve">
-											<i class="bx bx-check"></i>
-										</button>
-										<button class="action-btn action-btn-delete" title="Delete">
-											<i class="bx bx-trash"></i>
-										</button>
-									</div>
-								</td>
-							</tr>
+							
 
-							<!-- Sample Row 2 - Pending -->
-							<tr class="expense-row">
-								<td class="table-td">
-									<span class="fw-semibold text-muted">2</span>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-2">
-										<div class="rounded d-flex align-items-center justify-content-center"
-											style="width: 36px; height: 36px; background: linear-gradient(135deg, #fef3c7, #fde68a); flex-shrink: 0; border-radius: 10px !important;">
-											<i class="bx bx-building" style="color: #d97706; font-size: 1.1rem;"></i>
-										</div>
-										<div>
-											<h6 class="mb-0 fw-semibold" style="color: #1e293b; font-size: 0.88rem;">
-												Site Beta Complex</h6>
-											<small class="text-muted" style="font-size: 0.72rem;">ID: SITE-002</small>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="exp-receipt-thumb" onclick="openImageModal(this)">
-										<img src="https://via.placeholder.com/60x60/fff7ed/f59e0b?text=📄" alt="Receipt"
-											class="rounded-3 shadow-sm"
-											style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s;">
-										<div class="exp-receipt-overlay">
-											<i class="bx bx-zoom-in text-white"></i>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-2">
-										<div class="rounded-circle d-flex align-items-center justify-content-center"
-											style="width: 34px; height: 34px; background: linear-gradient(135deg, #f59e0b, #fbbf24); flex-shrink: 0;">
-											<span class="text-white fw-bold" style="font-size: 0.75rem;">AK</span>
-										</div>
-										<div>
-											<h6 class="mb-0 fw-semibold" style="color: #1e293b; font-size: 0.85rem;">
-												Anil Kumar</h6>
-											<small class="text-muted" style="font-size: 0.72rem;">Foreman</small>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<span class="category-badge" style="background: #fef3c7; color: #92400e;">
-										<i class="bx bx-car me-1"></i>Transport
-									</span>
-								</td>
-								<td class="table-td">
-									<div>
-										<div class="fw-semibold" style="color: #334155; font-size: 0.88rem;">
-											24 Dec 2024
-										</div>
-										<small class="text-muted">
-											<i class="bx bx-time me-1"></i>3 days ago
-										</small>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-1">
-										<span class="fw-bold" style="color: #1e293b; font-size: 1rem;">₹3,200</span>
-									</div>
-								</td>
-								<td class="table-td">
-									<span class="status-badge status-pending">
-										<span class="status-dot" style="background: #f59e0b;"></span>
-										Pending
-									</span>
-								</td>
-								<td class="table-td" style="text-align: center;">
-									<div class="d-flex gap-1 justify-content-center">
-										<button class="action-btn action-btn-view" title="View Details">
-											<i class="bx bx-show"></i>
-										</button>
-										<button class="action-btn action-btn-edit" title="Edit">
-											<i class="bx bx-edit"></i>
-										</button>
-										<button class="action-btn action-btn-approve" title="Approve">
-											<i class="bx bx-check"></i>
-										</button>
-										<button class="action-btn action-btn-delete" title="Delete">
-											<i class="bx bx-trash"></i>
-										</button>
-									</div>
-								</td>
-							</tr>
-
-							<!-- Sample Row 3 - Rejected -->
-							<tr class="expense-row">
-								<td class="table-td">
-									<span class="fw-semibold text-muted">3</span>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-2">
-										<div class="rounded d-flex align-items-center justify-content-center"
-											style="width: 36px; height: 36px; background: linear-gradient(135deg, #fee2e2, #fecaca); flex-shrink: 0; border-radius: 10px !important;">
-											<i class="bx bx-building" style="color: #dc2626; font-size: 1.1rem;"></i>
-										</div>
-										<div>
-											<h6 class="mb-0 fw-semibold" style="color: #1e293b; font-size: 0.88rem;">
-												Site Gamma Plaza</h6>
-											<small class="text-muted" style="font-size: 0.72rem;">ID: SITE-003</small>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="exp-receipt-thumb" onclick="openImageModal(this)">
-										<img src="https://via.placeholder.com/60x60/fef2f2/ef4444?text=📄" alt="Receipt"
-											class="rounded-3 shadow-sm"
-											style="width: 50px; height: 50px; object-fit: cover; border: 2px solid #e2e8f0; cursor: pointer; transition: all 0.3s;">
-										<div class="exp-receipt-overlay">
-											<i class="bx bx-zoom-in text-white"></i>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-2">
-										<div class="rounded-circle d-flex align-items-center justify-content-center"
-											style="width: 34px; height: 34px; background: linear-gradient(135deg, #ef4444, #f87171); flex-shrink: 0;">
-											<span class="text-white fw-bold" style="font-size: 0.75rem;">PJ</span>
-										</div>
-										<div>
-											<h6 class="mb-0 fw-semibold" style="color: #1e293b; font-size: 0.85rem;">
-												Priya Jain</h6>
-											<small class="text-muted" style="font-size: 0.72rem;">Accountant</small>
-										</div>
-									</div>
-								</td>
-								<td class="table-td">
-									<span class="category-badge" style="background: #fee2e2; color: #991b1b;">
-										<i class="bx bx-wrench me-1"></i>Repair
-									</span>
-								</td>
-								<td class="table-td">
-									<div>
-										<div class="fw-semibold" style="color: #334155; font-size: 0.88rem;">
-											23 Dec 2024
-										</div>
-										<small class="text-muted">
-											<i class="bx bx-time me-1"></i>4 days ago
-										</small>
-									</div>
-								</td>
-								<td class="table-td">
-									<div class="d-flex align-items-center gap-1">
-										<span class="fw-bold" style="color: #1e293b; font-size: 1rem;">₹8,750</span>
-									</div>
-								</td>
-								<td class="table-td">
-									<span class="status-badge status-rejected">
-										<span class="status-dot" style="background: #ef4444;"></span>
-										Rejected
-									</span>
-								</td>
-								<td class="table-td" style="text-align: center;">
-									<div class="d-flex gap-1 justify-content-center">
-										<button class="action-btn action-btn-view" title="View Details">
-											<i class="bx bx-show"></i>
-										</button>
-										<button class="action-btn action-btn-edit" title="Edit">
-											<i class="bx bx-edit"></i>
-										</button>
-										<button class="action-btn action-btn-approve" title="Approve">
-											<i class="bx bx-check"></i>
-										</button>
-										<button class="action-btn action-btn-delete" title="Delete">
-											<i class="bx bx-trash"></i>
-										</button>
-									</div>
-								</td>
-							</tr>
 
 						</tbody>
 					</table>
@@ -484,7 +201,7 @@
 			<!-- Pagination Footer -->
 			<div class="card-footer bg-white py-3" style="border-top: 1px solid #f1f5f9;">
 				<div class="row align-items-center">
-					<div class="col-md-5">
+					<!-- <div class="col-md-5">
 						<div class="d-flex align-items-center gap-2">
 							<span class="text-muted" style="font-size: 0.85rem;">Showing</span>
 							<select class="form-select form-select-sm enhanced-input" id="perPage"
@@ -497,7 +214,7 @@
 							<span class="text-muted" style="font-size: 0.85rem;">of <strong
 									id="totalRecords">50</strong> records</span>
 						</div>
-					</div>
+					</div> -->
 					<div class="col-md-7">
 						<nav aria-label="Expense pagination">
 							<ul class="pagination mb-0 justify-content-end gap-1" id="expensePaginationList">
@@ -534,49 +251,7 @@
 			</div>
 		</div>
 
-		<!-- Description Modal (Enhanced) -->
-		<div class="modal fade" id="expDescModal" tabindex="-1" aria-labelledby="expDescModalLabel" aria-hidden="true">
-			<div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
-				<div class="modal-content border-0" style="border-radius: 18px; overflow: hidden;">
-					<div class="modal-header py-3 px-4"
-						style="background: linear-gradient(135deg, #6366f1, #818cf8); border: none;">
-						<div class="d-flex align-items-center gap-2">
-							<div class="rounded-circle d-flex align-items-center justify-content-center"
-								style="width: 38px; height: 38px; background: rgba(255,255,255,0.2);">
-								<i class="bx bx-detail text-white" style="font-size: 1.2rem;"></i>
-							</div>
-							<h5 class="modal-title text-white fw-semibold mb-0" id="expDescModalLabel">Expense Details
-							</h5>
-						</div>
-						<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
-							aria-label="Close"></button>
-					</div>
-					<div class="modal-body p-4">
-						<div class="mb-4">
-							<div
-								style="font-size: 0.72rem; letter-spacing: 0.1em; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; font-weight: 600;">
-								<i class="bx bx-text me-1"></i>Description
-							</div>
-							<div id="expDescText"
-								style="font-size: 0.95rem; color: #334155; line-height: 1.7; background: #f8fafc; padding: 16px 20px; border-radius: 12px; border: 1px solid #f1f5f9;">
-							</div>
-						</div>
-						<div>
-							<div
-								style="font-size: 0.72rem; letter-spacing: 0.1em; color: #94a3b8; text-transform: uppercase; margin-bottom: 8px; font-weight: 600;">
-								<i class="bx bx-image me-1"></i>Attached Images
-							</div>
-							<div id="expDescImages" class="exp-image-grid-enhanced"></div>
-							<div id="expDescImagesEmpty" class="d-none text-center py-4"
-								style="background: #f8fafc; border-radius: 12px; border: 2px dashed #e2e8f0;">
-								<i class="bx bx-image-alt" style="font-size: 2rem; color: #cbd5e1;"></i>
-								<p class="text-muted mb-0 mt-1" style="font-size: 0.85rem;">No images attached</p>
-							</div>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
+		
 
 		<!-- Full Image Modal (Enhanced) -->
 		<div class="modal fade" id="siteImageModal" tabindex="-1" aria-labelledby="siteImageModalLabel"

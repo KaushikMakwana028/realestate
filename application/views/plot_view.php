@@ -12,7 +12,7 @@
 							</a>
 						</li>
 						<li class="breadcrumb-item">
-							<a href="<?= base_url('sites'); ?>" class="breadcrumb-link">Sites</a>
+							<a href="<?= base_url('site'); ?>" class="breadcrumb-link">Sites</a>
 						</li>
 						<li class="breadcrumb-item active" aria-current="page">Plots</li>
 					</ol>
@@ -24,21 +24,38 @@
 		<div class="page-header-section">
 			<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
 				<div>
-					<h3 class="page-main-title mb-1">
-						<i class="bx bx-grid-alt"></i> Plot Management
-					</h3>
-					<p class="page-subtitle mb-0">View and manage all plots for this site</p>
-				</div>
+    <h3 class="page-main-title mb-1">
+        <i class="bx bx-grid-alt"></i> Plot Management
+
+        <?php if (isset($site_name) && !empty($site_name)) : ?>
+            <span style="font-weight:700; color:#0d6efd;">
+                — <?= htmlspecialchars($site_name) ?>
+            </span>
+        <?php endif; ?>
+    </h3>
+
+    <p class="page-subtitle mb-0">
+        View and manage all plots
+        <?php if (isset($site_name) && !empty($site_name)) : ?>
+            for <strong style="color:#198754;">
+                <?= htmlspecialchars($site_name) ?>
+            </strong>
+        <?php else : ?>
+            for this site
+        <?php endif; ?>
+    </p>
+</div>
+
 				<div class="d-flex gap-2 flex-wrap">
-					<a href="<?= base_url('site_view'); ?>" class="btn btn-outline-secondary btn-sm rounded-pill px-3 text-align-center d-flex align-items-center gap-1">
+					<a href="<?= base_url('site'); ?>" class="btn btn-outline-secondary btn-sm rounded-pill px-3 text-align-center d-flex align-items-center gap-1">
 						<i class="bx bx-arrow-back me-1"></i> Back to Sites
 					</a>
 					<!-- <button class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="exportPlots('')">
 						<i class="bx bx-download me-1"></i> Export
 					</button> -->
-					<button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" id="importPlotsBtn">
+					<!-- <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" id="importPlotsBtn">
 						<i class="bx bx-upload me-1"></i> Import
-					</button>
+					</button> -->
 					<button class="btn btn-primary btn-sm rounded-pill px-3 btn-add-plot" data-bs-toggle="modal"
 						data-bs-target="#addPlotModal" onclick="window.location.href='<?= base_url('plots/add_plot/'.$id); ?>'">
 						<i class="bx bx-plus me-1"></i> Add Plot

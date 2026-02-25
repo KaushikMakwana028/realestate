@@ -61,7 +61,7 @@
 
 								<th>Site Name</th>
 
-								<th>Location</th>
+								<!-- <th>Location</th> -->
 
 								<th>Site Value</th>
 								<th>Collected Value</th>
@@ -71,7 +71,7 @@
 								<th>Total Plots</th>
 								<th>Map Status</th>
 								<th>View Plots</th>
-								<th>View Expenses</th>
+								<!-- <th>View Expenses</th> -->
 								<th>Actions</th>
 
 

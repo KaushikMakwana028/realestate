@@ -412,7 +412,6 @@ $(document).ready(function () {
                             <tr>
                                 <td>${startIndex + i}</td>
                                 <td><span class="site-name-chip"><i class='bx bx-building-house'></i>${siteName}</span></td>
-                                <td>${siteLocation}</td>
                                 <td><span class="value-cell">${formatInr(site.site_value)}</span></td>
                                 <td><span class="value-cell">${formatInr(site.collected_value)}</span></td>                       
                                 <td><span class="value-cell">${formatInr(site.total_expenses)}</span></td>
@@ -427,13 +426,7 @@ $(document).ready(function () {
     </a>
 </td>
 
-<td>
-    <a href="${site_url}expenses/${site.id}" 
-       class="quick-link-btn" 
-       title="View Expenses">
-        <i class='bx bx-receipt'></i>
-    </a>
-</td>
+
 
 <td>
                                     <div class="site-action-group">
@@ -719,9 +712,13 @@ $(document).ready(function () {
 			const siteId = $(this).data("id");
 			const adminId = $(this).data("admin"); // âœ… get admin id
 
-			$.ajax({
-				url: site_url + "site/get_users",
-				method: "GET",
+		$.ajax({
+    url: site_url + "site/get_users",
+    method: "GET",
+    data: {
+        admin_id: adminId   // ✅ send admin id
+    },
+
 				success: function (response) {
 					if (response.status && response.data.length > 0) {
 						let options = response.data
@@ -1062,18 +1059,28 @@ $(document).ready(function () {
 						let gridCards = "";
 
 						$.each(res.data, function (i, plot) {
-							const statusKey = normalizePlotStatus(plot.status);
-							const statusBadge = buildStatusBadge(statusKey);
-							const rowNo = (page - 1) * 10 + i + 1;
-							const buyerName = String(plot.name || "").trim();
-							const hasBuyer = statusKey === "sold" && buyerName.length > 0;
-							const safeBuyerName = escapeHtml(buyerName || "-");
-							const buyerHtml = hasBuyer
-								? `<div class="buyer-cell">
-										<div class="buyer-avatar" style="background:#4f46e5;">${escapeHtml(getBuyerInitials(buyerName))}</div>
-										<div class="buyer-name">${safeBuyerName}</div>
-								   </div>`
-								: '<span class="no-buyer">-</span>';
+
+	const statusKey = normalizePlotStatus(plot.status);
+	const statusBadge = buildStatusBadge(statusKey);
+	const rowNo = (page - 1) * 10 + i + 1;
+
+	// ✅ FIXED — correct fields
+	const buyerName = String(plot.buyer_name || "").trim();
+	const buyerId   = plot.buyer_id || "";
+
+	const hasBuyer = statusKey === "sold" && buyerName.length > 0;
+
+	const safeBuyerName = escapeHtml(buyerName || "-");
+
+	const buyerHtml = hasBuyer
+		? `<div class="buyer-cell">
+				<div class="buyer-avatar" style="background:#4f46e5;">
+					${escapeHtml(getBuyerInitials(buyerName))}
+				</div>
+				<div class="buyer-name">${safeBuyerName}</div>
+		   </div>`
+		: '<span class="no-buyer">-</span>';
+
 							const safePlotNumber = escapeHtml(plot.plot_number || "-");
 							const safeSize = escapeHtml(plot.size || "-");
 							const safeDimension = escapeHtml(plot.dimension || "-");
@@ -1091,22 +1098,34 @@ $(document).ready(function () {
 									<td class="text-center">${statusBadge}</td>
 									<td>${buyerHtml}</td>
 									<td class="text-center">
-										<div class="action-group">
-											<a href="${site_url}plot/edit_plot/${plot.id}" class="btn-action btn-action-edit" data-tooltip="Edit Plot">
-												<i class="bx bx-edit-alt"></i>
-											</a>
-											<a href="javascript:;" class="btn-action btn-action-delete deletePlot" data-id="${plot.id}" data-tooltip="Delete Plot">
-												<i class="bx bx-trash"></i>
-											</a>
-											${
-												statusKey === "sold" && plot.buyer_id
-													? `<a href="${site_url}plots/buyer_details/${plot.id}" class="btn-action btn-action-view checkBuyer" data-id="${plot.id}" data-tooltip="Buyer Details">
-													<i class="bx bx-user-check"></i>
-											   </a>`
-													: ""
-											}
-										</div>
-									</td>
+	<div class="action-group">
+
+		<a href="${site_url}plot/edit_plot/${plot.id}"
+		   class="btn-action btn-action-edit"
+		   data-tooltip="Edit Plot">
+			<i class="bx bx-edit-alt"></i>
+		</a>
+
+		<a href="javascript:;"
+		   class="btn-action btn-action-delete deletePlot"
+		   data-id="${plot.id}"
+		   data-tooltip="Delete Plot">
+			<i class="bx bx-trash"></i>
+		</a>
+
+		${
+			hasBuyer
+				? `<a href="${site_url}plots/buyer_details/${plot.id}"
+					  class="btn-action btn-action-view"
+					  data-tooltip="Buyer Details">
+						<i class="bx bx-user-pin"></i>
+				   </a>`
+				: ""
+		}
+
+	</div>
+</td>
+
 								</tr>
 							`;
 
@@ -1135,13 +1154,29 @@ $(document).ready(function () {
 										<div class="plot-grid-card-footer">
 											<span class="plot-grid-price">${safePrice}</span>
 											<div class="action-group">
-												<a href="${site_url}plot/edit_plot/${plot.id}" class="btn-action btn-action-edit" data-tooltip="Edit Plot">
-													<i class="bx bx-edit-alt"></i>
-												</a>
-												<a href="javascript:;" class="btn-action btn-action-delete deletePlot" data-id="${plot.id}" data-tooltip="Delete Plot">
-													<i class="bx bx-trash"></i>
-												</a>
-											</div>
+
+	<a href="${site_url}plot/edit_plot/${plot.id}"
+	   class="btn-action btn-action-edit">
+		<i class="bx bx-edit-alt"></i>
+	</a>
+
+	<a href="javascript:;"
+	   class="btn-action btn-action-delete deletePlot"
+	   data-id="${plot.id}">
+		<i class="bx bx-trash"></i>
+	</a>
+
+	${
+		hasBuyer
+			? `<a href="${site_url}plots/buyer_details/${plot.id}"
+				  class="btn-action btn-action-view">
+					<i class="bx bx-user-pin"></i>
+			   </a>`
+			: ""
+	}
+
+</div>
+
 										</div>
 									</div>
 								</div>
@@ -2694,7 +2729,7 @@ $(document).ready(function () {
                                 <td>${res.plot?.site_name ?? "-"}</td>
                                 <td>${res.plot?.plot_number ?? "-"}</td>
                                 <td>${log.created_on}</td>
-                                <td>â‚¹${log.paid_amount}</td>
+                                <td>${log.paid_amount}</td>
                                  <td>
                             <select class="form-select statuspayment" data-id="${log.id}">
                     <option value="pending" ${log.status == "pending" ? "selected" : ""}>Pending</option>
