@@ -1,5 +1,28 @@
 $(function () {
 	"use strict";
+	const THEMESTORAGEKEY = "app_theme";
+	const $html = $("html");
+
+	function applyTheme(theme) {
+		$html.attr("data-bs-theme", theme);
+		try {
+			localStorage.setItem(THEMESTORAGEKEY, theme);
+		} catch (e) {}
+		const iconClass = theme === "dark" ? "bx bx-sun" : "bx bx-moon";
+		$(".dark-mode-icon i").attr("class", iconClass);
+	}
+
+	try {
+		const storedTheme = localStorage.getItem(THEMESTORAGEKEY);
+		if (storedTheme) {
+			$html.attr("data-bs-theme", storedTheme);
+		}
+	} catch (e) {}
+
+	$(".dark-mode-icon i").attr(
+		"class",
+		$html.attr("data-bs-theme") === "dark" ? "bx bx-sun" : "bx bx-moon",
+	);
 
 	(new PerfectScrollbar(".app-container"),
 		new PerfectScrollbar(".header-message-list"),
@@ -10,18 +33,11 @@ $(function () {
 		/* dark mode button */
 
 		$(".dark-mode").click(function () {
-			$("html").attr("data-bs-theme", function (i, v) {
-				return v === "dark" ? "light" : "dark";
-			});
+			const current = $html.attr("data-bs-theme") || "light";
+			applyTheme(current === "dark" ? "light" : "dark");
 		}));
 
-	($(".dark-mode").on("click", function () {
-		if ($(".dark-mode-icon i").attr("class") == "bx bx-sun") {
-			$(".dark-mode-icon i").attr("class", "bx bx-moon");
-		} else {
-			$(".dark-mode-icon i").attr("class", "bx bx-sun");
-		}
-	}),
+	($(".dark-mode").on("click", function () {}),
 		$(".mobile-toggle-menu").click(function () {
 			$(".wrapper").hasClass("toggled")
 				? ($(".wrapper").removeClass("toggled"),
@@ -97,16 +113,16 @@ $(function () {
 		/* switcher */
 
 		$("#LightTheme").on("click", function () {
-			$("html").attr("data-bs-theme", "light");
+			applyTheme("light");
 		}),
 		$("#DarkTheme").on("click", function () {
-			$("html").attr("data-bs-theme", "dark");
+			applyTheme("dark");
 		}),
 		$("#SemiDarkTheme").on("click", function () {
-			$("html").attr("data-bs-theme", "semi-dark");
+			applyTheme("semi-dark");
 		}),
 		$("#BoderedTheme").on("click", function () {
-			$("html").attr("data-bs-theme", "bodered-theme");
+			applyTheme("bodered-theme");
 		}));
 
 	($(".switcher-btn").on("click", function () {

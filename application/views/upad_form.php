@@ -1,4 +1,5 @@
-<div class="page-wrapper">
+<?php $this->load->view('partials/admin_form_theme'); ?>
+<div class="page-wrapper admin-form-page">
     <div class="page-content">
 
         <!-- Breadcrumb -->
@@ -18,7 +19,7 @@
         </div>
 
         <!-- UPAD Form Card -->
-        <div class="card">
+        <div class="card admin-form-card">
             <div class="card-body p-4">
                 <h5 class="card-title">Add UPAD</h5>
                 <hr>
@@ -47,7 +48,7 @@
 
                                 <!-- UPAD Amount -->
                                 <div class="mb-3">
-                                    <label for="upadAmount" class="form-label">UPAD Amount (₹)</label>
+                                    <label for="upadAmount" class="form-label">UPAD Amount (INR)</label>
                                     <input type="number"
                                            name="amount"
                                            class="form-control"

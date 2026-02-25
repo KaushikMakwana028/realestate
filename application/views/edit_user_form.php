@@ -1,4 +1,5 @@
-<div class="page-wrapper">
+<?php $this->load->view('partials/admin_form_theme'); ?>
+<div class="page-wrapper admin-form-page">
     <div class="page-content">
 
         <!-- Breadcrumb -->
@@ -18,7 +19,7 @@
         </div>
 
         <!-- Edit User Card -->
-        <div class="card">
+        <div class="card admin-form-card">
             <div class="card-body p-4">
                 <h5 class="card-title">Edit User</h5>
                 <hr>
@@ -58,7 +59,7 @@
 
     <!-- ⭐ Daily Salary -->
     <div class="mb-3">
-        <label for="dailySalary" class="form-label">Daily Salary (₹)</label>
+        <label for="dailySalary" class="form-label">Daily Salary (INR)</label>
         <input type="number" name="daily_salary" class="form-control" id="dailySalary"
             value="<?= isset($user->daily_salary) ? htmlspecialchars($user->daily_salary) : ''; ?>"
             placeholder="Enter daily salary amount" required>

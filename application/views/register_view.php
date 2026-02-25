@@ -14,7 +14,7 @@
 
 	<!--favicon-->
 
-	<link rel="icon" href="<?= base_url('assets/images/favicon-32x32.png') ?>" type="image/png">
+	<link rel="icon" href="<?= base_url('assets/images/title_logo.png') ?>" type="image/png">
 
 	<!--plugins-->
 
@@ -43,6 +43,15 @@
 	<link rel="stylesheet" href="<?= base_url('assets/sass/dark-theme.css') ?>">
 
 	<link href="<?= base_url('assets/css/icons.css') ?>" rel="stylesheet">
+
+	<style>
+		.auth-logo {
+			height: 38px;
+			width: auto;
+			max-width: 190px;
+			object-fit: contain;
+		}
+	</style>
 
 	<title>Realstate</title>
 
@@ -209,9 +218,7 @@
 								<div class="p-4">
 
 									<div class="mb-3 text-center">
-
-										<img src="<?= base_url('assets/images/logo-icon.png') ?>" width="60" alt="" />
-
+										<img src="<?= base_url('assets/images/title_logo.png') ?>" alt="Title Logo" class="auth-logo" />
 									</div>
 
 									<div class="text-center mb-4">

@@ -463,7 +463,7 @@ public function fetch_inquiries()
     if (!empty($search)) {
         $this->db->group_start();
         $this->db->like("users.name", $search);
-        $this->db->or_like("sites.site_name", $search);
+        $this->db->or_like("sites.name", $search);
         $this->db->or_like("plots.plot_number", $search);
         $this->db->or_like("inquiries.customer_name", $search);
         $this->db->group_end();
@@ -524,10 +524,18 @@ public function fetch_attendance()
 
     $page   = intval($this->input->post("page")) ?: 1;
     $search = trim($this->input->post("search"));
+    $date_filter = trim($this->input->post("date_filter"));
+    $status_filter = strtolower(trim($this->input->post("status_filter")));
     $limit  = 10;
     $offset = ($page - 1) * $limit;
 
     $admin_id = $this->admin['user_id'];
+    $is_filtered = (!empty($search) || !empty($date_filter) || !empty($status_filter));
+
+    $allowed_statuses = ['present', 'absent', 'pending', 'rejected', 'late'];
+    if (!in_array($status_filter, $allowed_statuses, true)) {
+        $status_filter = '';
+    }
 
     $this->db->select("attendance.*, users.name AS user_name, users.mobile");
     $this->db->from("attendance");
@@ -542,16 +550,150 @@ public function fetch_attendance()
         $this->db->group_end();
     }
 
+    if (!empty($date_filter)) {
+        $this->db->where("DATE(attendance.attendance_time) =", $date_filter, false);
+    }
+
+    if (!empty($status_filter)) {
+        $this->db->where("LOWER(attendance.status)", $status_filter);
+    }
+
     $total = $this->db->count_all_results("", FALSE);
     $this->db->limit($limit, $offset);
+    $this->db->order_by('attendance.id', 'DESC');
     $data = $this->db->get()->result();
+
+    $today = date('Y-m-d');
+
+    if ($is_filtered) {
+        $this->db->select('COUNT(DISTINCT attendance.user_id) AS total_users', false);
+        $this->db->from('attendance');
+        $this->db->join("users", "users.id = attendance.user_id", "left");
+        $this->db->where("attendance.admin_id", $admin_id);
+        $this->db->where("attendance.isActive", 1);
+        if (!empty($search)) {
+            $this->db->group_start();
+            $this->db->like("users.name", $search);
+            $this->db->or_like("users.mobile", $search);
+            $this->db->group_end();
+        }
+        if (!empty($date_filter)) {
+            $this->db->where("DATE(attendance.attendance_time) =", $date_filter, false);
+        }
+        if (!empty($status_filter)) {
+            $this->db->where("LOWER(attendance.status)", $status_filter);
+        }
+        $total_employees = (int) ($this->db->get()->row()->total_users ?? 0);
+
+        $this->db->from('attendance');
+        $this->db->join("users", "users.id = attendance.user_id", "left");
+        $this->db->where("attendance.admin_id", $admin_id);
+        $this->db->where("attendance.isActive", 1);
+        if (!empty($search)) {
+            $this->db->group_start();
+            $this->db->like("users.name", $search);
+            $this->db->or_like("users.mobile", $search);
+            $this->db->group_end();
+        }
+        if (!empty($date_filter)) {
+            $this->db->where("DATE(attendance.attendance_time) =", $date_filter, false);
+        }
+        if (!empty($status_filter)) {
+            $this->db->where("LOWER(attendance.status)", $status_filter);
+        }
+        $present_today = (int) $this->db->where('LOWER(attendance.status)', 'present')->count_all_results();
+
+        $this->db->from('attendance');
+        $this->db->join("users", "users.id = attendance.user_id", "left");
+        $this->db->where("attendance.admin_id", $admin_id);
+        $this->db->where("attendance.isActive", 1);
+        if (!empty($search)) {
+            $this->db->group_start();
+            $this->db->like("users.name", $search);
+            $this->db->or_like("users.mobile", $search);
+            $this->db->group_end();
+        }
+        if (!empty($date_filter)) {
+            $this->db->where("DATE(attendance.attendance_time) =", $date_filter, false);
+        }
+        if (!empty($status_filter)) {
+            $this->db->where("LOWER(attendance.status)", $status_filter);
+        }
+        $late_arrivals = (int) $this->db
+            ->group_start()
+            ->where('LOWER(attendance.status)', 'pending')
+            ->or_where('LOWER(attendance.status)', 'late')
+            ->group_end()
+            ->count_all_results();
+
+        $this->db->from('attendance');
+        $this->db->join("users", "users.id = attendance.user_id", "left");
+        $this->db->where("attendance.admin_id", $admin_id);
+        $this->db->where("attendance.isActive", 1);
+        if (!empty($search)) {
+            $this->db->group_start();
+            $this->db->like("users.name", $search);
+            $this->db->or_like("users.mobile", $search);
+            $this->db->group_end();
+        }
+        if (!empty($date_filter)) {
+            $this->db->where("DATE(attendance.attendance_time) =", $date_filter, false);
+        }
+        if (!empty($status_filter)) {
+            $this->db->where("LOWER(attendance.status)", $status_filter);
+        }
+        $absent_today = (int) $this->db
+            ->group_start()
+            ->where('LOWER(attendance.status)', 'absent')
+            ->or_where('LOWER(attendance.status)', 'rejected')
+            ->group_end()
+            ->count_all_results();
+    } else {
+        $total_employees = (int) $this->db
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->count_all_results('users');
+
+        $present_today = (int) $this->db
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->where('DATE(attendance_time) =', $today, FALSE)
+            ->where('status', 'present')
+            ->count_all_results('attendance');
+
+        $late_arrivals = (int) $this->db
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->where('DATE(attendance_time) =', $today, FALSE)
+            ->group_start()
+            ->where('status', 'pending')
+            ->or_where('status', 'late')
+            ->group_end()
+            ->count_all_results('attendance');
+
+        $absent_today = (int) $this->db
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->where('DATE(attendance_time) =', $today, FALSE)
+            ->group_start()
+            ->where('status', 'absent')
+            ->or_where('status', 'rejected')
+            ->group_end()
+            ->count_all_results('attendance');
+    }
 
     echo json_encode([
         "status" => true,
         "data"   => $data,
         "total"  => $total,
         "limit"  => $limit,
-        "page"   => $page
+        "page"   => $page,
+        "stats" => [
+            "total_employees" => $total_employees,
+            "present_today" => $present_today,
+            "late_arrivals" => $late_arrivals,
+            "absent_today" => $absent_today
+        ]
     ]);
 }
 public function delete_attendance()

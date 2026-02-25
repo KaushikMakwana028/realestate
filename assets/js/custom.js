@@ -2378,6 +2378,96 @@ $(document).ready(function () {
 	if (!document.getElementById("inquiryTableBody")) return;
 
 	let currentPage = 1;
+	let lastData = [];
+
+	function esc(v) {
+		return String(v ?? "")
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
+	}
+
+	function updateStats(rows) {
+		const total = rows.length;
+		const now = new Date();
+		const today = now.toISOString().slice(0, 10);
+		const day = now.getDay();
+		const diffToMonday = day === 0 ? 6 : day - 1;
+		const weekStart = new Date(now);
+		weekStart.setDate(now.getDate() - diffToMonday);
+		weekStart.setHours(0, 0, 0, 0);
+
+		let todayCount = 0;
+		let weekCount = 0;
+
+		rows.forEach((r) => {
+			const dt = String(r.created_at || "").slice(0, 10);
+			if (dt === today) todayCount += 1;
+			const d = r.created_at ? new Date(r.created_at.replace(" ", "T")) : null;
+			if (d && d >= weekStart) weekCount += 1;
+		});
+
+		$("#statTotalEnquiries").text(total);
+		$("#statTodayEnquiries").text(todayCount);
+		$("#statWeekEnquiries").text(weekCount);
+		$("#statPendingEnquiries").text(total);
+	}
+
+	function applyClientFilters() {
+		const selectedSite = ($("#filterSite").val() || "").toLowerCase();
+		const selectedDate = ($("#filterDate").val() || "").toLowerCase();
+		const now = new Date();
+		let visible = 0;
+
+		$("#inquiryTableBody tr").each(function () {
+			const site = String($(this).data("site") || "").toLowerCase();
+			const dateStr = String($(this).data("date") || "");
+			let siteOk = !selectedSite || site === selectedSite;
+			let dateOk = true;
+
+			if (selectedDate && dateStr) {
+				const d = new Date(dateStr + "T00:00:00");
+				const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+				if (selectedDate === "today") {
+					dateOk =
+						d.getFullYear() === today.getFullYear() &&
+						d.getMonth() === today.getMonth() &&
+						d.getDate() === today.getDate();
+				} else if (selectedDate === "week") {
+					const day = today.getDay();
+					const diffToMonday = day === 0 ? 6 : day - 1;
+					const weekStart = new Date(today);
+					weekStart.setDate(today.getDate() - diffToMonday);
+					dateOk = d >= weekStart;
+				} else if (selectedDate === "month") {
+					dateOk =
+						d.getFullYear() === today.getFullYear() &&
+						d.getMonth() === today.getMonth();
+				}
+			}
+
+			const show = siteOk && dateOk;
+			$(this).toggle(show);
+			if (show) visible += 1;
+		});
+
+		$("#enqEmptyState").toggleClass("d-none", visible > 0);
+	}
+
+	function populateSiteFilter(rows) {
+		const $site = $("#filterSite");
+		if (!$site.length) return;
+		const current = $site.val() || "";
+		const uniqueSites = [...new Set(rows.map((r) => String(r.name || "").trim()).filter(Boolean))];
+		let html = '<option value="">All Sites</option>';
+		uniqueSites.forEach((s) => {
+			html += `<option value="${esc(s)}">${esc(s)}</option>`;
+		});
+		$site.html(html);
+		$site.val(current);
+	}
 
 	function loadInquiries(page = 1, search = "") {
 		$.ajax({
@@ -2397,9 +2487,16 @@ $(document).ready(function () {
                         </td>
                     </tr>`;
 					$("#inquiryTableBody").html(tbody);
+					$("#enqEmptyState").removeClass("d-none");
+					$("#enqPaginationInfo").text("No enquiries found");
+					$("#statTotalEnquiries, #statTodayEnquiries, #statWeekEnquiries, #statPendingEnquiries").text("0");
 					renderPagination(0, res.limit, res.page);
 					return;
 				}
+
+				lastData = res.data;
+				populateSiteFilter(lastData);
+				updateStats(lastData);
 
 				res.data.forEach((row, index) => {
 					// Safe note handling
@@ -2415,20 +2512,29 @@ $(document).ready(function () {
 						: "";
 
 					tbody += `
-                    <tr>
-                        <td>${index + 1}</td>
-                        <td>${row.user_name}</td>
-                        <td>${row.name}</td>
-                        <td>${row.plot_number}</td>
-                        <td>${row.customer_name}</td>
-                        <td>${row.mobile}</td>
+                    <tr data-user="${esc(row.user_name || "-")}"
+						data-site="${esc(row.name || "-")}"
+						data-plot="${esc(row.plot_number || "-")}"
+						data-customer="${esc(row.customer_name || "-")}"
+						data-mobile="${esc(row.mobile || "-")}"
+						data-notes="${esc(note)}"
+						data-date="${esc(formattedDate)}">
+                        <td>${(page - 1) * (res.limit || 10) + index + 1}</td>
+                        <td>${esc(row.user_name || "-")}</td>
+                        <td>${esc(row.name || "-")}</td>
+                        <td>${esc(row.plot_number || "-")}</td>
+                        <td>${esc(row.customer_name || "-")}</td>
+                        <td>${esc(row.mobile || "-")}</td>
 
-                        <td title="${note}">${shortNote}</td>
+                        <td title="${esc(note)}">${esc(shortNote)}</td>
 
-                        <td>${formattedDate}</td>
+                        <td>${esc(formattedDate)}</td>
 
                         <td>
-                            <div class="d-flex order-actions">
+                            <div class="d-flex order-actions align-items-center">
+                                <a href="javascript:;" class="viewEnquiryDetail" title="View">
+                                    <i class="bx bx-show text-primary fs-5"></i>
+                                </a>
                                 <a href="javascript:;" 
                                    class="ms-3 deleteInquiry" 
                                    data-id="${row.id}">
@@ -2440,18 +2546,24 @@ $(document).ready(function () {
 				});
 
 				$("#inquiryTableBody").html(tbody);
+				$("#enqEmptyState").addClass("d-none");
 				renderPagination(res.total, res.limit, res.page);
+				const start = (page - 1) * (res.limit || 10) + 1;
+				const end = start + res.data.length - 1;
+				$("#enqPaginationInfo").text(`Showing ${start}-${end} of ${res.total} enquiries`);
+				applyClientFilters();
 			},
 		});
 	}
 
 	function renderPagination(total, limit, page) {
 		let totalPages = Math.ceil(total / limit);
+		if (!totalPages || totalPages < 1) totalPages = 1;
 		let html = "";
 
 		// Previous
 		html += `<li class="page-item ${page === 1 ? "disabled" : ""}">
-                    <a class="page-link" href="#" data-page="${page - 1}">Previous</a>
+                    <a class="page-link enq-page-link" href="javascript:;" data-page="${page - 1}">Previous</a>
                 </li>`;
 
 		// Show only 3 numbers
@@ -2460,20 +2572,21 @@ $(document).ready(function () {
 
 		for (let i = start; i <= end; i++) {
 			html += `<li class="page-item ${page === i ? "active" : ""}">
-                        <a class="page-link" href="#" data-page="${i}">${i}</a>
+                        <a class="page-link enq-page-link" href="javascript:;" data-page="${i}">${i}</a>
                     </li>`;
 		}
 
 		// Next
 		html += `<li class="page-item ${page === totalPages ? "disabled" : ""}">
-                    <a class="page-link" href="#" data-page="${page + 1}">Next</a>
+                    <a class="page-link enq-page-link" href="javascript:;" data-page="${page + 1}">Next</a>
                 </li>`;
 
-		$(".pagination").html(html);
+		$(".enq-pagination").html(html);
 	}
 
 	// Pagination Click
-	$(document).on("click", ".page-link", function () {
+	$(document).on("click", ".enq-page-link", function () {
+		if ($(this).closest(".page-item").hasClass("disabled")) return;
 		let page = $(this).data("page");
 		if (!page || page < 1) return;
 
@@ -2485,6 +2598,9 @@ $(document).ready(function () {
 	$("#serchinquiry").on("keyup", function () {
 		let keyword = $(this).val();
 		loadInquiries(1, keyword);
+	});
+	$("#filterSite, #filterDate").on("change", function () {
+		applyClientFilters();
 	});
 
 	// Initial Load
@@ -2522,211 +2638,254 @@ $(document).ready(function () {
 		});
 	});
 });
-// Run only if the table exists
-if ($("#attedanceTableBody").length) {
-	function loadAttendance(page = 1, search = "") {
+$(document).ready(function () {
+	if (!$("#attedanceTableBody").length) return;
+
+	let currentPage = 1;
+	let currentSearch = "";
+
+	function esc(v) {
+		return String(v ?? "")
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#39;");
+	}
+
+	function getStatusUI(status) {
+		const s = String(status || "").toLowerCase();
+		let color = "text-muted";
+		let label = s ? s.charAt(0).toUpperCase() + s.slice(1) : "Unknown";
+		if (s === "pending") color = "text-warning";
+		if (s === "present") color = "text-success";
+		if (s === "absent" || s === "rejected") color = "text-danger";
+
+		return `<div class="d-flex align-items-center ${color}">
+			<i class="bx bx-radio-circle-marked bx-burst bx-rotate-90 align-middle font-18 me-1"></i>
+			<span>${label}</span>
+		</div>`;
+	}
+
+	function updateStats(rows, stats) {
+		if (stats) {
+			$("#totalEmployees").text(Number(stats.total_employees || 0));
+			$("#presentToday").text(Number(stats.present_today || 0));
+			$("#lateArrivals").text(Number(stats.late_arrivals || 0));
+			$("#absentToday").text(Number(stats.absent_today || 0));
+			return;
+		}
+
+		$("#totalEmployees").text(rows.length || 0);
+		$("#presentToday").text(0);
+		$("#lateArrivals").text(0);
+		$("#absentToday").text(0);
+	}
+
+	function getAttendanceFilters() {
+		return {
+			date_filter: ($("#dateFilter").val() || "").trim(),
+			status_filter: ($("#statusFilter").val() || "").toLowerCase().trim(),
+		};
+	}
+
+	function toggleShowAllButton() {
+		const filters = getAttendanceFilters();
+		const hasFilters =
+			!!filters.date_filter || !!filters.status_filter || !!currentSearch.trim();
+		$("#showAllAttendanceBtn").toggleClass("d-none", !hasFilters);
+	}
+
+	function renderAttendancePagination(total, limit, page) {
+		let totalPages = Math.ceil(total / limit);
+		if (!totalPages || totalPages < 1) totalPages = 1;
+
+		let html = `<li class="page-item ${page === 1 ? "disabled" : ""}">
+			<a class="page-link att-page-link" href="javascript:;" data-page="${page - 1}">Previous</a>
+		</li>`;
+
+		const start = Math.max(1, page - 1);
+		const end = Math.min(totalPages, start + 2);
+		for (let i = start; i <= end; i++) {
+			html += `<li class="page-item ${i === page ? "active" : ""}">
+				<a class="page-link att-page-link" href="javascript:;" data-page="${i}">${i}</a>
+			</li>`;
+		}
+
+		html += `<li class="page-item ${page === totalPages ? "disabled" : ""}">
+			<a class="page-link att-page-link" href="javascript:;" data-page="${page + 1}">Next</a>
+		</li>`;
+
+		$("#attendancePagination").html(html);
+	}
+
+	function loadAttendance(page = 1, search = null) {
+		currentPage = page;
+		if (search !== null) {
+			currentSearch = search;
+		}
+		const filters = getAttendanceFilters();
+		toggleShowAllButton();
+		$("#loadingState").removeClass("d-none");
+
 		$.ajax({
 			url: site_url + "dashboard/fetch_attendance",
 			type: "POST",
-			data: { page: page, search: search },
+			data: {
+				page: page,
+				search: currentSearch,
+				date_filter: filters.date_filter,
+				status_filter: filters.status_filter,
+			},
 			dataType: "json",
 			success: function (res) {
 				let tbody = "";
+				$("#loadingState").addClass("d-none");
 
-				if (res.data.length === 0) {
-					tbody = `<tr><td colspan="7" class="text-center text-danger">No Record Found</td></tr>`;
-					$("#attedanceTableBody").html(tbody);
-					$(".pagination").html("");
+				if (!res.data || res.data.length === 0) {
+					$("#attedanceTableBody").html(
+						`<tr><td colspan="7" class="text-center text-danger">No Record Found</td></tr>`,
+					);
+					$("#totalRecords").text("0");
+					$("#attendancePagination").html("");
+					updateStats([], res.stats || null);
+					$("#emptyState").removeClass("d-none");
+					toggleShowAllButton();
 					return;
 				}
 
 				res.data.forEach((row, index) => {
-					let dt = row.attendance_time ? row.attendance_time : "";
+					const dt = row.attendance_time ? row.attendance_time : "";
+					const dateOnly = dt ? dt.split(" ")[0] : "";
+					const status = String(row.status || "").toLowerCase();
 
-					function getStatusUI(status) {
-						let color = "";
-						let label = status.charAt(0).toUpperCase() + status.slice(1); // Capitalize
-
-						if (status === "pending") color = "text-warning";
-						if (status === "present") color = "text-success";
-						if (status === "absent") color = "text-danger";
-						if (status === "rejected") color = "text-danger";
-
-						return `
-        <div class="d-flex align-items-center ${color}">
-            <i class="bx bx-radio-circle-marked bx-burst bx-rotate-90 align-middle font-18 me-1"></i>
-            <span>${label}</span>
-        </div>`;
-					}
-
-					tbody += `
-<tr>
-    <td>${index + 1}</td>
-    <td>${row.user_name}</td>
-    <td>
-        <img src="${row.image_path}" width="60" height="60" class="rounded">
-    </td>
-
-    <td>${dt}</td>
-
-    <td>
-        ${getStatusUI(row.status)}
-    </td>
-
-    <td>${row.mobile}</td>
-
-    <td>
-        <div class="d-flex order-actions gap-2">
-
-            <!-- DELETE BUTTON -->
-            <a href="javascript:;" 
-               class="ms-3 text deleteAttendance"  
-               data-id="${row.id}">
-               <i class="bx bxs-trash"></i>
-            </a>
-                  <!-- STATUS DROPDOWN -->
-            <div class="dropdown">
-    <a href="javascript:;" class="text-dark" data-bs-toggle="dropdown">
-        <i class="bx bx-dots-vertical-rounded font-20"></i>
-    </a>
-
-    <ul class="dropdown-menu dropdown-menu-end">
-        <li>
-            <a class="dropdown-item changeStatus" data-id="${row.id}" data-status="present">
-                <i class="bx bx-check-circle me-2 text-success"></i> Present
-            </a>
-        </li>
-
-        <li>
-            <a class="dropdown-item changeStatus" data-id="${row.id}" data-status="absent">
-                <i class="bx bx-x-circle me-2 text-danger"></i> Absent
-            </a>
-        </li>
-
-        <li>
-            <a class="dropdown-item changeStatus" data-id="${row.id}" data-status="rejected">
-                <i class="bx bx-block me-2 text-danger"></i> Rejected
-            </a>
-        </li>
-    </ul>
-</div>
-            </div>
-            
-      
-            
-    </td>
-</tr>`;
+					tbody += `<tr data-date="${esc(dateOnly)}" data-status="${esc(status)}">
+						<td>${(page - 1) * (res.limit || 10) + index + 1}</td>
+						<td>${esc(row.user_name || "-")}</td>
+						<td><img src="${esc(row.image_path || "")}" width="60" height="60" class="rounded"></td>
+						<td>${esc(dt)}</td>
+						<td>${getStatusUI(status)}</td>
+						<td>${esc(row.mobile || "-")}</td>
+						<td>
+							<div class="d-flex order-actions gap-2">
+								<a href="javascript:;" class="ms-3 text deleteAttendance" data-id="${row.id}">
+									<i class="bx bxs-trash"></i>
+								</a>
+								<div class="dropdown">
+									<a href="javascript:;" class="text-dark" data-bs-toggle="dropdown">
+										<i class="bx bx-dots-vertical-rounded font-20"></i>
+									</a>
+									<ul class="dropdown-menu dropdown-menu-end">
+										<li><a class="dropdown-item changeStatus" data-id="${row.id}" data-status="present"><i class="bx bx-check-circle me-2 text-success"></i> Present</a></li>
+										<li><a class="dropdown-item changeStatus" data-id="${row.id}" data-status="absent"><i class="bx bx-x-circle me-2 text-danger"></i> Absent</a></li>
+										<li><a class="dropdown-item changeStatus" data-id="${row.id}" data-status="rejected"><i class="bx bx-block me-2 text-danger"></i> Rejected</a></li>
+									</ul>
+								</div>
+							</div>
+						</td>
+					</tr>`;
 				});
 
 				$("#attedanceTableBody").html(tbody);
-
-				renderAttedancePagination(res.total, res.limit, res.page);
+				$("#emptyState").addClass("d-none");
+				$("#totalRecords").text(res.total || res.data.length);
+				updateStats(res.data, res.stats || null);
+				renderAttendancePagination(res.total, res.limit, res.page);
+				toggleShowAllButton();
+			},
+			error: function () {
+				$("#loadingState").addClass("d-none");
+				Swal.fire("Error", "Failed to load attendance data", "error");
 			},
 		});
 	}
 
-	function renderAttedancePagination(total, limit, currentPage) {
-		let totalPages = Math.ceil(total / limit);
-		let html = "";
-
-		html += `<li class="page-item ${currentPage == 1 ? "disabled" : ""}">
-                    <a class="page-link" href="javascript:;" onclick="loadAttendance(${currentPage - 1})">Previous</a>
-                 </li>`;
-
-		let start = Math.max(1, currentPage - 1);
-		let end = Math.min(totalPages, start + 2);
-
-		for (let i = start; i <= end; i++) {
-			html += `
-                <li class="page-item ${i == currentPage ? "active" : ""}">
-                    <a class="page-link" href="javascript:;" onclick="loadAttendance(${i})">${i}</a>
-                </li>`;
-		}
-
-		if (end < totalPages) {
-			html += `
-                <li class="page-item">
-                    <a class="page-link" href="javascript:;" onclick="loadAttendance(${currentPage + 1})">Next</a>
-                </li>`;
-		}
-
-		$(".pagination").html(html);
-	}
-
-	// Search Event
-	$("#serchattedance").on("keyup", function () {
-		let val = $(this).val();
-		loadAttendance(1, val);
+	$(document).on("click", ".att-page-link", function () {
+		if ($(this).closest(".page-item").hasClass("disabled")) return;
+		const page = Number($(this).data("page") || 1);
+		if (page < 1) return;
+		loadAttendance(page, currentSearch);
 	});
 
-	// Load first page on initial page load
-	loadAttendance();
-}
+	$("#serchattedance").on("keyup", function () {
+		loadAttendance(1, $(this).val());
+	});
 
-// Change status click event
-$(document).on("click", ".changeStatus", function () {
-	let id = $(this).data("id");
-	let newStatus = $(this).data("status");
+	$("#dateFilter, #statusFilter").on("change", function () {
+		loadAttendance(1);
+	});
 
-	$.ajax({
-		url: site_url + "dashboard/update_status",
-		type: "POST",
-		data: {
-			id: id,
-			status: newStatus,
-		},
-		dataType: "json",
-		success: function (res) {
-			if (res.status === true) {
-				Swal.fire({
-					icon: "success",
-					title: "Status Updated!",
-					text: res.message,
-					timer: 1500,
-					showConfirmButton: false,
-				});
+	$("#perPage").prop("disabled", true);
 
-				loadAttendance(); // Reload table
-			} else {
+	$(document).on("click", "#showAllAttendanceBtn", function () {
+		$("#serchattedance").val("");
+		$("#dateFilter").val("");
+		$("#statusFilter").val("");
+		loadAttendance(1, "");
+	});
+
+	$(document).on("click", ".changeStatus", function () {
+		let id = $(this).data("id");
+		let newStatus = $(this).data("status");
+
+		$.ajax({
+			url: site_url + "dashboard/update_status",
+			type: "POST",
+			data: { id: id, status: newStatus },
+			dataType: "json",
+			success: function (res) {
+				if (res.status === true) {
+					Swal.fire({
+						icon: "success",
+						title: "Status Updated!",
+						text: res.message,
+						timer: 1500,
+						showConfirmButton: false,
+					});
+					loadAttendance(currentPage, currentSearch);
+				} else {
+					Swal.fire({ icon: "error", title: "Oops...", text: res.message });
+				}
+			},
+			error: function () {
 				Swal.fire({
 					icon: "error",
-					title: "Oops...",
-					text: res.message,
+					title: "Server Error",
+					text: "Unable to update status.",
 				});
+			},
+		});
+	});
+
+	$(document).on("click", ".deleteAttendance", function () {
+		let id = $(this).data("id");
+		Swal.fire({
+			title: "Are you sure?",
+			text: "This attendance will be removed!",
+			icon: "warning",
+			showCancelButton: true,
+			confirmButtonText: "Yes, Delete",
+		}).then((result) => {
+			if (result.isConfirmed) {
+				$.post(
+					site_url + "dashboard/delete_attendance",
+					{ id: id },
+					function () {
+						Swal.fire("Deleted!", "Attendance removed.", "success");
+						loadAttendance(currentPage, currentSearch);
+					},
+					"json",
+				);
 			}
-		},
-		error: function () {
-			Swal.fire({
-				icon: "error",
-				title: "Server Error",
-				text: "Unable to update status.",
-			});
-		},
+		});
 	});
-});
 
-$(document).on("click", ".deleteAttendance", function () {
-	let id = $(this).data("id");
+	window.refreshAttendanceTable = function () {
+		loadAttendance(currentPage, currentSearch);
+	};
 
-	Swal.fire({
-		title: "Are you sure?",
-		text: "This attendance will be removed!",
-		icon: "warning",
-		showCancelButton: true,
-		confirmButtonText: "Yes, Delete",
-	}).then((result) => {
-		if (result.isConfirmed) {
-			$.post(
-				site_url + "dashboard/delete_attendance",
-				{ id: id },
-				function (res) {
-					Swal.fire("Deleted!", "Attendance removed.", "success");
-					loadAttendance();
-				},
-				"json",
-			);
-		}
-	});
+	toggleShowAllButton();
+	loadAttendance();
 });
 $(document).ready(function () {
 	// Run code ONLY if #payment_data table exists
@@ -3207,6 +3366,16 @@ $(document).ready(function () {
 
 	function loadSuperSites(page = 1, search = "") {
 		if (!$("#superAdminSitesTable").length) return;
+
+		function escHtml(v) {
+			return String(v ?? "")
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#39;");
+		}
+
 		$.ajax({
 			url: site_url + "superadmin/get_all_sites",
 			method: "GET",
@@ -3215,6 +3384,8 @@ $(document).ready(function () {
 			success: function (res) {
 				if (res.status && res.data && res.data.length > 0) {
 					let rows = "";
+					const startIndex = (page - 1) * 5 + 1;
+
 					res.data.forEach((site, i) => {
 						const imgStatus = site.site_images_status || "";
 						const hasImages =
@@ -3235,19 +3406,24 @@ $(document).ready(function () {
 							imageBadge =
 								'<span class="badge bg-danger-light text-danger">Rejected</span>';
 						} else if (hasApprovedImages) {
-							let images = [];
+							let firstImage = "";
 							try {
-								images = JSON.parse(site.site_images) || [];
+								const parsedImages = JSON.parse(site.site_images || "[]");
+								if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+									firstImage = parsedImages[0];
+								}
 							} catch (e) {}
-							if (images.length > 0) {
-								imageBadge =
-									'<div style="text-align:center;"><img src="' +
-									site_url +
-									images[0] +
-									'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;"></div>';
+
+							if (firstImage) {
+								imageBadge = `
+									<div class="d-flex flex-column align-items-center">
+										<img src="${site_url}${firstImage}" alt="Site Image" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+										<span class="badge bg-success-light text-success mt-1">Approved</span>
+									</div>
+								`;
 							} else {
 								imageBadge =
-									'<span class="badge bg-secondary-light text-secondary">No Images</span>';
+									'<span class="badge bg-success-light text-success">Approved</span>';
 							}
 						} else {
 							imageBadge =
@@ -3255,18 +3431,18 @@ $(document).ready(function () {
 						}
 
 						const mapBadge = hasMap
-							? '<span class="badge bg-success-light text-success">✓ Yes</span>'
-							: '<span class="badge bg-secondary-light text-secondary">✗ No</span>';
+							? '<span class="badge bg-success-light text-success">Yes</span>'
+							: '<span class="badge bg-secondary-light text-secondary mapReason" data-reason="Map not uploaded" style="cursor:pointer;">No</span>';
 
 						const viewBtn = `<button class="btn btn-sm btn-primary viewSiteDetail" data-id="${site.id}" title="View Details"><i class="bx bx-show"></i></button>`;
 						const uploadBtn = `<button type="button" class="btn btn-sm btn-success uploadSiteMap" data-id="${site.id}" data-has-images="${hasApprovedImages ? "1" : "0"}" data-has-map="${hasMap ? "1" : "0"}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map"><i class="bx bx-upload"></i></button>`;
 
 						rows += `
 							<tr>
-								<td class="fw-semibold">${i + 1}</td>
-								<td class="fw-semibold">${site.name || "-"}</td>
-								<td><small>${site.admin_name || "-"}</small></td>
-								<td><small>${site.location || "-"}</small></td>
+								<td class="fw-semibold">${startIndex + i}</td>
+								<td class="fw-semibold">${escHtml(site.name || "-")}</td>
+								<td><small>${escHtml(site.admin_name || "-")}</small></td>
+								<td><small>${escHtml(site.location || "-")}</small></td>
 								<td class="text-center"><span class="badge bg-info">${site.total_plots || 0}</span></td>
 								<td class="text-center">${imageBadge}</td>
 								<td class="text-center">${mapBadge}</td>
@@ -3279,6 +3455,7 @@ $(document).ready(function () {
 							</tr>
 						`;
 					});
+
 					$("#superAdminSitesTable").html(rows);
 					renderPagination("#sitePagination", res.pagination);
 					applyTableFilter("#superAdminSitesTable", search, 8);

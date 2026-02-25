@@ -87,10 +87,10 @@
 								<option value="month">This Month</option>
 							</select>
 						</div>
-						<button class="btn enq-export-btn" title="Export">
+						<!-- <button class="btn enq-export-btn" title="Export">
 							<i class="bx bx-download"></i>
 							<span class="d-none d-md-inline">Export</span>
-						</button>
+						</button> -->
 					</div>
 				</div>
 

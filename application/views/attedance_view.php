@@ -1,4 +1,4 @@
-<div class="page-wrapper">
+<div class="page-wrapper attendance-page">
 	<div class="page-content">
 
 		<!--breadcrumb-->
@@ -126,8 +126,8 @@
 							<option value="">All Status</option>
 							<option value="present">Present</option>
 							<option value="absent">Absent</option>
-							<option value="late">Late</option>
-							<option value="leave">On Leave</option>
+							<option value="pending">Pending</option>
+							<option value="rejected">Rejected</option>
 						</select>
 					</div>
 
@@ -140,17 +140,24 @@
 								<i class="bx bx-refresh" style="font-size: 1.1rem;"></i>
 								<span class="d-none d-xl-inline">Refresh</span>
 							</button>
+							<button type="button" id="showAllAttendanceBtn"
+								class="btn btn-outline-primary btn-sm d-flex align-items-center gap-1 d-none"
+								style="border-radius: 8px; padding: 8px 16px; border: 2px solid #c7d2fe;"
+								title="Show all attendance records">
+								<i class="bx bx-list-ul" style="font-size: 1.1rem;"></i>
+								<span class="d-none d-xl-inline">Show All Data</span>
+							</button>
 							<div class="btn-group">
-								<button class="btn btn-sm d-flex align-items-center gap-1 text-white"
+								<!-- <button class="btn btn-sm d-flex align-items-center gap-1 text-white"
 									style="border-radius: 8px 0 0 8px; padding: 8px 16px; background: linear-gradient(135deg, #6366f1, #818cf8); border: none;"
 									onclick="exportData('csv')">
 									<i class="bx bx-download" style="font-size: 1.1rem;"></i>
 									<span class="d-none d-xl-inline">Export</span>
-								</button>
-								<button class="btn btn-sm dropdown-toggle dropdown-toggle-split text-white"
+								</button> -->
+								<!-- <button class="btn btn-sm dropdown-toggle dropdown-toggle-split text-white"
 									data-bs-toggle="dropdown"
 									style="border-radius: 0 8px 8px 0; padding: 8px 10px; background: linear-gradient(135deg, #818cf8, #6366f1); border: none; border-left: 1px solid rgba(255,255,255,0.2);">
-								</button>
+								</button> -->
 								<ul class="dropdown-menu dropdown-menu-end shadow-sm"
 									style="border-radius: 10px; border: none;">
 									<li><a class="dropdown-item" href="javascript:;" onclick="exportData('csv')"><i
@@ -423,7 +430,7 @@
 					</div>
 					<div class="col-md-7">
 						<nav aria-label="Attendance pagination">
-							<ul class="pagination mb-0 justify-content-end gap-1">
+							<ul class="pagination mb-0 justify-content-end gap-1" id="attendancePagination">
 								<li class="page-item">
 									<a class="page-link d-flex align-items-center justify-content-center"
 										href="javascript:;"
@@ -607,6 +614,35 @@
 	.table-responsive::-webkit-scrollbar-thumb:hover {
 		background: #94a3b8;
 	}
+
+	html[data-bs-theme="dark"] .attendance-page .card,
+	html[data-bs-theme="dark"] .attendance-page .card-header,
+	html[data-bs-theme="dark"] .attendance-page .card-footer,
+	html[data-bs-theme="dark"] .attendance-page .bg-white {
+		background: #1f2937 !important;
+		color: #e5e7eb !important;
+		border-color: #374151 !important;
+	}
+
+	html[data-bs-theme="dark"] .attendance-page .table thead,
+	html[data-bs-theme="dark"] .attendance-page .table tbody tr,
+	html[data-bs-theme="dark"] .attendance-page .table tbody td {
+		background: transparent !important;
+		color: #e5e7eb !important;
+		border-color: #374151 !important;
+	}
+
+	html[data-bs-theme="dark"] .attendance-page .form-control,
+	html[data-bs-theme="dark"] .attendance-page .form-select,
+	html[data-bs-theme="dark"] .attendance-page .input-group-text {
+		background: #111827 !important;
+		color: #e5e7eb !important;
+		border-color: #374151 !important;
+	}
+
+	html[data-bs-theme="dark"] .attendance-page .text-muted {
+		color: #9ca3af !important;
+	}
 </style>
 
 <script>
@@ -616,12 +652,14 @@
 	}
 
 	function refreshTable() {
-		// Add refresh logic
-		const btn = event.target.closest('button');
-		btn.querySelector('i').classList.add('bx-spin');
-		setTimeout(() => {
-			btn.querySelector('i').classList.remove('bx-spin');
-		}, 1000);
+		const icon = document.querySelector('button[onclick="refreshTable()"] i');
+		if (icon) {
+			icon.classList.add('bx-spin');
+			setTimeout(() => icon.classList.remove('bx-spin'), 700);
+		}
+		if (typeof window.refreshAttendanceTable === 'function') {
+			window.refreshAttendanceTable();
+		}
 	}
 
 	function exportData(type) {

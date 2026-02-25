@@ -5371,3 +5371,163 @@ input::placeholder {
 	}
 
 }
+/* ===== Dark Mode Fixes ===== */
+html[data-bs-theme="dark"] body {
+	background: #111827 !important;
+	color: #e5e7eb !important;
+}
+
+html[data-bs-theme="dark"] .topbar,
+html[data-bs-theme="dark"] .sidebar-wrapper,
+html[data-bs-theme="dark"] .sidebar-header,
+html[data-bs-theme="dark"] .page-footer {
+	background: #1f2937 !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .card,
+html[data-bs-theme="dark"] .card-header,
+html[data-bs-theme="dark"] .card-footer,
+html[data-bs-theme="dark"] .bg-white,
+html[data-bs-theme="dark"] .table-light,
+html[data-bs-theme="dark"] .dropdown-menu {
+	background: #1f2937 !important;
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .table,
+html[data-bs-theme="dark"] .table th,
+html[data-bs-theme="dark"] .table td {
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .form-control,
+html[data-bs-theme="dark"] .form-select,
+html[data-bs-theme="dark"] textarea,
+html[data-bs-theme="dark"] .input-group-text {
+	background: #111827 !important;
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .text-muted {
+	color: #9ca3af !important;
+}
+
+html[data-bs-theme="dark"] .btn-outline-secondary {
+	color: #cbd5e1 !important;
+	border-color: #475569 !important;
+}
+
+/* ===== Dark Mode Contrast Hardening (Admin + Superadmin) ===== */
+html[data-bs-theme="dark"] .bg-light,
+html[data-bs-theme="dark"] .table-light,
+html[data-bs-theme="dark"] .modal-header.bg-light,
+html[data-bs-theme="dark"] .modal-footer.bg-light {
+	background: #1f2937 !important;
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .text-dark {
+	color: #e5e7eb !important;
+}
+
+html[data-bs-theme="dark"] .text-muted,
+html[data-bs-theme="dark"] small,
+html[data-bs-theme="dark"] .small {
+	color: #9ca3af !important;
+}
+
+html[data-bs-theme="dark"] .table thead th {
+	background: #111827 !important;
+	color: #cbd5e1 !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .table tbody td,
+html[data-bs-theme="dark"] .table tbody th {
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .table tbody tr:hover {
+	background: rgba(148, 163, 184, 0.08) !important;
+}
+
+html[data-bs-theme="dark"] .pagination .page-link {
+	background: #111827 !important;
+	color: #cbd5e1 !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .pagination .page-item.active .page-link {
+	background: #2563eb !important;
+	border-color: #2563eb !important;
+	color: #fff !important;
+}
+
+html[data-bs-theme="dark"] .modal-content,
+html[data-bs-theme="dark"] .modal-body {
+	background: #1f2937 !important;
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .form-text {
+	color: #9ca3af !important;
+}
+
+/* Site pages (admin + superadmin) */
+html[data-bs-theme="dark"] .site-main-card,
+html[data-bs-theme="dark"] .site-table-wrapper,
+html[data-bs-theme="dark"] .site-detail-card {
+	background: #1f2937 !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .site-search-input {
+	background: #111827 !important;
+	color: #e5e7eb !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .site-search-input::placeholder {
+	color: #94a3b8 !important;
+}
+
+html[data-bs-theme="dark"] .site-search-icon {
+	color: #9ca3af !important;
+}
+
+html[data-bs-theme="dark"] .site-table thead th,
+html[data-bs-theme="dark"] .site-detail-table th {
+	background: #111827 !important;
+	color: #9ca3af !important;
+	border-color: #374151 !important;
+}
+
+html[data-bs-theme="dark"] .site-table tbody td,
+html[data-bs-theme="dark"] .site-detail-table td,
+html[data-bs-theme="dark"] .site-detail-value,
+html[data-bs-theme="dark"] .value-cell {
+	color: #e5e7eb !important;
+}
+
+html[data-bs-theme="dark"] .site-name-chip {
+	background: rgba(99, 102, 241, 0.2) !important;
+	color: #c7d2fe !important;
+}
+
+html[data-bs-theme="dark"] .count-pill {
+	background: rgba(6, 182, 212, 0.18) !important;
+	color: #67e8f9 !important;
+}
+
+html[data-bs-theme="dark"] .quick-link-btn {
+	background: #111827 !important;
+	color: #cbd5e1 !important;
+	border-color: #374151 !important;
+}

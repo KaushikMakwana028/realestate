@@ -1,4 +1,5 @@
-<div class="page-wrapper">
+<?php $this->load->view('partials/admin_form_theme'); ?>
+<div class="page-wrapper admin-form-page">
     <div class="page-content">
 
         <!-- Breadcrumb -->
@@ -18,7 +19,7 @@
         </div>
 
         <!-- Add User Card -->
-        <div class="card">
+        <div class="card admin-form-card">
             <div class="card-body p-4">
                 <h5 class="card-title">Add New User</h5>
                 <hr>
@@ -49,7 +50,7 @@
                                     <div class="invalid-feedback">Please enter a valid 10-digit mobile number.</div>
                                 </div>
                                 <div class="mb-3">
-        <label for="dailySalary" class="form-label">Daily Salary (₹)</label>
+        <label for="dailySalary" class="form-label">Daily Salary (INR)</label>
         <input type="number" name="daily_salary" class="form-control" id="dailySalary"
                placeholder="Enter daily salary (e.g. 200)" min="1" required>
         <div class="invalid-feedback">Please enter a valid daily salary amount.</div>
