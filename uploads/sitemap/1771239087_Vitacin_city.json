@@ -1,0 +1,14 @@
+{
+  "location": {
+    "name": "Vitacin city",
+    "address": "Nobal nagar",
+    "rating": 4.3,
+    "reviews": 78,
+    "type": "Housing society",
+    "nearby": [
+      "Ozone City",
+      "Mayur Restaurant & Banquet",
+      "ITI Industrial Training Institute - Kuhernagar"
+    ]
+  }
+}
