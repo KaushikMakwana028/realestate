@@ -82,7 +82,7 @@
 							<i class="bx bx-search usr-search-icon"></i>
 							<input type="text" id="serchUser" class="form-control usr-search-input"
 								placeholder="Search by name, email, mobile...">
-							<kbd class="usr-search-kbd d-none d-md-inline">⌘K</kbd>
+							<kbd class="usr-search-kbd d-none d-md-inline">Ctrl+K</kbd>
 						</div>
 					</div>
 					<div class="usr-toolbar__right">
@@ -142,7 +142,7 @@
 								</th>
 								<th class="text-center">
 									<div class="usr-th-content justify-content-center">
-										<i class="bx bx-money"></i> Upad
+										<i class="bx bx-money"></i> UPAD
 									</div>
 								</th>
 								<th class="text-center">
@@ -1436,7 +1436,7 @@
 				'</div>' +
 				'<div class="usr-salary-box usr-salary-box--upad">' +
 				'<span class="usr-salary-box__value">₹' + upad + '</span>' +
-				'<span class="usr-salary-box__label">Total Upad</span>' +
+				'<span class="usr-salary-box__label">Total UPAD</span>' +
 				'</div>' +
 				'<div class="usr-salary-box usr-salary-box--payable">' +
 				'<span class="usr-salary-box__value">₹' + payable + '</span>' +
@@ -1463,3 +1463,6 @@
 		}
 	});
 </script>
+
+
+

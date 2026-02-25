@@ -1493,11 +1493,31 @@ $(document).ready(function () {
 	if ($("#userTable").length) {
 		let currentPage = 1;
 		let searchQuery = "";
+		let activeFilter = "all";
 
-		// âœ… Fetch users with pagination + search
+		function formatMoney(value) {
+			const num = Number(value || 0);
+			return num.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+		}
+
+		function applyUserFilter(filter) {
+			activeFilter = filter || "all";
+			let hasVisible = false;
+
+			$("#userTable tr").each(function () {
+				const status = String($(this).data("status") || "").toLowerCase();
+				const show = activeFilter === "all" || status === activeFilter;
+				$(this).toggle(show);
+				if (show) hasVisible = true;
+			});
+
+			$("#usrEmptyState").toggleClass("d-none", hasVisible);
+		}
+
 		function loadUsers(page = 1, search = "") {
+			currentPage = page;
 			$.ajax({
-				url: site_url + "user/get_users_ajax", // <-- your backend endpoint
+				url: site_url + "user/get_users_ajax",
 				method: "GET",
 				data: { page: page, search: search },
 				success: function (response) {
@@ -1508,36 +1528,39 @@ $(document).ready(function () {
 						let rows = "";
 
 						$.each(res.data, function (i, user) {
-							const statusBadge =
-								user.isActive == 1
-									? '<div class="badge rounded-pill text-success bg-light-success p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Active</div>'
-									: '<div class="badge rounded-pill text-danger bg-light-danger p-2 text-uppercase px-3"><i class="bx bxs-circle me-1"></i>Inactive</div>';
-
+							const isActive = Number(user.isActive) === 1;
+							const userStatus = isActive ? "active" : "inactive";
+							const statusBadge = isActive
+								? '<span class="usr-status usr-status--active">Active</span>'
+								: '<span class="usr-status usr-status--inactive">Inactive</span>';
 							const profileImage = user.profile_image
 								? `<img src="${site_url + user.profile_image}" width="40" height="40" class="rounded-circle">`
 								: `<img src="${site_url}assets/images/default-user.png" width="40" height="40" class="rounded-circle">`;
 
 							rows += `
-                <tr>
+                <tr data-status="${userStatus}"
+                    data-name="${user.name || "-"}"
+                    data-email="${user.email || "-"}"
+                    data-mobile="${user.mobile || "-"}"
+                    data-salary="${formatMoney(user.actual_salary)}"
+                    data-upad="${formatMoney(user.total_upad)}"
+                    data-payable="${formatMoney(user.payable_salary)}"
+                    data-image="${user.profile_image ? site_url + user.profile_image : ""}">
                   <td>${(page - 1) * 10 + i + 1}</td>
                   <td>${user.name || "-"}</td>
                   <td>${user.mobile || "-"}</td>
                   <td>${user.email || "-"}</td>
                   <td>${profileImage}</td>
                   <td>${statusBadge}</td>
-<td>${user.actual_salary_text}</td>
-<td>${user.total_upad || "-"}</td>
-<td>${user.payable_salary}</td>
-
-
-
+                  <td>${user.actual_salary_text || "-"}</td>
+                  <td>${formatMoney(user.total_upad)}</td>
+                  <td>${formatMoney(user.payable_salary)}</td>
                   <td>
                     <div class="d-flex order-actions">
-                      <a href="${site_url}edit_user/${user.id}" class="text"><i class="bx bxs-edit"></i></a>
+                      <a href="javascript:;" class="text viewUserDetail" title="View User"><i class="bx bx-show"></i></a>
+                      <a href="${site_url}user/edit_user/${user.id}" class="text ms-2"><i class="bx bxs-edit"></i></a>
                       <a href="javascript:;" class="ms-3 text deleteUser" data-id="${user.id}"><i class="bx bxs-trash"></i></a>
-                       <a href="${site_url}user/view_upad/${user.id}" class="text-primary">
-            <i class="bx bx-show"></i>
-        </a>
+                      <a href="${site_url}user/view_upad/${user.id}" class="text-primary ms-3"><i class="bx bx-wallet"></i></a>
                     </div>
                   </td>
                 </tr>
@@ -1545,21 +1568,39 @@ $(document).ready(function () {
 						});
 
 						$("#userTable").html(rows);
+						applyUserFilter(activeFilter);
 						renderPagination(
 							res.pagination.total_pages,
 							res.pagination.current_page,
 						);
+						const activeUsers = res.data.filter((u) => Number(u.isActive) === 1).length;
+						const totalSalary = res.data.reduce((sum, u) => sum + Number(u.actual_salary || 0), 0);
+						const totalPayable = res.data.reduce((sum, u) => sum + Number(u.payable_salary || 0), 0);
+						$("#statTotalUsers").text(res.data.length);
+						$("#statActiveUsers").text(activeUsers);
+						$("#statTotalSalary").text(formatMoney(totalSalary));
+						$("#statTotalPayable").text(formatMoney(totalPayable));
+
+
+						const start = (res.pagination.current_page - 1) * 10 + 1;
+						const end = start + res.data.length - 1;
+						$("#usrPaginationInfo").text(`Showing ${start}-${end} users`);
 					} else {
 						$("#userTable").html(
-							`<tr><td colspan="7" class="text-center text-muted">No users found</td></tr>`,
+							`<tr><td colspan="10" class="text-center text-muted">No users found</td></tr>`,
 						);
 						$(".pagination").html("");
+						$("#usrPaginationInfo").text("No users found");
+						$("#usrEmptyState").removeClass("d-none");
+						$("#statTotalUsers").text("0");
+						$("#statActiveUsers").text("0");
+						$("#statTotalSalary").text("0");
+						$("#statTotalPayable").text("0");
 					}
 				},
 			});
 		}
 
-		// âœ… Render pagination (3 visible + Last + Next)
 		function renderPagination(totalPages, currentPage) {
 			let paginationHTML = "";
 			const maxVisible = 3;
@@ -1572,39 +1613,53 @@ $(document).ready(function () {
 
 			paginationHTML += `
         <li class="page-item ${currentPage === 1 ? "disabled" : ""}">
-          <a class="page-link" href="javascript:;" onclick="loadUsers(${currentPage - 1}, '${searchQuery}')">Previous</a>
+          <a class="page-link usr-page-link" href="javascript:;" data-page="${currentPage - 1}">Previous</a>
         </li>
       `;
 
 			for (let i = startPage; i <= endPage; i++) {
 				paginationHTML += `
           <li class="page-item ${i === currentPage ? "active" : ""}">
-            <a class="page-link" href="javascript:;" onclick="loadUsers(${i}, '${searchQuery}')">${i}</a>
+            <a class="page-link usr-page-link" href="javascript:;" data-page="${i}">${i}</a>
           </li>`;
 			}
 
 			if (endPage < totalPages) {
 				paginationHTML += `
-          <li class="page-item"><a class="page-link" href="javascript:;" onclick="loadUsers(${totalPages}, '${searchQuery}')">Last</a></li>
+          <li class="page-item"><a class="page-link usr-page-link" href="javascript:;" data-page="${totalPages}">Last</a></li>
         `;
 			}
 
 			paginationHTML += `
         <li class="page-item ${currentPage === totalPages ? "disabled" : ""}">
-          <a class="page-link" href="javascript:;" onclick="loadUsers(${currentPage + 1}, '${searchQuery}')">Next</a>
+          <a class="page-link usr-page-link" href="javascript:;" data-page="${currentPage + 1}">Next</a>
         </li>
       `;
 
 			$(".pagination").html(paginationHTML);
 		}
 
-		// âœ… Search functionality
+		$(document).on("click", ".usr-page-link", function () {
+			const page = Number($(this).data("page") || 1);
+			if (page < 1 || $(this).closest(".page-item").hasClass("disabled")) return;
+			loadUsers(page, searchQuery);
+		});
+
 		$("#serchUser").on("keyup", function () {
 			searchQuery = $(this).val();
 			loadUsers(1, searchQuery);
 		});
 
-		// âœ… Delete user confirmation
+		$(".usr-filter-chip").on("click", function () {
+			$(".usr-filter-chip").removeClass("active");
+			$(this).addClass("active");
+			applyUserFilter($(this).data("filter"));
+		});
+		$(".usr-add-btn").on("click", function () {
+			window.location.href = site_url + "user/add_user";
+		});
+
+
 		$(document).on("click", ".deleteUser", function () {
 			const id = $(this).data("id");
 
@@ -1629,7 +1684,6 @@ $(document).ready(function () {
 			});
 		});
 
-		// âœ… Initial Load
 		loadUsers();
 	}
 });
@@ -3939,3 +3993,4 @@ $(document).ready(function () {
 		initAdminPlotsPagination();
 	}
 });
+
