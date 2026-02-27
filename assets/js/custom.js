@@ -1235,26 +1235,31 @@ $(document).ready(function () {
 
 		function normalizeImportedStatus(value) {
 			const cleaned = normalizeImportedValue(value);
-			if (!cleaned) return "available";
+			if (!cleaned) return null;
 			const status = cleaned.toLowerCase();
 			if (status === "sold") return "sold";
 			if (status === "booked" || status === "reserved" || status === "pending") {
-				return "booked";
+				return "pending";
 			}
-			return "available";
+			if (status === "available") return "available";
+			return status;
 		}
 
 		function getMappedImportRow(rawRow) {
 			const mapped = {
+				site_name: null,
 				plot_number: null,
 				size: null,
 				dimension: null,
 				facing: null,
 				price: null,
-				status: "available",
+				status: null,
 			};
 
 			const headerMap = {
+				sitename: "site_name",
+				site: "site_name",
+				projectname: "site_name",
 				plotnumber: "plot_number",
 				plotno: "plot_number",
 				plot: "plot_number",
@@ -1294,11 +1299,13 @@ $(document).ready(function () {
 			});
 
 			const hasAnyValue =
+				mapped.site_name !== null ||
 				mapped.plot_number !== null ||
 				mapped.size !== null ||
 				mapped.dimension !== null ||
 				mapped.facing !== null ||
-				mapped.price !== null;
+				mapped.price !== null ||
+				mapped.status !== null;
 
 			return hasAnyValue ? mapped : null;
 		}
@@ -1408,14 +1415,14 @@ $(document).ready(function () {
 					if (rows.length === 0) {
 						Swal.fire(
 							"Error",
-							"No valid rows found. Use headers like plot_number, size, dimension, facing, price, status.",
+							"No valid rows found. Use headers: site_name, plot_number, size, dimension, facing, price, status.",
 							"error",
 						);
 						return;
 					}
 
 					$.ajax({
-						url: site_url + "plots/import_plots",
+						url: site_url + "plots/import",
 						type: "POST",
 						dataType: "json",
 						data: {
@@ -1433,14 +1440,48 @@ $(document).ready(function () {
 						success: function (res) {
 							Swal.close();
 							if (res.status === "success") {
-								const msg = `Inserted: ${res.inserted || 0}\nSkipped Duplicates: ${
-									res.skipped_duplicates || 0
-								}\nSkipped Empty: ${res.skipped_empty || 0}`;
+								const msg = `Inserted: ${res.inserted || 0}`;
 								Swal.fire("Success", msg, "success");
 								currentPage = 1;
 								loadPlots(currentPage, searchQuery);
 							} else {
-								Swal.fire("Error", res.message || "Import failed.", "error");
+								const issues = Array.isArray(res.errors) ? res.errors : [];
+								if (issues.length) {
+									const shown = issues.slice(0, 20);
+									const escapedItems = shown.map((item) =>
+										String(item)
+											.replace(/&/g, "&amp;")
+											.replace(/</g, "&lt;")
+											.replace(/>/g, "&gt;"),
+									);
+									const moreCount = issues.length - shown.length;
+
+									const html = `
+										<div style="text-align:left;">
+											<div style="margin-bottom:10px;">${res.message || "Import failed. Please fix the rows below."}</div>
+											<div style="max-height:280px; overflow:auto; border:1px solid #e5e7eb; border-radius:8px; padding:10px; background:#f9fafb;">
+												<ol style="margin:0; padding-left:18px;">
+													${escapedItems.map((item) => `<li style="margin-bottom:6px;">${item}</li>`).join("")}
+												</ol>
+											</div>
+											${moreCount > 0 ? `<div style="margin-top:8px; font-size:12px; color:#6b7280;">Showing first ${shown.length} errors. ${moreCount} more error(s) in console.</div>` : ""}
+											${res.error_count && res.error_count > shown.length ? `<div style="margin-top:4px; font-size:12px; color:#6b7280;">Total validation errors: ${res.error_count}</div>` : ""}
+										</div>
+									`;
+
+									if (moreCount > 0) {
+										console.log("Import validation errors:", issues);
+									}
+
+									Swal.fire({
+										icon: "error",
+										title: "Import Failed",
+										html: html,
+										width: 640,
+									});
+								} else {
+									Swal.fire("Error", res.message || "Import failed.", "error");
+								}
 							}
 						},
 						error: function () {
@@ -2109,6 +2150,19 @@ $(document).ready(function () {
 
 	// âž¤ Search
 	$("#serchexp").keyup(function () {
+		currentPage = 1;
+		loadExpenses(1);
+	});
+
+	$("#serchexp").on("keydown", function (e) {
+		if (e.key === "Enter") {
+			e.preventDefault();
+			currentPage = 1;
+			loadExpenses(1);
+		}
+	});
+
+	$("#expSearchBtn").on("click", function () {
 		currentPage = 1;
 		loadExpenses(1);
 	});
@@ -3443,7 +3497,7 @@ $(document).ready(function () {
 								<td class="fw-semibold">${escHtml(site.name || "-")}</td>
 								<td><small>${escHtml(site.admin_name || "-")}</small></td>
 								<td><small>${escHtml(site.location || "-")}</small></td>
-								<td class="text-center"><span class="badge bg-info">${site.total_plots || 0}</span></td>
+								<td class="text-center"><span class="badge bg-info">${site.plot_count || site.total_plots || 0}</span></td>
 								<td class="text-center">${imageBadge}</td>
 								<td class="text-center">${mapBadge}</td>
 								<td class="text-center">
@@ -3552,7 +3606,7 @@ $(document).ready(function () {
 								<td class="fw-semibold">${startIndex + i}</td>
 								<td class="fw-semibold">${site.name || "-"}</td>
 								<td><small>${site.location || "-"}</small></td>
-								<td class="text-center"><span class="badge bg-info">${site.total_plots || 0}</span></td>
+								<td class="text-center"><span class="badge bg-info">${site.plot_count || site.total_plots || 0}</span></td>
 								<td class="text-center">${imageBadge}</td>
 								<td class="text-center">${mapBtn}</td>
 							</tr>

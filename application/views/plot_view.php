@@ -24,40 +24,48 @@
 		<div class="page-header-section">
 			<div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
 				<div>
-    <h3 class="page-main-title mb-1">
-        <i class="bx bx-grid-alt"></i> Plot Management
+					<h3 class="page-main-title mb-1">
+						<i class="bx bx-grid-alt"></i> Plot Management
 
-        <?php if (isset($site_name) && !empty($site_name)) : ?>
-            <span style="font-weight:700; color:#0d6efd;">
-                — <?= htmlspecialchars($site_name) ?>
-            </span>
-        <?php endif; ?>
-    </h3>
+						<?php if (isset($site_name) && !empty($site_name)) : ?>
+							<span style="font-weight:700; color:#0d6efd;">
+								— <?= htmlspecialchars($site_name) ?>
+							</span>
+						<?php endif; ?>
+					</h3>
 
-    <p class="page-subtitle mb-0">
-        View and manage all plots
-        <?php if (isset($site_name) && !empty($site_name)) : ?>
-            for <strong style="color:#198754;">
-                <?= htmlspecialchars($site_name) ?>
-            </strong>
-        <?php else : ?>
-            for this site
-        <?php endif; ?>
-    </p>
-</div>
+					<p class="page-subtitle mb-0">
+						View and manage all plots
+						<?php if (isset($site_name) && !empty($site_name)) : ?>
+							for <strong style="color:#198754;">
+								<?= htmlspecialchars($site_name) ?>
+							</strong>
+						<?php else : ?>
+							for this site
+						<?php endif; ?>
+					</p>
+				</div>
 
 				<div class="d-flex gap-2 flex-wrap">
-					<a href="<?= base_url('site'); ?>" class="btn btn-outline-secondary btn-sm rounded-pill px-3 text-align-center d-flex align-items-center gap-1">
+					<a href="<?= base_url('site'); ?>"
+						class="btn btn-sm btn-back-site rounded-pill px-3">
 						<i class="bx bx-arrow-back me-1"></i> Back to Sites
 					</a>
 					<!-- <button class="btn btn-outline-primary btn-sm rounded-pill px-3" onclick="exportPlots('')">
 						<i class="bx bx-download me-1"></i> Export
 					</button> -->
-					<!-- <button type="button" class="btn btn-outline-success btn-sm rounded-pill px-3" id="importPlotsBtn">
+					<a href="<?= base_url('plots/download_sample_format?site_id=' . (int) $id); ?>"
+						class="btn btn-sm btn-download-sample rounded-pill px-3">
+						<i class="bx bx-download me-1"></i> Download Sample
+					</a>
+
+					<label for="importPlotsFile"
+						class="btn btn-sm btn-import-plot rounded-pill px-3 mb-0">
 						<i class="bx bx-upload me-1"></i> Import
-					</button> -->
+					</label>
+
 					<button class="btn btn-primary btn-sm rounded-pill px-3 btn-add-plot" data-bs-toggle="modal"
-						data-bs-target="#addPlotModal" onclick="window.location.href='<?= base_url('plots/add_plot/'.$id); ?>'">
+						data-bs-target="#addPlotModal" onclick="window.location.href='<?= base_url('plots/add_plot/' . $id); ?>'">
 						<i class="bx bx-plus me-1"></i> Add Plot
 					</button>
 				</div>
@@ -211,7 +219,7 @@
 				<!-- Table View -->
 				<div class="table-responsive plot-table-wrapper" id="tableView">
 					<thead>
-					<table class="table plot-table" id="plotTableMain">
+						<table class="table plot-table" id="plotTableMain">
 							<tr>
 								<th>#</th>
 								<th class="th-sortable" data-sort="number">
@@ -227,10 +235,10 @@
 								<th>Buyer</th>
 								<th class="text-center">Actions</th>
 							</tr>
-						</thead>
-						<tbody id="plotTable">
-							<!-- Rows injected by JS -->
-						</tbody>
+					</thead>
+					<tbody id="plotTable">
+						<!-- Rows injected by JS -->
+					</tbody>
 					</table>
 
 					<!-- Empty State -->
@@ -372,6 +380,82 @@
 		transform: translateY(-2px);
 		box-shadow: 0 6px 20px rgba(79, 70, 229, 0.4);
 		background: linear-gradient(135deg, #4338ca 0%, #6366f1 100%);
+	}
+
+	/* ================= DOWNLOAD SAMPLE BUTTON ================= */
+	.btn-download-sample {
+		background: linear-gradient(135deg, var(--plot-info) 0%, #06b6d4 100%);
+		border: none;
+		font-weight: 600;
+		box-shadow: 0 4px 12px rgba(8, 145, 178, 0.3);
+		transition: var(--plot-transition);
+		padding: 10px 20px;
+		border-radius: 10px;
+		color: #fff;
+	}
+
+	.btn-download-sample:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(8, 145, 178, 0.4);
+		background: linear-gradient(135deg, #0e7490 0%, #06b6d4 100%);
+		color: #fff;
+	}
+
+	/* ================= IMPORT BUTTON ================= */
+	.btn-import-plot {
+		background: linear-gradient(135deg, var(--plot-success) 0%, #10b981 100%);
+		border: none;
+		font-weight: 600;
+		box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+		transition: var(--plot-transition);
+		padding: 10px 20px;
+		border-radius: 10px;
+		color: #fff;
+	}
+
+	.btn-import-plot:hover {
+		transform: translateY(-2px);
+		box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+		background: linear-gradient(135deg, #047857 0%, #10b981 100%);
+		color: #fff;
+	}
+
+	/* Optional: Loading State */
+	.btn-import-plot.loading {
+		opacity: 0.8;
+		pointer-events: none;
+	}
+
+
+	/* ================= BACK BUTTON ================= */
+
+	.btn-back-site {
+		background: linear-gradient(135deg, var(--plot-gray-200) 0%, var(--plot-gray-300) 100%);
+		border: none;
+		color: var(--plot-gray-800);
+		font-weight: 600;
+		padding: 10px 20px;
+		border-radius: 10px;
+		box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+		transition: var(--plot-transition);
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+	}
+
+	.btn-back-site i {
+		transition: var(--plot-transition);
+	}
+
+	.btn-back-site:hover {
+		background: linear-gradient(135deg, var(--plot-gray-300) 0%, var(--plot-gray-400) 100%);
+		color: var(--plot-gray-900);
+		transform: translateY(-2px);
+		box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+	}
+
+	.btn-back-site:hover i {
+		transform: translateX(-4px);
 	}
 
 	.btn-outline-secondary:hover {
@@ -1013,9 +1097,11 @@
 			background-color: var(--plot-success-light);
 			box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.7);
 		}
+
 		50% {
 			box-shadow: 0 0 0 4px rgba(5, 150, 105, 0);
 		}
+
 		100% {
 			background-color: var(--plot-success-light);
 			box-shadow: 0 0 0 0 rgba(5, 150, 105, 0);
@@ -1027,9 +1113,11 @@
 			background-color: var(--plot-danger-light);
 			box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.7);
 		}
+
 		50% {
 			box-shadow: 0 0 0 4px rgba(220, 38, 38, 0);
 		}
+
 		100% {
 			background-color: var(--plot-danger-light);
 			box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
@@ -1726,175 +1814,228 @@
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
 <script>
-	// ===================== HELPERS =====================
-	function getAvatarColor(str) {
-		const colors = [
-			'#4f46e5', '#059669', '#0891b2', '#d97706',
-			'#dc2626', '#7c3aed', '#db2777', '#0d9488',
-			'#2563eb', '#ca8a04', '#e11d48', '#6d28d9'
-		];
-		let hash = 0;
-		for (let i = 0; i < (str || '').length; i++) {
-			hash = str.charCodeAt(i) + ((hash << 5) - hash);
-		}
-		return colors[Math.abs(hash) % colors.length];
-	}
+	document.addEventListener("DOMContentLoaded", function() {
 
-	function getInitials(name) {
-		if (!name) return '?';
-		const words = name.trim().split(/\s+/);
-		return words.length >= 2
-			? (words[0][0] + words[1][0]).toUpperCase()
-			: name.substring(0, 2).toUpperCase();
-	}
+		// ✅ Prevent entire script from running twice
+		if (window.plotPageInitialized) return;
+		window.plotPageInitialized = true;
 
-	function formatCurrency(val) {
-		const num = parseFloat(val);
-		if (isNaN(num)) return '₹0';
-		return '₹' + num.toLocaleString('en-IN');
-	}
+		// =====================================================
+		// ===================== HELPERS =======================
+		// =====================================================
 
-	function getStatusClass(status) {
-		const s = (status || '').toLowerCase();
-		if (s === 'available' || s === 'open') return 'available';
-		if (s === 'booked' || s === 'reserved') return 'booked';
-		if (s === 'sold') return 'sold';
-		return 'available';
-	}
-
-	function getFacingIcon(facing) {
-		const f = (facing || '').toLowerCase();
-		const icons = {
-			east: 'bx-right-arrow-alt',
-			west: 'bx-left-arrow-alt',
-			north: 'bx-up-arrow-alt',
-			south: 'bx-down-arrow-alt'
-		};
-		return icons[f] || 'bx-compass';
-	}
-
-	// ===================== ADD ANIMATED DOTS TO STATUS BADGES =====================
-	function enhanceStatusBadges() {
-		// Add animated dots to status-available badges
-		document.querySelectorAll('.status-badge.status-available').forEach(badge => {
-			if (!badge.querySelector('.badge-dot-available')) {
-				const dot = document.createElement('span');
-				dot.className = 'badge-dot-available';
-				badge.insertBefore(dot, badge.firstChild);
+		function getAvatarColor(str) {
+			const colors = [
+				'#4f46e5', '#059669', '#0891b2', '#d97706',
+				'#dc2626', '#7c3aed', '#db2777', '#0d9488',
+				'#2563eb', '#ca8a04', '#e11d48', '#6d28d9'
+			];
+			let hash = 0;
+			for (let i = 0; i < (str || '').length; i++) {
+				hash = str.charCodeAt(i) + ((hash << 5) - hash);
 			}
-		});
-
-		// Add animated dots to status-sold badges
-		document.querySelectorAll('.status-badge.status-sold').forEach(badge => {
-			if (!badge.querySelector('.badge-dot-sold')) {
-				const dot = document.createElement('span');
-				dot.className = 'badge-dot-sold';
-				badge.insertBefore(dot, badge.firstChild);
-			}
-		});
-	}
-
-	// Call on page load
-	document.addEventListener('DOMContentLoaded', enhanceStatusBadges);
-
-	// Call periodically if content is loaded dynamically
-	setInterval(enhanceStatusBadges, 1000);
-
-	// ===================== KEYBOARD SHORTCUT =====================
-	document.addEventListener('keydown', function (e) {
-		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-			e.preventDefault();
-			document.getElementById('serchPlot')?.focus();
+			return colors[Math.abs(hash) % colors.length];
 		}
-	});
 
-	if (navigator.platform.indexOf('Mac') === -1) {
-		const el = document.getElementById('searchShortcut');
-		if (el) el.textContent = 'Ctrl+K';
-	}
+		function formatCurrency(val) {
+			const num = parseFloat(val);
+			if (isNaN(num)) return '₹0';
+			return '₹' + num.toLocaleString('en-IN');
+		}
 
-	// ===================== VIEW TOGGLE =====================
-	document.querySelectorAll('.view-toggle .btn').forEach(function (btn) {
-		btn.addEventListener('click', function () {
-			document.querySelectorAll('.view-toggle .btn').forEach(b => b.classList.remove('active'));
-			this.classList.add('active');
-			const view = this.getAttribute('data-view');
-			document.getElementById('tableView').classList.toggle('d-none', view !== 'table');
-			document.getElementById('gridView').classList.toggle('d-none', view !== 'grid');
-		});
-	});
-
-	// ===================== FILTER TABS =====================
-	document.querySelectorAll('.filter-tab').forEach(function (tab) {
-		tab.addEventListener('click', function () {
-			document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-			this.classList.add('active');
-
-			const filter = this.getAttribute('data-filter');
-			const rows = document.querySelectorAll('#plotTable tr[data-status]');
-			let visible = 0;
-
-			rows.forEach(function (row) {
-				const status = row.getAttribute('data-status');
-				const show = filter === 'all' || status === filter;
-				row.style.display = show ? '' : 'none';
-				if (show) visible++;
+		function enhanceStatusBadges() {
+			document.querySelectorAll('.status-badge.status-available').forEach(badge => {
+				if (!badge.querySelector('.badge-dot-available')) {
+					const dot = document.createElement('span');
+					dot.className = 'badge-dot-available';
+					badge.insertBefore(dot, badge.firstChild);
+				}
 			});
 
-			const empty = document.getElementById('emptyState');
-			if (empty) empty.classList.toggle('d-none', visible > 0);
-
-			// Also filter grid view
-			document.querySelectorAll('#gridView [data-status]').forEach(function (card) {
-				const status = card.getAttribute('data-status');
-				const show = filter === 'all' || status === filter;
-				card.style.display = show ? '' : 'none';
+			document.querySelectorAll('.status-badge.status-sold').forEach(badge => {
+				if (!badge.querySelector('.badge-dot-sold')) {
+					const dot = document.createElement('span');
+					dot.className = 'badge-dot-sold';
+					badge.insertBefore(dot, badge.firstChild);
+				}
 			});
+		}
 
-			// Enhance badges after filtering
-			enhanceStatusBadges();
-		});
-	});
-
-	// ===================== SEARCH =====================
-	const searchInput = document.getElementById('serchPlot');
-	if (searchInput) {
-		searchInput.addEventListener('input', function () {
-			const query = this.value.toLowerCase().trim();
-			const rows = document.querySelectorAll('#plotTable tr');
-			let visible = 0;
-
-			rows.forEach(function (row) {
-				const text = row.textContent.toLowerCase();
-				const match = !query || text.includes(query);
-				row.style.display = match ? '' : 'none';
-				if (match) visible++;
-			});
-
-			const empty = document.getElementById('emptyState');
-			if (empty) empty.classList.toggle('d-none', visible > 0);
-		});
-	}
-
-	// ===================== CLEAR FILTERS =====================
-	function clearFilters() {
-		// Reset filter tabs
-		document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-		document.querySelector('.filter-tab[data-filter="all"]')?.classList.add('active');
-
-		// Show all rows
-		document.querySelectorAll('#plotTable tr').forEach(r => r.style.display = '');
-		document.querySelectorAll('#gridView [data-status]').forEach(c => c.style.display = '');
-
-		// Clear search
-		if (searchInput) searchInput.value = '';
-
-		// Hide empty state
-		const empty = document.getElementById('emptyState');
-		if (empty) empty.classList.add('d-none');
-
-		// Enhance badges
 		enhanceStatusBadges();
-	}
+		setInterval(enhanceStatusBadges, 1000);
+
+		// =====================================================
+		// ================= KEYBOARD SHORTCUT =================
+		// =====================================================
+
+		document.addEventListener('keydown', function(e) {
+			if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+				e.preventDefault();
+				document.getElementById('serchPlot')?.focus();
+			}
+		});
+
+		// =====================================================
+		// ================= VIEW TOGGLE =======================
+		// =====================================================
+
+		document.querySelectorAll('.view-toggle .btn').forEach(btn => {
+			btn.addEventListener('click', function() {
+				document.querySelectorAll('.view-toggle .btn').forEach(b => b.classList.remove('active'));
+				this.classList.add('active');
+
+				const view = this.getAttribute('data-view');
+				document.getElementById('tableView')?.classList.toggle('d-none', view !== 'table');
+				document.getElementById('gridView')?.classList.toggle('d-none', view !== 'grid');
+			});
+		});
+
+		// =====================================================
+		// ================= FILTER TABS =======================
+		// =====================================================
+
+		document.querySelectorAll('.filter-tab').forEach(tab => {
+			tab.addEventListener('click', function() {
+
+				document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+				this.classList.add('active');
+
+				const filter = this.getAttribute('data-filter');
+				const rows = document.querySelectorAll('#plotTable tr[data-status]');
+				let visible = 0;
+
+				rows.forEach(row => {
+					const status = row.getAttribute('data-status');
+					const show = filter === 'all' || status === filter;
+					row.style.display = show ? '' : 'none';
+					if (show) visible++;
+				});
+
+				document.getElementById('emptyState')?.classList.toggle('d-none', visible > 0);
+				enhanceStatusBadges();
+			});
+		});
+
+		// =====================================================
+		// ================= SEARCH ============================
+		// =====================================================
+
+		const searchInput = document.getElementById('serchPlot');
+		if (searchInput) {
+			searchInput.addEventListener('input', function() {
+				const query = this.value.toLowerCase().trim();
+				const rows = document.querySelectorAll('#plotTable tr');
+				let visible = 0;
+
+				rows.forEach(row => {
+					const text = row.textContent.toLowerCase();
+					const match = !query || text.includes(query);
+					row.style.display = match ? '' : 'none';
+					if (match) visible++;
+				});
+
+				document.getElementById('emptyState')?.classList.toggle('d-none', visible > 0);
+			});
+		}
+
+		// =====================================================
+		// ================= IMPORT PLOTS ======================
+		// =====================================================
+
+		const importBtn = document.getElementById("importPlotsBtn");
+		const fileInput = document.getElementById("importPlotsFile");
+
+		if (!importBtn || !fileInput) return;
+
+		// Open file selector on button click
+		importBtn.addEventListener("click", function(e) {
+			e.preventDefault();
+			fileInput.click();
+		});
+
+		fileInput.addEventListener("change", function(e) {
+
+			const file = e.target.files[0];
+			if (!file) return;
+
+			if (!file.name.toLowerCase().endsWith(".xlsx")) {
+				alert("Only XLSX files are allowed.");
+				fileInput.value = "";
+				return;
+			}
+
+			importBtn.classList.add("loading");
+
+			const reader = new FileReader();
+
+			reader.onload = function(evt) {
+
+				try {
+
+					const data = new Uint8Array(evt.target.result);
+					const workbook = XLSX.read(data, {
+						type: "array"
+					});
+					const sheet = workbook.Sheets[workbook.SheetNames[0]];
+					const rows = XLSX.utils.sheet_to_json(sheet);
+
+					fetch("<?= base_url('plots/import'); ?>", {
+							method: "POST",
+							headers: {
+								"Content-Type": "application/x-www-form-urlencoded"
+							},
+							body: new URLSearchParams({
+								site_id: document.getElementById("site_id").value,
+								rows: JSON.stringify(rows)
+							})
+						})
+						.then(response => response.text())
+						.then(text => {
+
+							console.log("SERVER RESPONSE:", text);
+
+							let res;
+
+							try {
+								res = JSON.parse(text);
+							} catch (e) {
+								throw new Error("Invalid JSON from server.");
+							}
+
+							if (res.status === "success") {
+								alert("Successfully imported " + res.inserted + " plots.");
+								location.reload();
+							} else {
+								alert(res.message || "Import failed.");
+								if (res.errors) {
+									console.log("Validation Errors:", res.errors);
+								}
+							}
+
+						})
+						.catch(error => {
+							console.error("Import Error:", error);
+							alert("Import failed. Check console for details.");
+						})
+						.finally(() => {
+							importBtn.classList.remove("loading");
+							fileInput.value = "";
+						});
+
+				} catch (error) {
+					console.error("File Processing Error:", error);
+					alert("Invalid Excel file.");
+					importBtn.classList.remove("loading");
+					fileInput.value = "";
+				}
+
+			};
+
+			reader.readAsArrayBuffer(file);
+
+		});
+
+	});
 </script>

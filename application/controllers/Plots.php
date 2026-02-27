@@ -19,24 +19,24 @@ class Plots extends My_Controller
 
 
 
-   public function index($id = null)
-{
-    $this->data['id'] = $id ?? '';
+    public function index($id = null)
+    {
+        $this->data['id'] = $id ?? '';
 
-    // ✅ Fetch site details using site id
-    if (!empty($id)) {
-        $site = $this->general_model->getOne('sites', ['id' => $id]);
+        // ✅ Fetch site details using site id
+        if (!empty($id)) {
+            $site = $this->general_model->getOne('sites', ['id' => $id]);
 
-        // Pass site name to view
-        $this->data['site_name'] = $site->name ?? '';
-    } else {
-        $this->data['site_name'] = '';
+            // Pass site name to view
+            $this->data['site_name'] = $site->name ?? '';
+        } else {
+            $this->data['site_name'] = '';
+        }
+
+        $this->load->view('header');
+        $this->load->view('plot_view', $this->data);
+        $this->load->view('footer');
     }
-
-    $this->load->view('header');
-    $this->load->view('plot_view', $this->data);
-    $this->load->view('footer');
-}
 
 
     public function add_plot()
@@ -238,116 +238,212 @@ class Plots extends My_Controller
             ->update('sites', ['site_value' => $total_value]);
     }
 
-    public function import_plots()
+    public function import()
     {
         header('Content-Type: application/json');
 
         $admin_id = $this->admin['user_id'] ?? null;
-        if (!$admin_id) {
-            echo json_encode(['status' => 'error', 'message' => 'Unauthorized access']);
+        $site_id  = (int) $this->input->post('site_id');
+        $rows     = json_decode($this->input->post('rows'), true);
+
+        $errors = [];
+        $insert_data = [];
+        $excel_plot_numbers = [];
+        $max_error_messages = 200;
+
+        if (!$admin_id || !$site_id) {
+            echo json_encode(['status' => 'error', 'message' => 'Invalid request']);
             return;
         }
 
-        $site_id = (int) $this->input->post('site_id');
-        $rows_json = $this->input->post('rows');
-
-        if ($site_id <= 0) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid site id']);
-            return;
-        }
-
-        if (empty($rows_json)) {
-            echo json_encode(['status' => 'error', 'message' => 'No import data found']);
-            return;
-        }
-
-        $rows = json_decode($rows_json, true);
         if (!is_array($rows) || empty($rows)) {
-            echo json_encode(['status' => 'error', 'message' => 'Invalid import data format']);
+            echo json_encode(['status' => 'error', 'message' => 'No rows found for import']);
             return;
         }
 
-        $existing_rows = $this->db->select('plot_number')
-            ->from('plots')
-            ->where('site_id', $site_id)
-            ->where('isActive', 1)
-            ->get()
+        // Guardrail for extremely large payloads.
+        if (count($rows) > 10000) {
+            echo json_encode(['status' => 'error', 'message' => 'Too many rows. Please import up to 10,000 rows per file.']);
+            return;
+        }
+
+        // Allow large imports to complete instead of timing out.
+        if (function_exists('set_time_limit')) {
+            @set_time_limit(300);
+        }
+
+        // Selected site must belong to current admin.
+        $site = $this->db
+            ->where('id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->get('sites')
+            ->row();
+
+        if (!$site) {
+            echo json_encode(['status' => 'error', 'message' => 'This is Not Found.']);
+            return;
+        }
+
+        // Build admin site-name map once (O(1) lookup during validation).
+        $admin_sites = $this->db
+            ->select('id, name')
+            ->where('admin_id', $admin_id)
+            ->get('sites')
             ->result();
 
-        $existing_plot_numbers = [];
-        foreach ($existing_rows as $existing) {
-            $plot_number = trim((string) ($existing->plot_number ?? ''));
-            if ($plot_number !== '') {
-                $existing_plot_numbers[strtolower($plot_number)] = true;
+        $admin_site_name_map = [];
+        foreach ($admin_sites as $admin_site) {
+            $name_key = strtolower(trim((string) ($admin_site->name ?? '')));
+            if ($name_key !== '') {
+                $admin_site_name_map[$name_key] = (int) $admin_site->id;
             }
         }
 
-        $insert_rows = [];
-        $skipped_duplicates = 0;
-        $skipped_empty = 0;
+        // Load all site names once to avoid per-row queries while validating ownership.
+        $all_sites = $this->db
+            ->select('admin_id, name')
+            ->where('isActive', 1)
+            ->get('sites')
+            ->result();
 
-        foreach ($rows as $row) {
-            if (!is_array($row)) {
-                $skipped_empty++;
+        $global_site_owner_map = [];
+        foreach ($all_sites as $s) {
+            $key = strtolower(trim((string) ($s->name ?? '')));
+            if ($key === '') {
                 continue;
             }
-
-            $plot_number = $this->import_field($row['plot_number'] ?? null);
-            $size = $this->import_field($row['size'] ?? null);
-            $dimension = $this->import_field($row['dimension'] ?? null);
-            $facing = $this->import_field($row['facing'] ?? null);
-            $price = $this->import_number_field($row['price'] ?? null);
-            $status = $this->normalize_import_status($row['status'] ?? null);
-
-            if (
-                $plot_number === null &&
-                $size === null &&
-                $dimension === null &&
-                $facing === null &&
-                $price === null
-            ) {
-                $skipped_empty++;
-                continue;
+            if (!isset($global_site_owner_map[$key])) {
+                $global_site_owner_map[$key] = [];
             }
+            $global_site_owner_map[$key][(int) $s->admin_id] = true;
+        }
 
-            if ($plot_number !== null) {
-                $plot_key = strtolower($plot_number);
-                if (isset($existing_plot_numbers[$plot_key])) {
-                    $skipped_duplicates++;
-                    continue;
+        // Load existing plot numbers once to avoid N queries.
+        $existing_plots = $this->db
+            ->select('plot_number')
+            ->where('admin_id', $admin_id)
+            ->where('site_id', $site_id)
+            ->where('isActive', 1)
+            ->get('plots')
+            ->result();
+
+        $db_plot_numbers = [];
+        foreach ($existing_plots as $p) {
+            $k = strtolower(trim((string) ($p->plot_number ?? '')));
+            if ($k !== '') {
+                $db_plot_numbers[$k] = true;
+            }
+        }
+
+        foreach ($rows as $index => $row) {
+            $line = $index + 2; // Excel header is row 1.
+            $row_errors = [];
+
+            $site_name   = $this->import_field($row['Site Name'] ?? ($row['site_name'] ?? ($row['site'] ?? null)));
+            $plot_number = $this->import_field($row['Plot Number'] ?? ($row['plot_number'] ?? ($row['plot'] ?? null)));
+            $size        = $this->import_field($row['Size'] ?? ($row['size'] ?? null));
+            $dimension   = $this->import_field($row['Dimension'] ?? ($row['dimension'] ?? null));
+            $facing      = $this->import_field($row['Facing'] ?? ($row['facing'] ?? null));
+            $price       = $this->import_number_field($row['Price'] ?? ($row['price'] ?? null));
+            $raw_status  = $this->import_field($row['Status'] ?? ($row['status'] ?? null));
+            $status      = $this->normalize_import_status($raw_status);
+            $site_name_key = strtolower(trim((string) ($site_name ?? '')));
+
+            // Required fields.
+            if (!$site_name)      $row_errors[] = "Line $line: Site Name is missing";
+            if (!$plot_number)    $row_errors[] = "Line $line: Plot Number is missing";
+            if (!$size)           $row_errors[] = "Line $line: Plot Size is missing";
+            if (!$dimension)      $row_errors[] = "Line $line: Dimension is missing";
+            if (!$facing)         $row_errors[] = "Line $line: Facing is missing";
+            if ($price === null)  $row_errors[] = "Line $line: Price is missing";
+            if (!$raw_status)     $row_errors[] = "Line $line: Status is missing";
+
+            // Site ownership + selected-site match checks.
+            if ($site_name) {
+                if (!isset($admin_site_name_map[$site_name_key])) {
+                    $owners = $global_site_owner_map[$site_name_key] ?? [];
+                    $has_other_admin_owner = !empty($owners) && !isset($owners[(int) $admin_id]);
+                    if ($has_other_admin_owner) {
+                        $row_errors[] = "Line $line: Site Name '{$site_name}' belongs to another admin";
+                    } else {
+                        $row_errors[] = "Line $line: Site Name '{$site_name}' is not found for this admin";
+                    }
+                } elseif ((int) $admin_site_name_map[$site_name_key] !== $site_id) {
+                    $row_errors[] = "Line $line: Site Name '{$site_name}' does not match selected site '{$site->name}'";
                 }
-                $existing_plot_numbers[$plot_key] = true;
             }
 
-            $insert_rows[] = [
-                'admin_id' => $admin_id,
-                'site_id' => $site_id,
+            // Status checks.
+            if ($raw_status && $status === null) {
+                $row_errors[] = "Line $line: Invalid Status '{$raw_status}' (allowed: available, pending)";
+            }
+            if ($status === 'sold') {
+                $row_errors[] = "Line $line: Sold plots cannot be imported. Use only available or pending";
+            }
+
+            // Duplicate inside Excel file.
+            if ($plot_number) {
+                $plot_key = strtolower($plot_number);
+                if (isset($excel_plot_numbers[$plot_key])) {
+                    $row_errors[] = "Line $line: Duplicate Plot Number inside Excel file";
+                } else {
+                    $excel_plot_numbers[$plot_key] = true;
+                }
+            }
+
+            // Duplicate in database for current admin+site (in-memory lookup).
+            if ($plot_number) {
+                $plot_key = strtolower($plot_number);
+                if (isset($db_plot_numbers[$plot_key])) {
+                    $row_errors[] = "Line $line: Plot Number already exists in database";
+                }
+            }
+
+            if (!empty($row_errors)) {
+                $errors = array_merge($errors, $row_errors);
+                if (count($errors) >= $max_error_messages) {
+                    break;
+                }
+                continue;
+            }
+
+            // Reserve key immediately so same-file later rows are treated duplicate.
+            $db_plot_numbers[strtolower($plot_number)] = true;
+
+            $insert_data[] = [
+                'admin_id'    => $admin_id,
+                'site_id'     => $site_id,
                 'plot_number' => $plot_number,
-                'size' => $size,
-                'dimension' => $dimension,
-                'facing' => $facing,
-                'price' => $price,
-                'status' => $status,
-                'isActive' => 1,
-                'created_at' => date('Y-m-d')
+                'size'        => $size,
+                'dimension'   => $dimension,
+                'facing'      => $facing,
+                'price'       => $price,
+                'status'      => $status,
+                'isActive'    => 1,
+                'created_at'  => date('Y-m-d')
             ];
         }
 
-        if (empty($insert_rows)) {
+        if (!empty($errors)) {
             echo json_encode([
-                'status' => 'error',
-                'message' => 'No valid rows to import',
-                'inserted' => 0,
-                'skipped_duplicates' => $skipped_duplicates,
-                'skipped_empty' => $skipped_empty
+                'status'  => 'error',
+                'message' => 'Import failed. Please fix the row errors.',
+                'errors'  => $errors,
+                'error_count' => count($errors)
+            ]);
+            return;
+        }
+
+        if (empty($insert_data)) {
+            echo json_encode([
+                'status'  => 'error',
+                'message' => 'No valid rows found to import'
             ]);
             return;
         }
 
         $this->db->trans_start();
-
-        $chunks = array_chunk($insert_rows, 200);
-        foreach ($chunks as $chunk) {
+        foreach (array_chunk($insert_data, 500) as $chunk) {
             $this->db->insert_batch('plots', $chunk);
         }
 
@@ -362,24 +458,19 @@ class Plots extends My_Controller
 
         $this->db->where('id', $site_id)
             ->update('sites', ['site_value' => $total_value]);
-
         $this->db->trans_complete();
 
         if ($this->db->trans_status() === FALSE) {
             echo json_encode([
-                'status' => 'error',
-                'message' => 'Import failed. Please check the data format and try again.'
+                'status'  => 'error',
+                'message' => 'Import failed while saving data'
             ]);
             return;
         }
 
         echo json_encode([
-            'status' => 'success',
-            'message' => 'Plots imported successfully',
-            'inserted' => count($insert_rows),
-            'skipped_duplicates' => $skipped_duplicates,
-            'skipped_empty' => $skipped_empty,
-            'site_value' => $total_value
+            'status'   => 'success',
+            'inserted' => count($insert_data)
         ]);
     }
 
@@ -425,7 +516,7 @@ class Plots extends My_Controller
     {
         $clean = $this->import_field($value);
         if ($clean === null) {
-            return 'available';
+            return null;
         }
 
         $status = strtolower($clean);
@@ -433,28 +524,30 @@ class Plots extends My_Controller
             return 'sold';
         }
         if ($status === 'booked' || $status === 'reserved' || $status === 'pending') {
-            return 'booked';
+            return 'pending';
+        }
+        if ($status === 'available') {
+            return 'available';
         }
 
-        return 'available';
+        return null;
     }
+    public function get_plots_ajax()
+    {
+        header('Content-Type: application/json');
 
-   public function get_plots_ajax()
-{
-    header('Content-Type: application/json');
+        $limit   = 10;
+        $page    = (int) $this->input->get('page');
+        $search  = trim($this->input->get('search'));
+        $site_id = (int) $this->input->get('site_id');
 
-    $limit   = 10;
-    $page    = (int) $this->input->get('page');
-    $search  = trim($this->input->get('search'));
-    $site_id = (int) $this->input->get('site_id');
+        if ($page < 1) $page = 1;
+        $offset = ($page - 1) * $limit;
 
-    if ($page < 1) $page = 1;
-    $offset = ($page - 1) * $limit;
-
-    // -------------------------------
-    // MAIN QUERY (WITH BUYER)
-    // -------------------------------
-    $this->db->select('
+        // -------------------------------
+        // MAIN QUERY (WITH BUYER)
+        // -------------------------------
+        $this->db->select('
         p.id,
         p.plot_number,
         p.size,
@@ -467,74 +560,74 @@ class Plots extends My_Controller
         b.name AS buyer_name
     ');
 
-    $this->db->from('plots p');
-    $this->db->join('sites s', 's.id = p.site_id', 'left');
-    $this->db->join('buyer b', 'b.plot_id = p.id AND b.isActive = 1', 'left');
+        $this->db->from('plots p');
+        $this->db->join('sites s', 's.id = p.site_id', 'left');
+        $this->db->join('buyer b', 'b.plot_id = p.id AND b.isActive = 1', 'left');
 
-    $this->db->where('p.isActive', 1);
+        $this->db->where('p.isActive', 1);
 
-    if ($site_id > 0) {
-        $this->db->where('p.site_id', $site_id);
+        if ($site_id > 0) {
+            $this->db->where('p.site_id', $site_id);
+        }
+
+        if (!empty($search)) {
+            $this->db->group_start();
+            $this->db->like('p.plot_number', $search);
+            $this->db->or_like('s.name', $search);
+            $this->db->or_like('b.name', $search); // search buyer also
+            $this->db->group_end();
+        }
+
+        // Count
+        $total_records = $this->db->count_all_results('', FALSE);
+
+        // Pagination
+        $this->db->order_by('p.id', 'DESC');
+        $this->db->limit($limit, $offset);
+
+        $plots = $this->db->get()->result();
+
+        // -------------------------------
+        // STATUS COUNTS
+        // -------------------------------
+        $this->db->select('LOWER(TRIM(status)) as status_key, COUNT(*) as total_count');
+        $this->db->from('plots');
+        $this->db->where('isActive', 1);
+
+        if ($site_id > 0) {
+            $this->db->where('site_id', $site_id);
+        }
+
+        $this->db->group_by('LOWER(TRIM(status))');
+        $status_rows = $this->db->get()->result();
+
+        $status_counts = [
+            'available' => 0,
+            'booked'    => 0,
+            'sold'      => 0
+        ];
+
+        foreach ($status_rows as $row) {
+            $key = strtolower(trim($row->status_key));
+            if ($key == 'sold') $status_counts['sold'] += $row->total_count;
+            elseif ($key == 'booked' || $key == 'pending') $status_counts['booked'] += $row->total_count;
+            else $status_counts['available'] += $row->total_count;
+        }
+
+        // -------------------------------
+        // RESPONSE
+        // -------------------------------
+        echo json_encode([
+            'status' => true,
+            'data'   => $plots,
+            'status_counts' => $status_counts,
+            'pagination' => [
+                'current_page'  => $page,
+                'total_pages'  => ceil($total_records / $limit),
+                'total_records' => $total_records
+            ]
+        ]);
     }
-
-    if (!empty($search)) {
-        $this->db->group_start();
-        $this->db->like('p.plot_number', $search);
-        $this->db->or_like('s.name', $search);
-        $this->db->or_like('b.name', $search); // search buyer also
-        $this->db->group_end();
-    }
-
-    // Count
-    $total_records = $this->db->count_all_results('', FALSE);
-
-    // Pagination
-    $this->db->order_by('p.id', 'DESC');
-    $this->db->limit($limit, $offset);
-
-    $plots = $this->db->get()->result();
-
-    // -------------------------------
-    // STATUS COUNTS
-    // -------------------------------
-    $this->db->select('LOWER(TRIM(status)) as status_key, COUNT(*) as total_count');
-    $this->db->from('plots');
-    $this->db->where('isActive', 1);
-
-    if ($site_id > 0) {
-        $this->db->where('site_id', $site_id);
-    }
-
-    $this->db->group_by('LOWER(TRIM(status))');
-    $status_rows = $this->db->get()->result();
-
-    $status_counts = [
-        'available' => 0,
-        'booked'    => 0,
-        'sold'      => 0
-    ];
-
-    foreach ($status_rows as $row) {
-        $key = strtolower(trim($row->status_key));
-        if ($key == 'sold') $status_counts['sold'] += $row->total_count;
-        elseif ($key == 'booked') $status_counts['booked'] += $row->total_count;
-        else $status_counts['available'] += $row->total_count;
-    }
-
-    // -------------------------------
-    // RESPONSE
-    // -------------------------------
-    echo json_encode([
-        'status' => true,
-        'data'   => $plots,
-        'status_counts' => $status_counts,
-        'pagination' => [
-            'current_page'  => $page,
-            'total_pages'  => ceil($total_records / $limit),
-            'total_records'=> $total_records
-        ]
-    ]);
-}
 
 
 
@@ -778,66 +871,128 @@ class Plots extends My_Controller
     }
 
 
-   public function download_pdf($buyer_id)
-{
+    public function download_pdf($buyer_id)
+    {
 
-    if (!$buyer_id) {
-        log_message('error', 'Invalid Buyer ID');
-        show_error('Invalid Buyer');
+        if (!$buyer_id) {
+            log_message('error', 'Invalid Buyer ID');
+            show_error('Invalid Buyer');
+        }
+
+        $admin_id = $this->session->userdata('admin')['user_id'];
+
+        // ---- Buyer ----
+        $buyer = $this->db->get_where('buyer', ['id' => $buyer_id])->row();
+
+        // ---- User ----
+        $user = $this->db->select('business_name,email,mobile,profile_image')
+            ->from('user_master')
+            ->where('id', $admin_id)
+            ->get()->row();
+
+
+        // ---- Payment Logs ----
+        $logs = $this->db->where('buyer_id', $buyer_id)
+            ->where('status', 'approve')
+            ->order_by('created_on', 'ASC')
+            ->get('cash_payment_logs')
+            ->result();
+
+
+        $data = [
+            'buyer' => $buyer,
+            'user' => $user,
+            'logs' => $logs
+        ];
+
+
+        // ---- Load View ----
+        $html = $this->load->view('buyer_statement', $data, true);
+
+
+
+        $options = new Options();
+        $options->set('isRemoteEnabled', true);
+        $options->set('defaultFont', 'DejaVu Sans');
+
+        $dompdf = new Dompdf($options);
+        $dompdf->loadHtml($html);
+        $dompdf->setPaper('A4', 'portrait');
+
+
+
+        $dompdf->render();
+
+
+
+        $dompdf->stream(
+            "Buyer_Statement_{$buyer_id}.pdf",
+            ["Attachment" => true]
+        );
     }
 
-    $admin_id = $this->session->userdata('admin')['user_id'];
+    public function download_sample_format()
+    {
+        if (ob_get_length()) {
+            ob_end_clean();
+        }
+        ob_start();
 
-    // ---- Buyer ----
-    $buyer = $this->db->get_where('buyer', ['id' => $buyer_id])->row();
+        require_once FCPATH . 'vendor/autoload.php';
 
-    // ---- User ----
-    $user = $this->db->select('business_name,email,mobile,profile_image')
-        ->from('user_master')
-        ->where('id', $admin_id)
-        ->get()->row();
+        $admin_id = $this->admin['user_id'] ?? null;
+        $site_id = (int) $this->input->get('site_id');
+        $sample_site_name = 'Your Site Name';
 
+        if ($admin_id && $site_id > 0) {
+            $site = $this->db
+                ->select('name')
+                ->where('id', $site_id)
+                ->where('admin_id', $admin_id)
+                ->get('sites')
+                ->row();
 
-    // ---- Payment Logs ----
-    $logs = $this->db->where('buyer_id', $buyer_id)
-        ->where('status', 'approve')
-        ->order_by('created_on', 'ASC')
-        ->get('cash_payment_logs')
-        ->result();
+            if ($site && !empty($site->name)) {
+                $sample_site_name = $site->name;
+            }
+        }
 
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
 
-    $data = [
-        'buyer' => $buyer,
-        'user' => $user,
-        'logs' => $logs
-    ];
+        $headers = [
+            'Site Name',
+            'Plot Number',
+            'Size',
+            'Dimension',
+            'Facing',
+            'Price',
+            'Status'
+        ];
 
+        $sheet->fromArray($headers, NULL, 'A1');
 
-    // ---- Load View ----
-    $html = $this->load->view('buyer_statement', $data, true);
+        $sheet->fromArray([
+            $sample_site_name,
+            'Plot 101',
+            '1200',
+            '30x40',
+            'East',
+            '500000',
+            'available'
+        ], NULL, 'A2');
 
-   
+        $filename = "plot_import_template.xlsx";
 
-    $options = new Options();
-    $options->set('isRemoteEnabled', true);
-    $options->set('defaultFont', 'DejaVu Sans');
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+        header('Expires: 0');
+        header('Pragma: public');
 
-    $dompdf = new Dompdf($options);
-    $dompdf->loadHtml($html);
-    $dompdf->setPaper('A4', 'portrait');
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
 
-    
-
-    $dompdf->render();
-
-  
-
-    $dompdf->stream(
-        "Buyer_Statement_{$buyer_id}.pdf",
-        ["Attachment" => true]
-    );
-
-  
-}
-
+        exit;
+    }
 }

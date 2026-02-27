@@ -107,9 +107,14 @@
 					<!-- Search -->
 					<div class="col-lg-4 col-md-6">
 						<div class="position-relative">
-							
 							<input type="text" id="serchexp" class="form-control ps-5 enhanced-input"
 								placeholder="Search expenses by name, site, amount...">
+							<button type="button" id="expSearchBtn"
+								class="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-1 px-2 py-1"
+								style="border: 1px solid #e2e8f0; background: #fff; color: #6366f1; border-radius: 8px;"
+								title="Search">
+								<i class="bx bx-search"></i>
+							</button>
 							<input type="hidden" id="siteID" value="">
 						</div>
 					</div>

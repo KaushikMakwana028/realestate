@@ -1,6 +1,6 @@
 
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
 /*
 | -------------------------------------------------------------------------
@@ -73,6 +73,8 @@ $route['plots/(:num)'] = 'plots/index/$1';
 $route['add_plot'] = 'plots/add_plot';
 $route['plot/edit_plot/(:num)'] = 'plots/edit_plot/$1';
 $route['plots/buyer_details/(:num)'] = 'plots/buyer_details/$1';
+$route['plots/import'] = 'plots/import';
+$route['plots/download_sample_format'] = 'plots/download_sample_format';
 
 $route['users'] = 'user';
 $route['add_user'] = 'user/add_user';

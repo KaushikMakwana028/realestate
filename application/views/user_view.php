@@ -500,7 +500,8 @@
 	.usr-table-wrap {
 		border-radius: 12px;
 		border: 1px solid #f0f1f3;
-		overflow: hidden;
+		overflow-x: auto;
+		overflow-y: hidden;
 	}
 
 	.usr-table {

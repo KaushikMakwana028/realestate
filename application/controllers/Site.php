@@ -142,26 +142,38 @@ class Site extends My_Controller
         $limit = 10;
         $offset = ($page - 1) * $limit;
 
-        $search = $this->input->post('search');
+        $search = trim((string) $this->input->post('search'));
         $site_id = $this->input->post('site_id');
         $month_filter = trim((string) $this->input->post('month_filter'));
         if (!preg_match('/^\d{4}-\d{2}$/', $month_filter)) {
             $month_filter = '';
         }
+        $search_like = $this->db->escape_like_str($search);
 
         /* ----------------------------------------------
            COUNT QUERY
         ---------------------------------------------- */
         $this->db->from('expenses');
-        $this->db->where('admin_id', $admin_id);
-        $this->db->where('isActive', 1);  // Only active
+        $this->db->join('sites', 'sites.id = expenses.site_id', 'left');
+        $this->db->join('users', 'users.id = expenses.user_id', 'left');
+        $this->db->join('user_master', 'user_master.id = expenses.admin_id', 'left');
+        $this->db->where('expenses.admin_id', $admin_id);
+        $this->db->where('expenses.isActive', 1);  // Only active
 
         if (!empty($site_id)) {
-            $this->db->where('site_id', $site_id);
+            $this->db->where('expenses.site_id', $site_id);
         }
 
         if (!empty($search)) {
-            $this->db->like('description', $search);
+            $this->db->group_start();
+            $this->db->like('expenses.description', $search);
+            $this->db->or_like('sites.name', $search);
+            $this->db->or_like('users.name', $search);
+            $this->db->or_like('user_master.name', $search);
+            $this->db->or_like('expenses.status', $search);
+            $this->db->or_like('expenses.date', $search);
+            $this->db->or_where("CAST(expenses.amount AS CHAR) LIKE '%{$search_like}%'", null, false);
+            $this->db->group_end();
         }
 
         if ($month_filter !== '') {
@@ -201,7 +213,15 @@ class Site extends My_Controller
         }
 
         if (!empty($search)) {
+            $this->db->group_start();
             $this->db->like('expenses.description', $search);
+            $this->db->or_like('sites.name', $search);
+            $this->db->or_like('users.name', $search);
+            $this->db->or_like('user_master.name', $search);
+            $this->db->or_like('expenses.status', $search);
+            $this->db->or_like('expenses.date', $search);
+            $this->db->or_where("CAST(expenses.amount AS CHAR) LIKE '%{$search_like}%'", null, false);
+            $this->db->group_end();
         }
 
         if ($month_filter !== '') {
@@ -220,15 +240,26 @@ class Site extends My_Controller
 
         $this->db->select('status, COUNT(*) AS total_count, COALESCE(SUM(amount), 0) AS total_amount');
         $this->db->from('expenses');
-        $this->db->where('admin_id', $admin_id);
-        $this->db->where('isActive', 1);
+        $this->db->join('sites', 'sites.id = expenses.site_id', 'left');
+        $this->db->join('users', 'users.id = expenses.user_id', 'left');
+        $this->db->join('user_master', 'user_master.id = expenses.admin_id', 'left');
+        $this->db->where('expenses.admin_id', $admin_id);
+        $this->db->where('expenses.isActive', 1);
 
         if (!empty($site_id)) {
-            $this->db->where('site_id', $site_id);
+            $this->db->where('expenses.site_id', $site_id);
         }
 
         if (!empty($search)) {
-            $this->db->like('description', $search);
+            $this->db->group_start();
+            $this->db->like('expenses.description', $search);
+            $this->db->or_like('sites.name', $search);
+            $this->db->or_like('users.name', $search);
+            $this->db->or_like('user_master.name', $search);
+            $this->db->or_like('expenses.status', $search);
+            $this->db->or_like('expenses.date', $search);
+            $this->db->or_where("CAST(expenses.amount AS CHAR) LIKE '%{$search_like}%'", null, false);
+            $this->db->group_end();
         }
 
         if ($month_filter !== '') {

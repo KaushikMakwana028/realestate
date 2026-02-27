@@ -287,7 +287,7 @@ class SuperAdmin extends My_Controller
 
         $total_records = $this->db->count_all_results('', FALSE);
 
-        $this->db->select('s.id, s.name, s.location, s.total_plots, s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.listed_map, s.admin_id, um.name as admin_name');
+        $this->db->select("s.id, s.name, s.location, s.total_plots, s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.listed_map, s.admin_id, um.name as admin_name, (SELECT COUNT(*) FROM plots p WHERE p.site_id = s.id AND p.isActive = 1) AS plot_count");
         $this->db->order_by('s.created_at', 'DESC');
         $this->db->order_by('s.id', 'DESC');
         $this->db->limit($limit, $offset);
@@ -489,9 +489,10 @@ class SuperAdmin extends My_Controller
         $total_records = $this->db->count_all_results(); // ✅ CLEAN COUNT
 
         // -------- GET PAGINATED DATA (new fresh query) --------
-        $this->db->select('s.id, s.name, s.location, s.total_plots, 
-                       s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.listed_map, s.admin_id, 
-                       um.name as admin_name');
+        $this->db->select("s.id, s.name, s.location, s.total_plots,
+                       s.site_images, s.site_images_pending, s.site_images_status, s.site_images_reason, s.site_map, s.listed_map, s.admin_id,
+                       um.name as admin_name,
+                       (SELECT COUNT(*) FROM plots p WHERE p.site_id = s.id AND p.isActive = 1) AS plot_count");
         $this->db->from('sites s');
         $this->db->join('user_master um', 'um.id = s.admin_id', 'left');
         $this->db->where('s.isActive', 1);
@@ -570,19 +571,19 @@ class SuperAdmin extends My_Controller
 
         /* ---------------- DATA QUERY ---------------- */
 
-        $this->db->select('id, name, location, area, total_plots, site_images, site_map, listed_map, site_images_status');
-        $this->db->from('sites');
-        $this->db->where('admin_id', (int) $admin_id);
-        $this->db->where('isActive', 1);
+        $this->db->select("s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.listed_map, s.site_images_status, (SELECT COUNT(*) FROM plots p WHERE p.site_id = s.id AND p.isActive = 1) AS plot_count");
+        $this->db->from('sites s');
+        $this->db->where('s.admin_id', (int) $admin_id);
+        $this->db->where('s.isActive', 1);
 
         if ($search !== '') {
             $this->db->group_start()
-                ->like('name', $search)
-                ->or_like('location', $search)
+                ->like('s.name', $search)
+                ->or_like('s.location', $search)
                 ->group_end();
         }
 
-        $this->db->order_by('id', 'DESC');
+        $this->db->order_by('s.id', 'DESC');
         $this->db->limit($limit, $offset);
 
         $sites = $this->db->get()->result();
@@ -712,6 +713,10 @@ class SuperAdmin extends My_Controller
             ->order_by('id', 'DESC')
             ->get()
             ->result();
+
+        // Keep total_plots in detail response aligned to live active plot count.
+        $site->plot_count = count($plots);
+        $site->total_plots = $site->plot_count;
 
         echo json_encode([
             'status' => true,

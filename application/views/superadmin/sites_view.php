@@ -81,7 +81,7 @@
                                         <td class="fw-semibold"><?= htmlspecialchars($site->name ?? '-'); ?></td>
                                         <td><small><?= htmlspecialchars($site->admin_name ?? '-'); ?></small></td>
                                         <td><small><?= htmlspecialchars($site->location ?? '-'); ?></small></td>
-                                        <td class="text-center"><span class="badge bg-info"><?= $site->total_plots ?? 0; ?></span></td>
+                                        <td class="text-center"><span class="badge bg-info"><?= (int) ($site->plot_count ?? $site->total_plots ?? 0); ?></span></td>
 
                                         <td class="text-center">
                                             <?php if ($img_status === 'pending'): ?>
