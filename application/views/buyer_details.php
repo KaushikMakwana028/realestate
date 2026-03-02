@@ -177,7 +177,7 @@
                              style="background: linear-gradient(135deg, #e8f8f0 0%, #f0fdf4 100%); border-radius: 12px;">
                             <small class="text-muted d-block mb-1">Total Price</small>
                             <h3 class="fw-bold text-success mb-0">
-                                ₹<?= isset($payment->total_price) ? number_format($payment->total_price) : "-" ?>
+                                &#8377;<?= isset($payment->total_price) ? number_format($payment->total_price) : "-" ?>
                             </h3>
                         </div>
 
@@ -202,7 +202,7 @@
                             </span>
                             <span class="fw-bold <?= (isset($remaining_amount) && $remaining_amount > 0) ? 'text-danger' : 'text-success' ?>"
                                   style="font-size: 16px;">
-                                ₹<?= isset($remaining_amount) ? number_format($remaining_amount) : "-" ?>
+                                &#8377;<?= isset($remaining_amount) ? number_format($remaining_amount) : "-" ?>
                             </span>
                         </div>
 
@@ -227,7 +227,7 @@
                              style="background: linear-gradient(135deg, #f0e6ff 0%, #faf5ff 100%); border-radius: 12px;">
                             <small class="text-muted d-block mb-1">Monthly EMI</small>
                             <h3 class="fw-bold mb-0" style="color: #7c3aed;">
-                                ₹<?= isset($emi[0]->emi_amount) ? number_format($emi[0]->emi_amount) : "-" ?>
+                                &#8377;<?= isset($emi[0]->emi_amount) ? number_format($emi[0]->emi_amount) : "-" ?>
                             </h3>
                         </div>
 

@@ -181,7 +181,7 @@
 						<i class="bx bx-search search-icon"></i>
 						<input type="text" id="serchPlot" class="form-control search-input"
 							placeholder="Search by plot number, buyer name, facing...">
-						<span class="search-shortcut" id="searchShortcut">⌘K</span>
+						<span class="search-shortcut" id="searchShortcut">Ctrl+K</span>
 					</div>
 					<div class="toolbar-actions">
 						<!-- <div class="dropdown">

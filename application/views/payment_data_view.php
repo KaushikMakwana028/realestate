@@ -101,6 +101,25 @@
                     </div>
                 </div>
 
+                <div class="emi-summary-wrap">
+                    <div class="emi-card">
+                        <div class="emi-card-label">Total Installments</div>
+                        <div class="emi-card-value" id="statTotalInstallments">0</div>
+                    </div>
+                    <div class="emi-card">
+                        <div class="emi-card-label">Remaining Installments</div>
+                        <div class="emi-card-value" id="statRemainingInstallments">0</div>
+                    </div>
+                    <div class="emi-card">
+                        <div class="emi-card-label">Pending Amount</div>
+                        <div class="emi-card-value" id="statPendingAmount">INR 0.00</div>
+                    </div>
+                    <div class="emi-card">
+                        <div class="emi-card-label">Receiving Amount</div>
+                        <div class="emi-card-value" id="statReceivingAmount">INR 0.00</div>
+                    </div>
+                </div>
+
                 <!-- Table Responsive -->
                 <div class="table-responsive">
                     <table class="table payment-table mb-0" id="paymentTable">
@@ -281,6 +300,37 @@
 
     .stat-item:last-child {
         border-right: none;
+    }
+
+    .emi-summary-wrap {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+        padding: 14px;
+        border-bottom: 1px solid #eef0f8;
+        background: #fff;
+    }
+
+    .emi-card {
+        background: #f8f9ff;
+        border: 1px solid #e6e9f4;
+        border-radius: 10px;
+        padding: 12px;
+    }
+
+    .emi-card-label {
+        font-size: 11px;
+        color: #6b7280;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        margin-bottom: 4px;
+    }
+
+    .emi-card-value {
+        font-size: 18px;
+        font-weight: 700;
+        color: #0f3460;
+        line-height: 1.2;
     }
 
     .stat-icon {
@@ -549,6 +599,18 @@
     .custom-pagination .page-item.disabled .page-link {
         color: #ccc;
         border-color: #eee;
+    }
+
+    @media (max-width: 992px) {
+        .emi-summary-wrap {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 576px) {
+        .emi-summary-wrap {
+            grid-template-columns: 1fr;
+        }
     }
 
 </style>

@@ -2944,19 +2944,179 @@ $(document).ready(function () {
 $(document).ready(function () {
 	// Run code ONLY if #payment_data table exists
 	if ($("#payment_data").length > 0) {
-		let buyer_id = $("#buyer_id").val();
+		const buyer_id = ($("#buyer_id").val() || "").trim();
 		let currentPage = 1;
+		let currentSearch = "";
+		let searchTimer = null;
+
+		function escapeHtml(value) {
+			return String(value ?? "")
+				.replace(/&/g, "&amp;")
+				.replace(/</g, "&lt;")
+				.replace(/>/g, "&gt;")
+				.replace(/"/g, "&quot;")
+				.replace(/'/g, "&#39;");
+		}
+
+		function toAmount(value) {
+			const parsed = parseFloat(value);
+			return Number.isFinite(parsed) ? parsed : 0;
+		}
+
+		function formatCurrency(value) {
+			try {
+				return value.toLocaleString("en-IN", {
+					style: "currency",
+					currency: "INR",
+					maximumFractionDigits: 2,
+				});
+			} catch (e) {
+				return "INR " + value.toFixed(2);
+			}
+		}
+
+		function setStats(totalRecords, totalPaid, uniqueBuyers) {
+			$("#statTotal").text(totalRecords);
+			$("#statAmount").text(formatCurrency(totalPaid));
+			$("#statBuyers").text(uniqueBuyers);
+		}
+
+		function setEmiSummary(summary) {
+			const totalInstallments = parseInt(summary?.total_installments || 0, 10) || 0;
+			const remainingInstallments =
+				parseInt(summary?.remaining_installments || 0, 10) || 0;
+			const pendingAmount = toAmount(summary?.pending_amount || 0);
+			const receivingAmount = toAmount(summary?.receiving_amount || 0);
+
+			$("#statTotalInstallments").text(totalInstallments);
+			$("#statRemainingInstallments").text(remainingInstallments);
+			$("#statPendingAmount").text(formatCurrency(pendingAmount));
+			$("#statReceivingAmount").text(formatCurrency(receivingAmount));
+		}
+
+		function renderMessage(message, cssClass = "text-muted") {
+			$("#payment_data").html(
+				`<tr><td colspan="8" class="text-center ${cssClass} py-4">${escapeHtml(message)}</td></tr>`,
+			);
+		}
+
+		function renderRows(res, page) {
+			const logs = Array.isArray(res.logs) ? res.logs : [];
+			const userName = res.user?.name || "-";
+			const buyerName = res.buyer?.name || "-";
+			const siteName = res.plot?.site_name || "-";
+			const plotNumber = res.plot?.plot_number || "-";
+			let index = (page - 1) * 10 + 1;
+			let html = "";
+			let pagePaid = 0;
+
+			logs.forEach((log) => {
+				const amount = toAmount(log.paid_amount);
+				const safeDate = escapeHtml(log.created_on || "-");
+				const safeAmount = escapeHtml(formatCurrency(amount));
+				pagePaid += amount;
+
+				const rawStatus = (log.status || "approve").toString().toLowerCase();
+				const statusValue = rawStatus === "requested" ? "pending" : rawStatus;
+				const statusDataAttr = log.id
+					? `data-id="${escapeHtml(log.id)}" data-source="${escapeHtml(log.log_source || "cash")}"`
+					: `title="Initial payment entry cannot be changed"`;
+				const optionSelected = function (value) {
+					return statusValue == value ? "selected" : "";
+				};
+				const actionHtml = `
+					<select class="form-select form-select-sm statuspayment" ${statusDataAttr}>
+						<option value="pending" ${optionSelected("pending")}>Pending</option>
+						<option value="approve" ${optionSelected("approve")}>Approve</option>
+						<option value="reject" ${optionSelected("reject")}>Reject</option>
+					</select>
+				`;
+
+				html += `
+					<tr>
+						<td class="text-center"><span class="index-badge">${index++}</span></td>
+						<td>
+							<div class="name-cell">
+								<span class="avatar-circle av-blue">${escapeHtml(String(userName).charAt(0).toUpperCase() || "U")}</span>
+								<span class="name-text">${escapeHtml(userName)}</span>
+							</div>
+						</td>
+						<td>
+							<div class="name-cell">
+								<span class="avatar-circle av-purple">${escapeHtml(String(buyerName).charAt(0).toUpperCase() || "B")}</span>
+								<span class="name-text">${escapeHtml(buyerName)}</span>
+							</div>
+						</td>
+						<td><span class="site-badge">${escapeHtml(siteName)}</span></td>
+						<td><span class="plot-badge">${escapeHtml(plotNumber)}</span></td>
+						<td><span class="date-cell">${safeDate}</span></td>
+						<td><span class="amount-cell">${safeAmount}</span></td>
+						<td class="text-center">${actionHtml}</td>
+					</tr>
+				`;
+			});
+
+			$("#payment_data").html(html);
+
+			const totalRows = parseInt(res.pagination?.total_rows || logs.length, 10) || 0;
+			const start = totalRows === 0 ? 0 : (page - 1) * 10 + 1;
+			const end = Math.min(page * 10, totalRows);
+			$("#paginationInfo").html(
+				`Showing <strong>${start}-${end}</strong> of <strong>${totalRows}</strong> records`,
+			);
+
+			const receivingAmount = toAmount(res.summary?.receiving_amount ?? pagePaid);
+			setStats(totalRows, receivingAmount, buyerName !== "-" ? 1 : 0);
+			setEmiSummary(res.summary || {});
+		}
+
+		function renderPagination(totalPages, current) {
+			const safeTotalPages = Math.max(1, parseInt(totalPages || 1, 10));
+			const safeCurrent = Math.min(
+				safeTotalPages,
+				Math.max(1, parseInt(current || 1, 10)),
+			);
+			const $list = $("#paginationList");
+			const $prev = $("#prevPage");
+			const $next = $("#nextPage");
+
+			$list.find(".js-page-num").remove();
+
+			for (let i = 1; i <= safeTotalPages; i++) {
+				$(
+					`<li class="page-item js-page-num ${i === safeCurrent ? "active" : ""}">
+						<a class="page-link" href="javascript:;" data-page="${i}">${i}</a>
+					</li>`,
+				).insertBefore($next);
+			}
+
+			$prev.toggleClass("disabled", safeCurrent <= 1);
+			$prev.find(".page-link").attr("data-page", Math.max(1, safeCurrent - 1));
+			$next.toggleClass("disabled", safeCurrent >= safeTotalPages);
+			$next
+				.find(".page-link")
+				.attr("data-page", Math.min(safeTotalPages, safeCurrent + 1));
+		}
 
 		function loadPaymentData(page = 1, search = "") {
 			currentPage = page;
+			currentSearch = search || "";
 
 			if (!buyer_id) {
-				$("#payment_data").html(
-					`<tr><td colspan='8' class="text-center text-danger">Buyer ID missing</td></tr>`,
+				renderMessage("Buyer ID missing", "text-danger");
+				$("#paginationList .js-page-num").remove();
+				$("#prevPage, #nextPage").addClass("disabled");
+				setStats(0, 0, 0);
+				setEmiSummary({});
+				$("#paginationInfo").html(
+					"Showing <strong>0</strong> of <strong>0</strong> records",
 				);
-				$(".pagination").html("");
 				return;
 			}
+
+			$("#payment_data").html(
+				`<tr class="skeleton-row"><td colspan="8"><div class="skeleton-wrap"><div class="skeleton-line"></div><div class="skeleton-line short"></div><div class="skeleton-line"></div><div class="skeleton-line short"></div></div></td></tr>`,
+			);
 
 			$.ajax({
 				url: site_url + "plots/payment_data_api",
@@ -2968,95 +3128,88 @@ $(document).ready(function () {
 				},
 				dataType: "json",
 				success: function (res) {
-					if (!res.status) {
-						$("#payment_data").html(
-							`<tr><td colspan='8' class="text-center">${res.message}</td></tr>`,
+					if (!res || !res.status) {
+						renderMessage(res?.message || "Unable to load payment data");
+						$("#paginationList .js-page-num").remove();
+						$("#prevPage, #nextPage").addClass("disabled");
+						setStats(0, 0, 0);
+						setEmiSummary({});
+						$("#paginationInfo").html(
+							"Showing <strong>0</strong> of <strong>0</strong> records",
 						);
-						$(".pagination").html(""); // clear pagination if no data
 						return;
 					}
 
 					if (!res.logs || res.logs.length === 0) {
-						$("#payment_data").html(
-							`<tr><td colspan='8' class="text-center text-muted">No payment records found</td></tr>`,
+						renderMessage("No payment records found");
+						$("#paginationList .js-page-num").remove();
+						$("#prevPage, #nextPage").addClass("disabled");
+						setStats(0, 0, 0);
+						setEmiSummary(res.summary || {});
+						$("#paginationInfo").html(
+							"Showing <strong>0</strong> of <strong>0</strong> records",
 						);
-						$(".pagination").html("");
 						return;
 					}
 
-					let html = "";
-					let index = (page - 1) * 10 + 1;
-
-					res.logs.forEach((log) => {
-						html += `
-                            <tr>
-                                <td>${index++}</td>
-                                <td>${res.user?.name ?? "-"}</td>
-                                <td>${res.buyer?.name ?? "-"}</td>
-                                <td>${res.plot?.site_name ?? "-"}</td>
-                                <td>${res.plot?.plot_number ?? "-"}</td>
-                                <td>${log.created_on}</td>
-                                <td>${log.paid_amount}</td>
-                                 <td>
-                            <select class="form-select statuspayment" data-id="${log.id}">
-                    <option value="pending" ${log.status == "pending" ? "selected" : ""}>Pending</option>
-                    <option value="approve" ${log.status == "approve" ? "selected" : ""}>Approve</option>
-                    <option value="reject" ${log.status == "reject" ? "selected" : ""}>Reject</option>
-                </select>
-                        </td>
-                            </tr>`;
-					});
-
-					$("#payment_data").html(html);
-
-					loadPagination(
-						res.pagination.total_pages,
-						res.pagination.current_page,
+					renderRows(res, page);
+					renderPagination(
+						res.pagination?.total_pages || 1,
+						res.pagination?.current_page || 1,
+					);
+				},
+				error: function () {
+					renderMessage("Server error while loading payments", "text-danger");
+					$("#paginationList .js-page-num").remove();
+					$("#prevPage, #nextPage").addClass("disabled");
+					setStats(0, 0, 0);
+					setEmiSummary({});
+					$("#paginationInfo").html(
+						"Showing <strong>0</strong> of <strong>0</strong> records",
 					);
 				},
 			});
 		}
 
-		// Pagination rendering
-		function loadPagination(totalPages, current) {
-			let phtml = "";
-
-			phtml += `<li class="page-item ${current == 1 ? "disabled" : ""}">
-                        <a class="page-link" href="#" data-page="${current - 1}">Previous</a>
-                      </li>`;
-
-			for (let i = 1; i <= totalPages; i++) {
-				phtml += `<li class="page-item ${i == current ? "active" : ""}">
-                            <a class="page-link" href="#" data-page="${i}">${i}</a>
-                          </li>`;
-			}
-
-			phtml += `<li class="page-item ${current == totalPages ? "disabled" : ""}">
-                        <a class="page-link" href="#" data-page="${current + 1}">Next</a>
-                      </li>`;
-
-			$(".pagination").html(phtml);
-		}
-
-		// Pagination Click
-		$(document).on("click", ".pagination a", function (e) {
+		$(document).on("click", "#paginationList .page-link", function (e) {
 			e.preventDefault();
-			let page = $(this).data("page");
-			if (page) loadPaymentData(page, $("#serchPlot").val());
+			const $item = $(this).closest(".page-item");
+			if ($item.hasClass("disabled") || $item.hasClass("active")) return;
+			const nextPage = parseInt($(this).data("page"), 10);
+			if (!nextPage || nextPage === currentPage) return;
+			loadPaymentData(nextPage, currentSearch);
 		});
 
-		// Search
 		$("#serchPlot").on("keyup", function () {
-			loadPaymentData(1, $(this).val());
+			const query = $(this).val();
+			clearTimeout(searchTimer);
+			searchTimer = setTimeout(function () {
+				loadPaymentData(1, query);
+			}, 250);
 		});
 
-		// Initial Load
-		loadPaymentData();
+		loadPaymentData(1, "");
 	}
 });
+$(document).on("focus mousedown", ".statuspayment", function () {
+	$(this).data("prevValue", $(this).val());
+});
 $(document).on("change", ".statuspayment", function () {
-	let log_id = $(this).data("id");
-	let status = $(this).val();
+	let $select = $(this);
+	let log_id = $select.data("id");
+	let source = ($select.data("source") || "cash").toString().toLowerCase();
+	let status = $select.val();
+	let previousStatus = $select.data("prevValue") || "pending";
+
+	if (!log_id) {
+		Swal.fire(
+			"Not allowed",
+			"This entry is from initial payment data and cannot be updated.",
+			"info",
+		);
+		$select.val(previousStatus);
+		return;
+	}
 
 	Swal.fire({
 		title: "Are you sure?",
@@ -3070,19 +3223,38 @@ $(document).on("change", ".statuspayment", function () {
 			$.ajax({
 				url: site_url + "plots/update_payment_status",
 				method: "POST",
-				data: { id: log_id, status: status },
+				dataType: "json",
+				data: { id: log_id, status: status, source: source },
+				beforeSend: function () {
+					$select.prop("disabled", true);
+				},
 				success: function (res) {
-					console.log("Status updated:", res);
+					if (res && res.status) {
+						Swal.fire(
+							"Updated!",
+							"Payment status updated successfully.",
+							"success",
+						);
+						return;
+					}
+
 					Swal.fire(
-						"Updated!",
-						"Payment status updated successfully.",
-						"success",
+						"Failed",
+						res?.message || "Unable to update payment status.",
+						"error",
 					);
+					$select.val(previousStatus);
 				},
 				error: function () {
 					Swal.fire("Error", "Server error!", "error");
+					$select.val(previousStatus);
+				},
+				complete: function () {
+					$select.prop("disabled", false);
 				},
 			});
+		} else {
+			$select.val(previousStatus);
 		}
 	});
 });
