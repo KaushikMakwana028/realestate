@@ -1304,9 +1304,9 @@
 	// ═══════════════════════════════════════
 	// Filter Chips
 	// ═══════════════════════════════════════
-	document.querySelectorAll('.usr-filter-chip').forEach(function (chip) {
-		chip.addEventListener('click', function () {
-			document.querySelectorAll('.usr-filter-chip').forEach(function (c) {
+	document.querySelectorAll('.usr-filter-chip').forEach(function(chip) {
+		chip.addEventListener('click', function() {
+			document.querySelectorAll('.usr-filter-chip').forEach(function(c) {
 				c.classList.remove('active');
 			});
 			this.classList.add('active');
@@ -1315,7 +1315,7 @@
 			var rows = document.querySelectorAll('#userTable tr');
 			var hasVisible = false;
 
-			rows.forEach(function (row) {
+			rows.forEach(function(row) {
 				var status = (row.getAttribute('data-status') || '').toLowerCase();
 				if (filter === 'all' || status === filter) {
 					row.style.display = '';
@@ -1335,17 +1335,17 @@
 	// ═══════════════════════════════════════
 	// Search with debounce
 	// ═══════════════════════════════════════
-	(function () {
+	(function() {
 		var searchTimer;
 		var searchInput = document.getElementById('serchUser');
 		if (searchInput) {
-			searchInput.addEventListener('input', function () {
+			searchInput.addEventListener('input', function() {
 				clearTimeout(searchTimer);
 				var val = this.value.toLowerCase();
-				searchTimer = setTimeout(function () {
+				searchTimer = setTimeout(function() {
 					var rows = document.querySelectorAll('#userTable tr');
 					var hasVisible = false;
-					rows.forEach(function (row) {
+					rows.forEach(function(row) {
 						var text = row.textContent.toLowerCase();
 						if (text.indexOf(val) > -1) {
 							row.style.display = '';
@@ -1371,7 +1371,7 @@
 	// ═══════════════════════════════════════
 	// Keyboard shortcut (Cmd/Ctrl + K)
 	// ═══════════════════════════════════════
-	document.addEventListener('keydown', function (e) {
+	document.addEventListener('keydown', function(e) {
 		if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
 			e.preventDefault();
 			var input = document.getElementById('serchUser');
@@ -1382,7 +1382,7 @@
 	// ═══════════════════════════════════════
 	// User Detail Modal
 	// ═══════════════════════════════════════
-	document.addEventListener('click', function (e) {
+	document.addEventListener('click', function(e) {
 		var btn = e.target.closest('.viewUserDetail');
 		if (!btn) return;
 
@@ -1407,16 +1407,18 @@
 			var upad = row.getAttribute('data-upad') || '0';
 			var payable = row.getAttribute('data-payable') || '0';
 			var image = row.getAttribute('data-image') || '';
-			var initials = name.split(' ').map(function (w) { return w[0]; }).join('').toUpperCase().substring(0, 2);
+			var initials = name.split(' ').map(function(w) {
+				return w[0];
+			}).join('').toUpperCase().substring(0, 2);
 			var colorIdx = (name.charCodeAt(0) % 6) + 1;
 
-			var avatarHtml = image
-				? '<img src="' + image + '" class="usr-modal-avatar" alt="' + name + '">'
-				: '<div class="usr-modal-avatar-placeholder usr-avatar-color-' + colorIdx + '">' + initials + '</div>';
+			var avatarHtml = image ?
+				'<img src="' + image + '" class="usr-modal-avatar" alt="' + name + '">' :
+				'<div class="usr-modal-avatar-placeholder usr-avatar-color-' + colorIdx + '">' + initials + '</div>';
 
-			var statusBadge = status.toLowerCase() === 'active'
-				? '<span class="usr-status usr-status--active">Active</span>'
-				: '<span class="usr-status usr-status--inactive">Inactive</span>';
+			var statusBadge = status.toLowerCase() === 'active' ?
+				'<span class="usr-status usr-status--active">Active</span>' :
+				'<span class="usr-status usr-status--inactive">Inactive</span>';
 
 			content.innerHTML =
 				'<div class="usr-modal-profile">' +
@@ -1464,6 +1466,3 @@
 		}
 	});
 </script>
-
-
-

@@ -152,9 +152,9 @@ $(document).ready(function () {
 				success: function (response) {
 					Swal.close();
 					if (response.status === "success") {
-						Swal.fire("Success!", response.message, "success");
-						$("#addSiteForm")[0].reset();
-						$("#addSiteForm").removeClass("was-validated");
+						Swal.fire("Success!", response.message, "success").then(() => {
+							window.location.href = site_url + "site";
+						});
 					} else {
 						Swal.fire("Error!", response.message, "error");
 					}
@@ -228,9 +228,14 @@ $(document).ready(function () {
 				success: function (response) {
 					Swal.close();
 					if (response.status === "success") {
-						Swal.fire("Success!", response.message, "success");
-						$("#addPlotForm")[0].reset();
-						$("#addPlotForm").removeClass("was-validated");
+						Swal.fire("Success!", response.message, "success").then(() => {
+							const siteId = formData.get("site_id");
+							if (siteId) {
+								window.location.href = site_url + "plots/" + siteId;
+							} else {
+								window.location.href = site_url + "plots";
+							}
+						});
 					} else {
 						Swal.fire("Error!", response.message, "error");
 					}
@@ -358,7 +363,12 @@ $(document).ready(function () {
 						title: "Updated!",
 						text: response.message,
 					}).then(() => {
-						location.reload();
+						const siteId = formData.get("site_id");
+						if (siteId) {
+							window.location.href = site_url + "plots/" + siteId;
+						} else {
+							window.location.href = site_url + "plots";
+						}
 					});
 				} else {
 					Swal.fire({
@@ -1068,9 +1078,14 @@ $(document).ready(function () {
 	const buyerName = String(plot.buyer_name || "").trim();
 	const buyerId   = plot.buyer_id || "";
 
-	const hasBuyer = statusKey === "sold" && buyerName.length > 0;
+	const hasBuyer =
+		statusKey === "sold" &&
+		buyerName.length > 0 &&
+		String(buyerId).trim().length > 0;
 
 	const safeBuyerName = escapeHtml(buyerName || "-");
+	const pendingInstallmentRequests =
+		parseInt(plot.pending_installment_requests || 0, 10) || 0;
 
 	const buyerHtml = hasBuyer
 		? `<div class="buyer-cell">
@@ -1115,10 +1130,24 @@ $(document).ready(function () {
 
 		${
 			hasBuyer
-				? `<a href="${site_url}plots/buyer_details/${plot.id}"
+				? `<a href="${site_url}plots/buyer_details/${buyerId}"
 					  class="btn-action btn-action-view"
 					  data-tooltip="Buyer Details">
 						<i class="bx bx-user-pin"></i>
+				   </a>`
+				: ""
+		}
+		${
+			hasBuyer
+				? `<a href="${site_url}payment_data/${buyerId}"
+					  class="btn-action btn-action-view"
+					  data-tooltip="${
+							pendingInstallmentRequests > 0
+								? pendingInstallmentRequests +
+									" installment request(s) pending"
+								: "Payment Data"
+					  }">
+						<i class="bx bx-wallet"></i>
 				   </a>`
 				: ""
 		}
@@ -1168,9 +1197,23 @@ $(document).ready(function () {
 
 	${
 		hasBuyer
-			? `<a href="${site_url}plots/buyer_details/${plot.id}"
+			? `<a href="${site_url}plots/buyer_details/${buyerId}"
 				  class="btn-action btn-action-view">
 					<i class="bx bx-user-pin"></i>
+			   </a>`
+			: ""
+	}
+	${
+		hasBuyer
+			? `<a href="${site_url}payment_data/${buyerId}"
+				  class="btn-action btn-action-view"
+				  title="${
+						pendingInstallmentRequests > 0
+							? pendingInstallmentRequests +
+								" installment request(s) pending"
+							: "Payment Data"
+				  }">
+					<i class="bx bx-wallet"></i>
 			   </a>`
 			: ""
 	}
@@ -2975,6 +3018,29 @@ $(document).ready(function () {
 			}
 		}
 
+		function formatDateOnly(value) {
+			const raw = (value || "").toString().trim();
+			if (!raw) return "-";
+			const datePart = raw.split(" ")[0];
+			if (/^\d{4}-\d{2}-\d{2}$/.test(datePart)) return datePart;
+			const dt = new Date(raw);
+			if (!Number.isNaN(dt.getTime())) {
+				const y = dt.getFullYear();
+				const m = String(dt.getMonth() + 1).padStart(2, "0");
+				const d = String(dt.getDate()).padStart(2, "0");
+				return `${y}-${m}-${d}`;
+			}
+			return raw;
+		}
+
+		function getInstallmentRowClass(statusValue, isInstallmentEntry, manualPaidByNote) {
+			if (!isInstallmentEntry) return "";
+			if (statusValue === "approve") return "installment-approve-row";
+			if (statusValue === "reject") return "installment-reject-row";
+			if (manualPaidByNote) return "installment-request-row";
+			return "";
+		}
+
 		function setStats(totalRecords, totalPaid, uniqueBuyers) {
 			$("#statTotal").text(totalRecords);
 			$("#statAmount").text(formatCurrency(totalPaid));
@@ -2987,11 +3053,29 @@ $(document).ready(function () {
 				parseInt(summary?.remaining_installments || 0, 10) || 0;
 			const pendingAmount = toAmount(summary?.pending_amount || 0);
 			const receivingAmount = toAmount(summary?.receiving_amount || 0);
+			const nextInstallmentDate = (summary?.next_installment_date || "").toString();
+			const nextInstallmentAmount = toAmount(summary?.next_installment_amount || 0);
+			let nextDateLabel = "-";
+
+			if (nextInstallmentDate) {
+				const dt = new Date(nextInstallmentDate + "T00:00:00");
+				if (!Number.isNaN(dt.getTime())) {
+					nextDateLabel = dt.toLocaleDateString("en-IN", {
+						year: "numeric",
+						month: "short",
+						day: "2-digit",
+					});
+				} else {
+					nextDateLabel = nextInstallmentDate;
+				}
+			}
 
 			$("#statTotalInstallments").text(totalInstallments);
 			$("#statRemainingInstallments").text(remainingInstallments);
 			$("#statPendingAmount").text(formatCurrency(pendingAmount));
 			$("#statReceivingAmount").text(formatCurrency(receivingAmount));
+			$("#statNextInstallmentDate").text(nextDateLabel);
+			$("#statNextInstallmentAmount").text(formatCurrency(nextInstallmentAmount));
 		}
 
 		function renderMessage(message, cssClass = "text-muted") {
@@ -3012,12 +3096,28 @@ $(document).ready(function () {
 
 			logs.forEach((log) => {
 				const amount = toAmount(log.paid_amount);
-				const safeDate = escapeHtml(log.created_on || "-");
 				const safeAmount = escapeHtml(formatCurrency(amount));
 				pagePaid += amount;
 
-				const rawStatus = (log.status || "approve").toString().toLowerCase();
+				const rawStatus = (log.status || "approve")
+					.toString()
+					.toLowerCase();
 				const statusValue = rawStatus === "requested" ? "pending" : rawStatus;
+				const sourceValue = (log.log_source || "cash").toString().toLowerCase();
+				const notesText = (log.notes || "").toString().toLowerCase();
+				const isInstallmentEntry =
+					sourceValue === "emi" || notesText.indexOf("emi") !== -1;
+				const isRequested = parseInt(log.is_requested || 0, 10) === 1;
+				const manualPaidByNote =
+					isRequested ||
+					(sourceValue === "cash" && amount > 0 && notesText.indexOf("paid") !== -1);
+				const rowClass = getInstallmentRowClass(
+					statusValue,
+					isInstallmentEntry,
+					manualPaidByNote,
+				);
+				const safeDate = escapeHtml(formatDateOnly(log.created_on || "-"));
+				const dateClass = statusValue === "approve" ? "date-cell paid-date" : "date-cell";
 				const statusDataAttr = log.id
 					? `data-id="${escapeHtml(log.id)}" data-source="${escapeHtml(log.log_source || "cash")}"`
 					: `title="Initial payment entry cannot be changed"`;
@@ -3033,7 +3133,7 @@ $(document).ready(function () {
 				`;
 
 				html += `
-					<tr>
+					<tr class="${rowClass}" data-installment="${isInstallmentEntry ? 1 : 0}" data-manual-paid="${manualPaidByNote ? 1 : 0}">
 						<td class="text-center"><span class="index-badge">${index++}</span></td>
 						<td>
 							<div class="name-cell">
@@ -3049,7 +3149,7 @@ $(document).ready(function () {
 						</td>
 						<td><span class="site-badge">${escapeHtml(siteName)}</span></td>
 						<td><span class="plot-badge">${escapeHtml(plotNumber)}</span></td>
-						<td><span class="date-cell">${safeDate}</span></td>
+						<td><span class="${dateClass}">${safeDate}</span></td>
 						<td><span class="amount-cell">${safeAmount}</span></td>
 						<td class="text-center">${actionHtml}</td>
 					</tr>
@@ -3230,9 +3330,36 @@ $(document).on("change", ".statuspayment", function () {
 				},
 				success: function (res) {
 					if (res && res.status) {
+						const $row = $select.closest("tr");
+						const isInstallmentRow = String($row.data("installment")) === "1";
+						const manualPaidByNote = String($row.data("manualPaid")) === "1";
+						$row.removeClass(
+							"installment-approve-row installment-reject-row installment-pending-row",
+						);
+						if (isInstallmentRow) {
+							const newRowClass = getInstallmentRowClass(
+								status,
+								isInstallmentRow,
+								manualPaidByNote,
+							);
+							if (newRowClass) {
+								$row.addClass(newRowClass);
+							}
+						}
+						$select.data("prevValue", status);
+
+						let successText = "Payment status updated successfully.";
+						if (isInstallmentRow && status === "approve") {
+							successText = "You received one installment successfully.";
+						} else if (isInstallmentRow && status === "reject") {
+							successText = "Installment marked as rejected.";
+						} else if (isInstallmentRow && status === "pending") {
+							successText = "Installment moved to pending.";
+						}
+
 						Swal.fire(
 							"Updated!",
-							"Payment status updated successfully.",
+							successText,
 							"success",
 						);
 						return;
@@ -3281,6 +3408,7 @@ $(document).on("click", ".update_form", function () {
 	let name = $("#fullName").val().trim();
 	let email = $("#email").val().trim();
 	let mobile = $("#mobile").val().trim();
+	let address = $("#address").val().trim();
 	let password = $("#password").val().trim();
 
 	let isValid = true;
@@ -3317,6 +3445,7 @@ $(document).on("click", ".update_form", function () {
 	formData.append("name", name);
 	formData.append("email", email);
 	formData.append("mobile", mobile);
+	formData.append("address", address);
 	formData.append("password", password);
 
 	// âœ… Profile image (optional)

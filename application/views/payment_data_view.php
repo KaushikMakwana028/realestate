@@ -48,14 +48,12 @@
                                 type="text"
                                 id="serchPlot"
                                 class="form-control search-input"
-                                placeholder="Search buyer..."
-                            >
+                                placeholder="Search buyer...">
                             <input
                                 type="hidden"
                                 id="buyer_id"
                                 name="buyer_id"
-                                value="<?= isset($buyer_id) ? $buyer_id : '' ?>"
-                            >
+                                value="<?= isset($buyer_id) ? $buyer_id : '' ?>">
                         </div>
 
                         <!-- Print Button -->
@@ -117,6 +115,11 @@
                     <div class="emi-card">
                         <div class="emi-card-label">Receiving Amount</div>
                         <div class="emi-card-value" id="statReceivingAmount">INR 0.00</div>
+                    </div>
+                    <div class="emi-card">
+                        <div class="emi-card-label">Next Installment</div>
+                        <div class="emi-card-value" id="statNextInstallmentDate">-</div>
+                        <div class="emi-card-subvalue" id="statNextInstallmentAmount">INR 0.00</div>
                     </div>
                 </div>
 
@@ -212,7 +215,6 @@
 
 <!-- ===================== STYLES ===================== -->
 <style>
-
     /* ===== Header Icon ===== */
     .header-icon-box {
         width: 42px;
@@ -304,18 +306,22 @@
 
     .emi-summary-wrap {
         display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
+        grid-template-columns: repeat(5, minmax(0, 1fr));
         gap: 12px;
         padding: 14px;
         border-bottom: 1px solid #eef0f8;
-        background: #fff;
+        background: #fbfcff;
     }
 
     .emi-card {
-        background: #f8f9ff;
+        background: #ffffff;
         border: 1px solid #e6e9f4;
         border-radius: 10px;
         padding: 12px;
+        min-height: 86px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
     }
 
     .emi-card-label {
@@ -344,9 +350,20 @@
         flex-shrink: 0;
     }
 
-    .stat-icon.blue   { background: #e8f0fe; color: #1a73e8; }
-    .stat-icon.green  { background: #e6f4ea; color: #34a853; }
-    .stat-icon.orange { background: #fef3e2; color: #f9ab00; }
+    .stat-icon.blue {
+        background: #e8f0fe;
+        color: #1a73e8;
+    }
+
+    .stat-icon.green {
+        background: #e6f4ea;
+        color: #34a853;
+    }
+
+    .stat-icon.orange {
+        background: #fef3e2;
+        color: #f9ab00;
+    }
 
     .stat-val {
         font-size: 16px;
@@ -386,6 +403,38 @@
 
     .payment-table tbody tr:hover {
         background-color: #f0f4ff !important;
+    }
+
+    .payment-table tbody tr.installment-pending-row td {
+        background: #fff9e8;
+    }
+
+    .payment-table tbody tr.installment-pending-row:hover td {
+        background: #fff3d1 !important;
+    }
+
+    .payment-table tbody tr.installment-approve-row td {
+        background: #ebfff4;
+    }
+
+    .payment-table tbody tr.installment-approve-row:hover td {
+        background: #ddfbe9 !important;
+    }
+
+    .payment-table tbody tr.installment-reject-row td {
+        background: #ffeef0;
+    }
+
+    .payment-table tbody tr.installment-reject-row:hover td {
+        background: #ffdfe3 !important;
+    }
+
+    .payment-table tbody tr.installment-request-row td {
+        background: #eaf4ff;
+    }
+
+    .payment-table tbody tr.installment-request-row:hover td {
+        background: #dbeeff !important;
     }
 
     .payment-table tbody td {
@@ -432,8 +481,13 @@
         flex-shrink: 0;
     }
 
-    .av-blue   { background: linear-gradient(135deg,#1a1a2e,#0f3460); }
-    .av-purple { background: linear-gradient(135deg,#6a0dad,#9b59b6); }
+    .av-blue {
+        background: linear-gradient(135deg, #1a1a2e, #0f3460);
+    }
+
+    .av-purple {
+        background: linear-gradient(135deg, #6a0dad, #9b59b6);
+    }
 
     .name-text {
         font-size: 13px;
@@ -472,11 +526,23 @@
         color: #27ae60;
     }
 
+    .emi-card-subvalue {
+        font-size: 12px;
+        color: #4b5563;
+        margin-top: 2px;
+        font-weight: 600;
+    }
+
     /* Date */
     .date-cell {
         font-size: 12px;
         color: #555;
         white-space: nowrap;
+    }
+
+    .date-cell.paid-date {
+        color: #0f9d58;
+        font-weight: 700;
     }
 
     /* Action buttons */
@@ -510,7 +576,7 @@
         background: #1a73e8;
         color: #fff;
         transform: translateY(-1px);
-        box-shadow: 0 3px 8px rgba(26,115,232,0.3);
+        box-shadow: 0 3px 8px rgba(26, 115, 232, 0.3);
     }
 
     .btn-pdf {
@@ -522,7 +588,7 @@
         background: #e94560;
         color: #fff;
         transform: translateY(-1px);
-        box-shadow: 0 3px 8px rgba(233,69,96,0.3);
+        box-shadow: 0 3px 8px rgba(233, 69, 96, 0.3);
     }
 
     /* ===== Empty State ===== */
@@ -568,8 +634,13 @@
     }
 
     @keyframes shimmer {
-        0%   { background-position: 200% 0; }
-        100% { background-position: -200% 0; }
+        0% {
+            background-position: 200% 0;
+        }
+
+        100% {
+            background-position: -200% 0;
+        }
     }
 
     /* ===== Pagination ===== */
@@ -601,7 +672,13 @@
         border-color: #eee;
     }
 
-    @media (max-width: 992px) {
+    @media (max-width: 1200px) {
+        .emi-summary-wrap {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+        }
+    }
+
+    @media (max-width: 768px) {
         .emi-summary-wrap {
             grid-template-columns: repeat(2, minmax(0, 1fr));
         }
@@ -612,5 +689,4 @@
             grid-template-columns: 1fr;
         }
     }
-
 </style>

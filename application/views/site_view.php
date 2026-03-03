@@ -457,9 +457,11 @@
 			background-color: #10b981;
 			box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
 		}
+
 		50% {
 			box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
 		}
+
 		100% {
 			background-color: #10b981;
 			box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
@@ -471,9 +473,11 @@
 			background-color: #f59e0b;
 			box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
 		}
+
 		50% {
 			box-shadow: 0 0 0 4px rgba(245, 158, 11, 0);
 		}
+
 		100% {
 			background-color: #f59e0b;
 			box-shadow: 0 0 0 0 rgba(245, 158, 11, 0);
@@ -532,6 +536,7 @@
 			opacity: 0;
 			transform: translateY(15px);
 		}
+
 		to {
 			opacity: 1;
 			transform: translateY(0);

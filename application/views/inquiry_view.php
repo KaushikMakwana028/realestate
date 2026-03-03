@@ -1018,17 +1018,17 @@
 	// ═══════════════════════════════════════
 	// Search with debounce
 	// ═══════════════════════════════════════
-	(function () {
+	(function() {
 		var searchTimer;
 		var searchInput = document.getElementById('serchinquiry');
 		if (searchInput) {
-			searchInput.addEventListener('input', function () {
+			searchInput.addEventListener('input', function() {
 				clearTimeout(searchTimer);
 				var val = this.value.toLowerCase();
-				searchTimer = setTimeout(function () {
+				searchTimer = setTimeout(function() {
 					var rows = document.querySelectorAll('#inquiryTableBody tr');
 					var hasVisible = false;
-					rows.forEach(function (row) {
+					rows.forEach(function(row) {
 						var text = row.textContent.toLowerCase();
 						if (text.indexOf(val) > -1) {
 							row.style.display = '';
@@ -1054,7 +1054,7 @@
 	// ═══════════════════════════════════════
 	// Enquiry Detail Modal
 	// ═══════════════════════════════════════
-	document.addEventListener('click', function (e) {
+	document.addEventListener('click', function(e) {
 		var btn = e.target.closest('.viewEnquiryDetail');
 		if (!btn) return;
 

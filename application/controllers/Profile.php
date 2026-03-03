@@ -56,15 +56,41 @@ class Profile extends My_Controller
 
     $admin_id = $adminSession['user_id'];
 
-    $name     = $this->input->post('name');
-    $email    = $this->input->post('email');
-    $mobile   = $this->input->post('mobile');
+    $name     = trim((string) $this->input->post('name'));
+    $email    = trim((string) $this->input->post('email'));
+    $mobile   = trim((string) $this->input->post('mobile'));
+    $address  = trim((string) $this->input->post('address'));
     $password = $this->input->post('password');
+
+    if ($name === '' || $mobile === '') {
+        echo json_encode([
+            'status' => 422,
+            'message' => 'Full Name and Phone are required.'
+        ]);
+        return;
+    }
+
+    if (!preg_match('/^[0-9]{10}$/', $mobile)) {
+        echo json_encode([
+            'status' => 422,
+            'message' => 'Please enter a valid 10-digit mobile number.'
+        ]);
+        return;
+    }
+
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode([
+            'status' => 422,
+            'message' => 'Please enter a valid email address.'
+        ]);
+        return;
+    }
 
     $updateData = [
         'name'   => $name,
         'email'  => $email,
-        'mobile' => $mobile
+        'mobile' => $mobile,
+        'address' => $address
     ];
 
     // ✅ Update password only if provided

@@ -563,13 +563,13 @@
             <div class="d-flex align-items-center justify-content-between">
                 <div>
                     <h2>
-👋 Welcome back, 
-<?= !empty($this->admin['user_name']) 
-        ? htmlspecialchars($this->admin['user_name']) 
-        : 'Admin'; ?>!
-</h2>
+                        👋 Welcome back,
+                        <?= !empty($this->admin['user_name'])
+                            ? htmlspecialchars($this->admin['user_name'])
+                            : 'Admin'; ?>!
+                    </h2>
 
-<p>Here's what's happening with your dashboard today.</p>
+                    <p>Here's what's happening with your dashboard today.</p>
 
                 </div>
                 <div class="d-none d-md-block">
@@ -656,10 +656,10 @@
                                 <span class="counter-change negative">
                                     <i class="bx bx-trending-up"></i>
                                     +<?php if (!empty($is_superadmin)): ?>
-                                        <?= $admins_last_week ?? 0 ?>
-                                    <?php else: ?>
-                                        <?= $users_last_week ?>
-                                    <?php endif; ?> this week
+                                    <?= $admins_last_week ?? 0 ?>
+                                <?php else: ?>
+                                    <?= $users_last_week ?>
+                                <?php endif; ?> this week
                                 </span>
                             </div>
                             <div class="counter-icon">
@@ -944,12 +944,12 @@
 
 <!-- ===== COUNTER ANIMATION SCRIPT ===== -->
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
 
         // Animate counters
-        document.querySelectorAll('.counter-value, .main-stat-value, .mini-value').forEach(function (el) {
+        document.querySelectorAll('.counter-value, .main-stat-value, .mini-value').forEach(function(el) {
             const raw = el.textContent.trim();
-            const prefix = raw.match(/^[^\d]*/)[0];   // e.g. ₹
+            const prefix = raw.match(/^[^\d]*/)[0]; // e.g. ₹
             const suffix = raw.match(/[^\d]*$/)[0];
             const numeric = raw.replace(/[^\d]/g, '');
 
@@ -974,10 +974,12 @@
         });
 
         // Animate progress bars
-        document.querySelectorAll('.progress-bar').forEach(function (bar) {
+        document.querySelectorAll('.progress-bar').forEach(function(bar) {
             const w = bar.style.width;
             bar.style.width = '0%';
-            setTimeout(function () { bar.style.width = w; }, 400);
+            setTimeout(function() {
+                bar.style.width = w;
+            }, 400);
         });
     });
 </script>

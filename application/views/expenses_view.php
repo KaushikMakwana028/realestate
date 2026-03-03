@@ -122,7 +122,7 @@
 					<!-- Month Filter -->
 					<div class="col-lg-2 col-md-4">
 						<div class="position-relative">
-												<input type="month" id="expMonthPicker" class="form-control ps-5 enhanced-input">
+							<input type="month" id="expMonthPicker" class="form-control ps-5 enhanced-input">
 						</div>
 					</div>
 
@@ -154,7 +154,7 @@
 								<i class="bx bx-refresh" style="font-size: 1.1rem;"></i>
 								<span class="d-none d-xl-inline">Refresh</span>
 							</button>
-							
+
 						</div>
 					</div>
 				</div>
@@ -181,7 +181,7 @@
 						<tbody id="expensesTable">
 
 							<!-- Sample Row 1 - Approved -->
-							
+
 
 
 						</tbody>
@@ -256,7 +256,7 @@
 			</div>
 		</div>
 
-		
+
 
 		<!-- Full Image Modal (Enhanced) -->
 		<div class="modal fade" id="siteImageModal" tabindex="-1" aria-labelledby="siteImageModalLabel"

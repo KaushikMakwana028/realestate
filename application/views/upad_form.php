@@ -50,12 +50,12 @@
                                 <div class="mb-3">
                                     <label for="upadAmount" class="form-label">UPAD Amount (INR)</label>
                                     <input type="number"
-                                           name="amount"
-                                           class="form-control"
-                                           id="upadAmount"
-                                           placeholder="Enter amount"
-                                           min="1"
-                                           required>
+                                        name="amount"
+                                        class="form-control"
+                                        id="upadAmount"
+                                        placeholder="Enter amount"
+                                        min="1"
+                                        required>
                                     <div class="invalid-feedback">Please enter a valid UPAD amount.</div>
                                 </div>
 
@@ -63,7 +63,7 @@
                                 <div class="mb-3">
                                     <label for="notes" class="form-label">Notes</label>
                                     <textarea name="notes" id="notes" rows="3" class="form-control"
-                                              placeholder="Enter notes (optional)"></textarea>
+                                        placeholder="Enter notes (optional)"></textarea>
                                 </div>
 
                                 <!-- Submit Button -->

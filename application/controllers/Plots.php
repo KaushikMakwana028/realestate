@@ -565,7 +565,14 @@ class Plots extends My_Controller
         p.isActive,
         s.name AS site_name,
         b.id   AS buyer_id,
-        b.name AS buyer_name
+        b.name AS buyer_name,
+        (
+            SELECT COUNT(*)
+            FROM cash_payment_logs cpl
+            WHERE cpl.buyer_id = b.id
+              AND LOWER(COALESCE(cpl.status, "")) = "pending"
+              AND LOWER(COALESCE(cpl.notes, "")) LIKE "%emi%"
+        ) AS pending_installment_requests
     ');
 
         $this->db->from('plots p');
@@ -576,6 +583,7 @@ class Plots extends My_Controller
             'b.id = (SELECT MAX(b2.id) FROM buyer b2 WHERE b2.plot_id = p.id AND b2.isActive = 1)',
             'left'
         );
+        $this->db->order_by('id', 'DESC');
 
         $this->db->where('p.isActive', 1);
 
@@ -670,38 +678,75 @@ class Plots extends My_Controller
         $this->load->view('footer');
     }
 
-    public function buyer_details($plot_id)
+    public function buyer_details($id)
     {
-        // 1. Fetch Buyer
+        $id = (int) $id;
+        if ($id <= 0) {
+            show_404();
+            return;
+        }
+
+        // 1) Prefer exact buyer id (correct link behavior).
         $buyer = $this->db->get_where("buyer", [
-            "plot_id" => $plot_id,
+            "id" => $id,
             "isActive" => 1
         ])->row();
+
+        // 2) Backward compatibility for old links that may pass plot_id.
+        if (!$buyer) {
+            $buyer = $this->db->order_by("id", "DESC")
+                ->get_where("buyer", [
+                    "plot_id" => $id,
+                    "isActive" => 1
+                ])->row();
+        }
 
         if (!$buyer) {
             show_404();
             return;
         }
 
+        $buyer_id = (int) $buyer->id;
+        $plot_id = (int) $buyer->plot_id;
+
         // 2. Fetch Payment Details
-        $payment = $this->db->get_where("payment_details", [
-            "plot_id" => $plot_id
-        ])->row();
+        $payment = $this->db->order_by("id", "DESC")
+            ->get_where("payment_details", [
+                "buyer_id" => $buyer_id
+            ])->row();
+
+        if (!$payment) {
+            $payment = $this->db->order_by("id", "DESC")
+                ->get_where("payment_details", [
+                    "plot_id" => $plot_id
+                ])->row();
+        }
         // 3A. Calculate remaining amount (from cash logs)
         $total_paid = 0;
+        $down_payment_in_logs = false;
+        $payment_down_payment = (float) ($payment->down_payment ?? 0);
 
         $cash_logs = $this->db->get_where("cash_payment_logs", [
-            "plot_id" => $plot_id,
+            "buyer_id" => $buyer_id,
             "status" => "approve"
         ])->result();
 
         foreach ($cash_logs as $log) {
-            $total_paid += (float) $log->paid_amount;
+            $paid_amount = (float) ($log->paid_amount ?? 0);
+            $total_paid += $paid_amount;
+
+            // Detect whether down payment is already represented in approved cash logs.
+            $note = strtolower((string) ($log->notes ?? ""));
+            if ($payment_down_payment > 0) {
+                if (strpos($note, "down") !== false || abs($paid_amount - $payment_down_payment) < 0.01) {
+                    $down_payment_in_logs = true;
+                }
+            }
         }
 
-        // Fallback for older records where initial down payment is only in payment_details
-        if ($total_paid <= 0 && $payment && isset($payment->down_payment)) {
-            $total_paid = (float) $payment->down_payment;
+        // Include configured down payment if it is not present in approved cash logs.
+        if ($payment_down_payment > 0 && !$down_payment_in_logs) {
+            $total_paid += $payment_down_payment;
         }
 
         $remaining_amount = 0;
@@ -716,9 +761,33 @@ class Plots extends My_Controller
         // 3. Fetch EMI logs (if EMI)
         $emi = [];
         if ($payment && strtoupper((string) $payment->payment_mode) === "EMI") {
-            $emi = $this->db->order_by("month_no", "ASC")
-                ->get_where("emi_logs", ["plot_id" => $plot_id])
-                ->result();
+            $payment_id = (int) ($payment->id ?? 0);
+            if ($payment_id > 0) {
+                $emi = $this->db->order_by("month_no", "ASC")
+                    ->get_where("emi_logs", ["payment_id" => $payment_id])
+                    ->result();
+            } else {
+                $emi = $this->db->order_by("month_no", "ASC")
+                    ->get_where("emi_logs", ["buyer_id" => $buyer_id])
+                    ->result();
+            }
+        }
+
+        $total_emi_installments = 0;
+        $paid_emi_installments = 0;
+        $remaining_emi_installments = 0;
+        if ($payment && strtoupper((string) ($payment->payment_mode ?? "")) === "EMI") {
+            $duration = (int) ($payment->emi_duration ?? 0);
+            $total_emi_installments = $duration > 0 ? $duration : count($emi);
+            foreach ($emi as $emi_row) {
+                if (strtolower((string) ($emi_row->status ?? "pending")) === "approve") {
+                    $paid_emi_installments++;
+                }
+            }
+            if ($paid_emi_installments > $total_emi_installments) {
+                $paid_emi_installments = $total_emi_installments;
+            }
+            $remaining_emi_installments = max(0, $total_emi_installments - $paid_emi_installments);
         }
 
         // 4. Fetch plot details + site name
@@ -733,7 +802,10 @@ class Plots extends My_Controller
             "payment" => $payment,
             "emi" => $emi,
             "plot" => $plot,
-            "remaining_amount" => $remaining_amount
+            "remaining_amount" => $remaining_amount,
+            "total_emi_installments" => $total_emi_installments,
+            "paid_emi_installments" => $paid_emi_installments,
+            "remaining_emi_installments" => $remaining_emi_installments
         ];
         // echo "<pre>";
         // print_r($data);
@@ -848,62 +920,347 @@ class Plots extends My_Controller
             ->result_array();
         $payment_ids = array_map("intval", array_column($payment_ids, "id"));
 
-        $this->db->from("emi_logs");
-        $this->db->where("buyer_id", $buyer_id);
+        $payment_installment_map = [];
+        $payment_meta_map = [];
+        $total_installments_expected = 0;
         if (!empty($payment_ids)) {
+            $payment_fields = $this->db->list_fields("payment_details");
+            $installment_col = null;
+            if (in_array("installment_amount", $payment_fields, true)) {
+                $installment_col = "installment_amount";
+            } elseif (in_array("insatallment_amount", $payment_fields, true)) {
+                $installment_col = "insatallment_amount";
+            }
+
+            $select_cols = "id, buyer_id, plot_id, emi_duration, emi_start_date, remaining_amount, total_price, down_payment";
+            if ($installment_col !== null) {
+                $select_cols .= ", {$installment_col} AS installment_amount";
+            }
+
+            $payment_rows = $this->db->select($select_cols)
+                ->from("payment_details")
+                ->where_in("id", $payment_ids)
+                ->get()
+                ->result();
+
+            foreach ($payment_rows as $p) {
+                $duration = (int) ($p->emi_duration ?? 0);
+                $installment_amount = 0.0;
+                if ($installment_col !== null) {
+                    $installment_amount = (float) ($p->installment_amount ?? 0);
+                }
+                if ($installment_amount <= 0 && $duration > 0) {
+                    $remaining_amount = (float) ($p->remaining_amount ?? 0);
+                    if ($remaining_amount > 0) {
+                        $installment_amount = round($remaining_amount / $duration, 2);
+                    }
+                }
+                if ($installment_amount <= 0 && $duration > 0) {
+                    $total_price = (float) ($p->total_price ?? 0);
+                    $down_payment = (float) ($p->down_payment ?? 0);
+                    $balance = max(0, $total_price - $down_payment);
+                    if ($balance > 0) {
+                        $installment_amount = round($balance / $duration, 2);
+                    }
+                }
+
+                $payment_installment_map[(int) $p->id] = $installment_amount;
+                $payment_meta_map[(int) $p->id] = [
+                    "buyer_id" => (int) ($p->buyer_id ?? $buyer_id),
+                    "plot_id" => (int) ($p->plot_id ?? $plot_id),
+                    "duration" => $duration,
+                    "start_date" => (string) ($p->emi_start_date ?? ""),
+                    "installment_amount" => $installment_amount,
+                ];
+
+                if ($duration > $total_installments_expected) {
+                    $total_installments_expected = $duration;
+                }
+            }
+        }
+
+        $this->db->from("emi_logs");
+        if (!empty($payment_ids)) {
+            // Primary key for EMI linkage should be payment_id.
+            // Some legacy rows may carry incorrect buyer_id, so do not over-filter here.
             $this->db->where_in("payment_id", $payment_ids);
+        } else {
+            // Fallback when payment_details is missing.
+            $this->db->where("buyer_id", $buyer_id);
         }
         $this->db->order_by("month_no", "ASC");
         $emi_logs = $this->db->get()->result();
 
-        $merged_logs = [];
+        // Deduplicate accidental repeated EMI rows: keep one row per payment_id + month_no.
+        $emi_unique = [];
+        $status_rank = function ($status) {
+            $s = strtolower((string) $status);
+            if ($s === "approve") {
+                return 4;
+            }
+            if ($s === "pending" || $s === "requested") {
+                return 3;
+            }
+            if ($s === "reject") {
+                return 2;
+            }
+            return 1;
+        };
 
+        foreach ($emi_logs as $emi) {
+            $payment_id_key = (int) ($emi->payment_id ?? 0);
+            $month_no_key = (int) ($emi->month_no ?? 0);
+            if ($month_no_key > 0) {
+                $key = "pm:{$payment_id_key}:m:{$month_no_key}";
+            } else {
+                $date_key = (string) ($emi->emi_date ?? $emi->created_on ?? $emi->id ?? "");
+                $key = "pm:{$payment_id_key}:d:{$date_key}";
+            }
+
+            $existing = $emi_unique[$key] ?? null;
+            if ($existing === null) {
+                $emi_unique[$key] = $emi;
+                continue;
+            }
+
+            $cur_amount = (float) ($emi->emi_amount ?? 0);
+            $old_amount = (float) ($existing->emi_amount ?? 0);
+            $cur_rank = $status_rank($emi->status ?? "");
+            $old_rank = $status_rank($existing->status ?? "");
+
+            $replace = false;
+            if ($cur_amount > $old_amount) {
+                $replace = true;
+            } elseif ($cur_amount === $old_amount && $cur_rank > $old_rank) {
+                $replace = true;
+            } elseif ($cur_amount === $old_amount && $cur_rank === $old_rank && (int) ($emi->id ?? 0) > (int) ($existing->id ?? 0)) {
+                $replace = true;
+            }
+
+            if ($replace) {
+                $emi_unique[$key] = $emi;
+            }
+        }
+
+        $emi_logs = array_values($emi_unique);
+
+        // Ensure full EMI schedule is visible even if emi_logs rows are missing/incomplete.
+        if (!empty($payment_meta_map)) {
+            $existing_month_keys = [];
+            foreach ($emi_logs as $emi) {
+                $existing_month_keys[(int) ($emi->payment_id ?? 0) . ":" . (int) ($emi->month_no ?? 0)] = true;
+            }
+
+            foreach ($payment_meta_map as $pid => $meta) {
+                $duration = (int) ($meta["duration"] ?? 0);
+                $start_date = (string) ($meta["start_date"] ?? "");
+                $installment_amount = (float) ($meta["installment_amount"] ?? 0);
+                if ($duration <= 0 || empty($start_date) || $installment_amount <= 0) {
+                    continue;
+                }
+
+                for ($m = 1; $m <= $duration; $m++) {
+                    $k = $pid . ":" . $m;
+                    if (isset($existing_month_keys[$k])) {
+                        continue;
+                    }
+
+                    $emi_date = date("Y-m-d", strtotime($start_date . " +" . ($m - 1) . " month"));
+                    $virtual = new stdClass();
+                    $virtual->id = 0;
+                    $virtual->payment_id = $pid;
+                    $virtual->buyer_id = (int) ($meta["buyer_id"] ?? $buyer_id);
+                    $virtual->plot_id = (int) ($meta["plot_id"] ?? $plot_id);
+                    $virtual->month_no = $m;
+                    $virtual->emi_date = $emi_date;
+                    $virtual->emi_amount = $installment_amount;
+                    $virtual->status = "pending";
+                    $virtual->created_on = $emi_date . " 00:00:00";
+                    $emi_logs[] = $virtual;
+                }
+            }
+        }
+        usort($emi_logs, function ($a, $b) {
+            $ma = (int) ($a->month_no ?? 0);
+            $mb = (int) ($b->month_no ?? 0);
+            if ($ma !== $mb) {
+                return $ma <=> $mb;
+            }
+            $ta = strtotime((string) ($a->emi_date ?? $a->created_on ?? ""));
+            $tb = strtotime((string) ($b->emi_date ?? $b->created_on ?? ""));
+            return $ta <=> $tb;
+        });
+
+        $merged_logs = [];
+        $effective_emi_rows = [];
+        $today_ts = strtotime(date("Y-m-d"));
+
+        // Split EMI-cash requests so they map into installment slots, not as extra rows.
+        $emi_cash_requests = [];
+        $other_cash_logs = [];
         foreach ($cash_logs as $log) {
+            $log_amount = (float) ($log->paid_amount ?? 0);
+            $log_notes = strtolower((string) ($log->notes ?? ""));
+            $is_emi_cash = ($log_amount > 0 && strpos($log_notes, "emi") !== false);
+            if ($is_emi_cash) {
+                $emi_cash_requests[] = $log;
+            } else {
+                $other_cash_logs[] = $log;
+            }
+        }
+
+        usort($emi_cash_requests, function ($a, $b) {
+            $ta = strtotime((string) ($a->created_on ?? $a->created_at ?? ""));
+            $tb = strtotime((string) ($b->created_on ?? $b->created_at ?? ""));
+            if ($ta === $tb) {
+                return ((int) ($a->id ?? 0)) <=> ((int) ($b->id ?? 0));
+            }
+            return $ta <=> $tb;
+        });
+
+        $request_idx = 0;
+        $requests_by_month = [];
+        $unmapped_requests = [];
+        foreach ($emi_cash_requests as $req) {
+            $notes = (string) ($req->notes ?? "");
+            if (preg_match('/\[EMI:(\d+):(\d+)\]/i', $notes, $m)) {
+                $k = ((int) $m[1]) . ':' . ((int) $m[2]);
+                if (!isset($requests_by_month[$k])) {
+                    $requests_by_month[$k] = [];
+                }
+                $requests_by_month[$k][] = $req;
+            } else {
+                $unmapped_requests[] = $req;
+            }
+        }
+
+        foreach ($emi_logs as $emi) {
+            $emi_amount = (float) ($emi->emi_amount ?? 0);
+            if ($emi_amount <= 0) {
+                $p_id = (int) ($emi->payment_id ?? 0);
+                if ($p_id > 0 && isset($payment_installment_map[$p_id])) {
+                    $emi_amount = (float) $payment_installment_map[$p_id];
+                }
+            }
+
+            $entry = new stdClass();
+            $entry->month_no = $emi->month_no ?? null;
+            $entry->notes = "EMI installment" . (!empty($entry->month_no) ? (" #" . $entry->month_no) : "");
+            $entry->paid_amount = $emi_amount;
+
+            $req = null;
+            $k = ((int) ($emi->payment_id ?? 0)) . ':' . ((int) ($emi->month_no ?? 0));
+            if (!empty($requests_by_month[$k])) {
+                $req = array_shift($requests_by_month[$k]);
+            } elseif (isset($unmapped_requests[$request_idx])) {
+                $req = $unmapped_requests[$request_idx++];
+            }
+
+            if ($req !== null) {
+                // Early payment request consumes the next installment slot.
+                $entry->id = $req->id;
+                $entry->log_source = "cash";
+                $entry->buyer_id = $req->buyer_id ?? $emi->buyer_id;
+                $entry->plot_id = $req->plot_id ?? $emi->plot_id;
+                $entry->paid_amount = (float) ($req->paid_amount ?? $emi_amount);
+                $entry->status = $req->status ?? "pending";
+                $entry->created_on = $req->created_on ?? ($req->created_at ?? ($emi->emi_date ?? $emi->created_on ?? null));
+                $entry->notes = $req->notes ?? $entry->notes;
+                $entry->is_requested = 1;
+                $entry->scheduled_on = $emi->emi_date ?? ($emi->created_on ?? null);
+
+                // Backfill/sync EMI status with mapped cash request (for old data too).
+                $emi_id = (int) ($emi->id ?? 0);
+                if ($emi_id > 0) {
+                    $mapped_status = strtolower((string) ($req->status ?? "pending"));
+                    $current_status = strtolower((string) ($emi->status ?? "pending"));
+                    $mapped_amount = (float) ($req->paid_amount ?? $emi_amount);
+                    $current_amount = (float) ($emi->emi_amount ?? 0);
+                    if ($mapped_status !== $current_status || $mapped_amount !== $current_amount) {
+                        $this->db->where("id", $emi_id)->update("emi_logs", [
+                            "status" => $mapped_status,
+                            "emi_amount" => $mapped_amount
+                        ]);
+                        // Keep in-memory row consistent for summary calculations below.
+                        $emi->status = $mapped_status;
+                        $emi->emi_amount = $mapped_amount;
+                    }
+                }
+            } else {
+                $entry->id = $emi->id;
+                $entry->log_source = "emi";
+                $entry->buyer_id = $emi->buyer_id;
+                $entry->plot_id = $emi->plot_id;
+                $entry->status = $emi->status ?? "pending";
+                $entry->created_on = $emi->emi_date ?? ($emi->created_on ?? null);
+                $entry->is_requested = 0;
+                $entry->scheduled_on = $emi->emi_date ?? ($emi->created_on ?? null);
+            }
+
+            $merged_logs[] = $entry;
+            $effective_emi_rows[] = $entry;
+        }
+
+        foreach ($other_cash_logs as $log) {
             $log->log_source = "cash";
             $log->created_on = $log->created_on ?? ($log->created_at ?? null);
             $log->paid_amount = (float) ($log->paid_amount ?? 0);
+            $log->is_requested = 0;
             $merged_logs[] = $log;
         }
 
-        foreach ($emi_logs as $emi) {
-            $entry = new stdClass();
-            $entry->id = $emi->id;
-            $entry->log_source = "emi";
-            $entry->buyer_id = $emi->buyer_id;
-            $entry->plot_id = $emi->plot_id;
-            $entry->paid_amount = (float) ($emi->emi_amount ?? 0);
-            $entry->status = $emi->status ?? "pending";
-            $entry->created_on = $emi->emi_date ?? ($emi->created_on ?? null);
-            $entry->month_no = $emi->month_no ?? null;
-            $entry->notes = "EMI installment" . (!empty($entry->month_no) ? (" #" . $entry->month_no) : "");
-            $merged_logs[] = $entry;
-        }
+        // Skip invalid/legacy rows that carry no payable value.
+        $merged_logs = array_values(array_filter($merged_logs, function ($row) {
+            return (float) ($row->paid_amount ?? 0) > 0;
+        }));
 
-        // Summary cards data for payment_data view
-        $total_installments = count($emi_logs);
+        // Summary cards data for payment_data view (based on effective installment rows).
+        $total_installments = $total_installments_expected > 0 ? $total_installments_expected : count($effective_emi_rows);
         $approved_installments = 0;
+        $progress_installments = 0;
         $pending_amount = 0.0;
         $receiving_amount = 0.0;
+        $next_installment = null;
 
-        foreach ($emi_logs as $emi) {
-            $emi_status = strtolower((string) ($emi->status ?? "pending"));
-            $emi_amount = (float) ($emi->emi_amount ?? 0);
+        foreach ($effective_emi_rows as $emi_row) {
+            $emi_status = strtolower((string) ($emi_row->status ?? "pending"));
+            $emi_amount = (float) ($emi_row->paid_amount ?? 0);
+            $is_requested = (int) ($emi_row->is_requested ?? 0) === 1;
+            $emi_ts = strtotime((string) ($emi_row->scheduled_on ?? $emi_row->created_on ?? ""));
+
             if ($emi_status === "approve") {
                 $approved_installments++;
+                $progress_installments++;
                 $receiving_amount += $emi_amount;
             } else {
-                $pending_amount += $emi_amount;
+                if ($is_requested) {
+                    // Buyer already requested/paid this installment (awaiting approval),
+                    // so move progression forward but do not add to received amount yet.
+                    $progress_installments++;
+                } else {
+                    $pending_amount += $emi_amount;
+                    if ($emi_ts !== false) {
+                        if ($next_installment === null || $emi_ts < (int) $next_installment["ts"]) {
+                            $next_installment = [
+                                "date" => date("Y-m-d", $emi_ts),
+                                "amount" => $emi_amount,
+                                "ts" => $emi_ts
+                            ];
+                        }
+                    }
+                }
             }
         }
 
-        foreach ($cash_logs as $cash) {
+        foreach ($other_cash_logs as $cash) {
             $cash_status = strtolower((string) ($cash->status ?? "pending"));
+            $cash_amount = (float) ($cash->paid_amount ?? 0);
             if ($cash_status === "approve") {
-                $receiving_amount += (float) ($cash->paid_amount ?? 0);
+                $receiving_amount += $cash_amount;
             }
         }
 
-        $remaining_installments = max(0, $total_installments - $approved_installments);
+        $remaining_installments = max(0, $total_installments - $progress_installments);
 
         // Search in merged records
         if (!empty($search)) {
@@ -923,9 +1280,35 @@ class Plots extends My_Controller
             }));
         }
 
-        usort($merged_logs, function ($a, $b) {
+        usort($merged_logs, function ($a, $b) use ($today_ts) {
             $ta = strtotime((string) ($a->created_on ?? ""));
             $tb = strtotime((string) ($b->created_on ?? ""));
+            $sa = strtolower((string) ($a->status ?? ""));
+            $sb = strtolower((string) ($b->status ?? ""));
+            $src_a = strtolower((string) ($a->log_source ?? ""));
+            $src_b = strtolower((string) ($b->log_source ?? ""));
+            $notes_a = strtolower((string) ($a->notes ?? ""));
+            $notes_b = strtolower((string) ($b->notes ?? ""));
+
+            $is_cash_emi_req_a = $src_a === "cash" && $sa === "pending" && strpos($notes_a, "emi") !== false;
+            $is_cash_emi_req_b = $src_b === "cash" && $sb === "pending" && strpos($notes_b, "emi") !== false;
+            if ($is_cash_emi_req_a !== $is_cash_emi_req_b) {
+                return $is_cash_emi_req_a ? -1 : 1; // buyer-requested installment first
+            }
+
+            $is_upcoming_a = $src_a === "emi" && $sa !== "approve" && $ta !== false && $ta >= $today_ts;
+            $is_upcoming_b = $src_b === "emi" && $sb !== "approve" && $tb !== false && $tb >= $today_ts;
+
+            if ($is_upcoming_a !== $is_upcoming_b) {
+                return $is_upcoming_a ? -1 : 1; // upcoming installment first
+            }
+
+            if ($is_upcoming_a && $is_upcoming_b) {
+                if ($ta === $tb) {
+                    return ((int) ($a->month_no ?? 0)) <=> ((int) ($b->month_no ?? 0));
+                }
+                return $ta <=> $tb; // nearest upcoming first
+            }
 
             if ($ta === $tb) {
                 return ((int) ($b->id ?? 0)) <=> ((int) ($a->id ?? 0));
@@ -946,7 +1329,9 @@ class Plots extends My_Controller
                 "total_installments" => $total_installments,
                 "remaining_installments" => $remaining_installments,
                 "pending_amount" => $pending_amount,
-                "receiving_amount" => $receiving_amount
+                "receiving_amount" => $receiving_amount,
+                "next_installment_date" => $next_installment["date"] ?? null,
+                "next_installment_amount" => (float) ($next_installment["amount"] ?? 0)
             ],
             "pagination" => [
                 "current_page" => $page,
@@ -984,6 +1369,30 @@ class Plots extends My_Controller
         // 2. Update status in log table
         $this->db->where("id", $log_id);
         $this->db->update($table, ["status" => $status]);
+
+        // If this is a cash EMI request, sync matching EMI schedule row status too.
+        if ($source !== "emi") {
+            $cash_notes = (string) ($log->notes ?? "");
+            if (preg_match('/\[EMI:(\d+):(\d+)\]/i', $cash_notes, $m)) {
+                $payment_id = (int) $m[1];
+                $month_no = (int) $m[2];
+                if ($payment_id > 0 && $month_no > 0) {
+                    $emi_row = $this->db->order_by("id", "DESC")->get_where("emi_logs", [
+                        "payment_id" => $payment_id,
+                        "buyer_id" => (int) ($log->buyer_id ?? 0),
+                        "plot_id" => (int) ($log->plot_id ?? 0),
+                        "month_no" => $month_no
+                    ])->row();
+
+                    if ($emi_row) {
+                        $this->db->where("id", (int) $emi_row->id)->update("emi_logs", [
+                            "status" => $status,
+                            "emi_amount" => (float) ($log->paid_amount ?? ($emi_row->emi_amount ?? 0))
+                        ]);
+                    }
+                }
+            }
+        }
 
         // 3. Keep site values in sync only when approval state changes
         if ($old_status !== $new_status && $amount > 0) {
@@ -1037,7 +1446,7 @@ class Plots extends My_Controller
         $buyer = $this->db->get_where('buyer', ['id' => $buyer_id])->row();
 
         // ---- User ----
-        $user = $this->db->select('business_name,email,mobile,profile_image')
+        $user = $this->db->select('name,business_name,email,mobile,address,profile_image')
             ->from('user_master')
             ->where('id', $admin_id)
             ->get()->row();
@@ -1050,11 +1459,56 @@ class Plots extends My_Controller
             ->get('cash_payment_logs')
             ->result();
 
+        // ---- Payment Details (for fallback down payment row) ----
+        $payment = $this->db->order_by('id', 'DESC')
+            ->get_where('payment_details', ['buyer_id' => $buyer_id])
+            ->row();
+
+        if ($payment) {
+            $down_payment = (float) ($payment->down_payment ?? 0);
+            $total_price = (float) ($payment->total_price ?? 0);
+            if ($down_payment > 0) {
+                $has_down_payment_in_logs = false;
+                foreach ($logs as $lg) {
+                    $paid = (float) ($lg->paid_amount ?? 0);
+                    $note = strtolower((string) ($lg->notes ?? ''));
+                    if (abs($paid - $down_payment) < 0.01 && strpos($note, 'down') !== false) {
+                        $has_down_payment_in_logs = true;
+                        break;
+                    }
+                }
+
+                if (!$has_down_payment_in_logs) {
+                    $entry = new stdClass();
+                    $entry->id = 0;
+                    $entry->buyer_id = $buyer_id;
+                    $entry->plot_id = (int) ($payment->plot_id ?? 0);
+                    $entry->paid_amount = $down_payment;
+                    $entry->remaining_amount = max(0, $total_price - $down_payment);
+                    $entry->total_price = $total_price;
+                    $entry->notes = 'Initial down payment';
+                    $entry->status = 'approve';
+                    $entry->created_on = $payment->created_on ?? date('Y-m-d H:i:s');
+                    $logs[] = $entry;
+                }
+            }
+        }
+
+        usort($logs, function ($a, $b) {
+            $ta = strtotime((string) ($a->created_on ?? ''));
+            $tb = strtotime((string) ($b->created_on ?? ''));
+            if ($ta === $tb) {
+                return ((int) ($a->id ?? 0)) <=> ((int) ($b->id ?? 0));
+            }
+            return $ta <=> $tb;
+        });
+
 
         $data = [
             'buyer' => $buyer,
             'user' => $user,
-            'logs' => $logs
+            'logs' => $logs,
+            'payment' => $payment
         ];
 
 

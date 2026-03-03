@@ -21,7 +21,7 @@
 
 <script>
 	$('#menu').metisMenu();
-</script>
+</script> 
 
 <!-- DASHBOARD -->
 <script src="<?= base_url('assets/js/index.js') ?>"></script>

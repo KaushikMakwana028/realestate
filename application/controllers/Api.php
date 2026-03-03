@@ -662,7 +662,9 @@ class Api extends CI_Controller
                 // Fetch buyer
                 $buyer = $this->db
                     ->where('plot_id', $plot['id'])
+                    ->where('admin_id', $admin_id)
                     ->where('isActive', 1)
+                    ->order_by('id', 'DESC')
                     ->get('buyer')
                     ->row_array();
 
@@ -851,7 +853,9 @@ class Api extends CI_Controller
             // -------- Buyer Details --------
             $buyer = $this->db
                 ->where('plot_id', $plot_id)
+                ->where('admin_id', $admin_id)
                 ->where('isActive', 1)
+                ->order_by('id', 'DESC')
                 ->get('buyer')
                 ->row_array();
 
@@ -871,10 +875,16 @@ class Api extends CI_Controller
             }
 
             // -------- Payment Details --------
-            $payment = $this->db
-                ->where('plot_id', $plot_id)
-                ->get('payment_details')
-                ->row_array();
+            $payment = [];
+            if (!empty($buyer['id'])) {
+                $payment = $this->db
+                    ->where('plot_id', $plot_id)
+                    ->where('admin_id', $admin_id)
+                    ->where('buyer_id', (int) $buyer['id'])
+                    ->order_by('id', 'DESC')
+                    ->get('payment_details')
+                    ->row_array();
+            }
 
             $cash_logs = [];
             $emi_logs  = [];
@@ -882,20 +892,24 @@ class Api extends CI_Controller
             if (!empty($payment)) {
 
                 // ===== CASH MODE =====
-                if ($payment['payment_mode'] === "CASH") {
+                $payment_mode = strtoupper((string) ($payment['payment_mode'] ?? ''));
+                if ($payment_mode === "CASH") {
 
                     $cash_logs = $this->db
                         ->where('plot_id', $plot_id)
+                        ->where('buyer_id', (int) ($payment['buyer_id'] ?? 0))
                         ->order_by('id', 'ASC')
                         ->get('cash_payment_logs')
                         ->result_array();
                 }
 
                 // ===== EMI MODE =====
-                if ($payment['payment_mode'] === "EMI") {
+                if ($payment_mode === "EMI") {
 
                     $emi_logs = $this->db
                         ->where('payment_id', $payment['id'])
+                        ->where('buyer_id', (int) ($payment['buyer_id'] ?? 0))
+                        ->where('plot_id', $plot_id)
                         ->order_by('month_no', 'ASC')
                         ->get('emi_logs')
                         ->result_array();
@@ -1081,6 +1095,13 @@ class Api extends CI_Controller
             }
         }
 
+        if (empty($input['buyer']) || !is_array($input['buyer'])) {
+            return $this->respond(false, 400, "buyer payload is required");
+        }
+        if (empty($input['payment']) || !is_array($input['payment'])) {
+            return $this->respond(false, 400, "payment payload is required");
+        }
+
         // Buyer fields
         $buyer = $input['buyer'];
         $buyer_required = ['name', 'mobile', 'email', 'address', 'aadhar'];
@@ -1091,9 +1112,25 @@ class Api extends CI_Controller
         }
 
         $payment = $input['payment'];
+        $payment_mode = strtoupper(trim((string) ($payment['payment_mode'] ?? '')));
+        if (!in_array($payment_mode, ['CASH', 'EMI'], true)) {
+            return $this->respond(false, 400, "payment_mode must be CASH or EMI");
+        }
+
+        $down_payment = (float) ($payment['down_payment'] ?? 0);
+        $remaining_amount = (float) ($payment['remaining_amount'] ?? 0);
+        $emi_duration = (int) ($payment['emi_duration'] ?? 0);
+        $installment_amount = (float) ($payment['installment_amount'] ?? ($payment['insatallment_amount'] ?? 0));
+        $emi_start_date = !empty($payment['emi_start_date']) ? date('Y-m-d', strtotime($payment['emi_start_date'])) : null;
+
+        if ($payment_mode === 'EMI') {
+            if (empty($emi_start_date) || $emi_duration <= 0 || $installment_amount <= 0) {
+                return $this->respond(false, 400, "emi_start_date, emi_duration and installment_amount are required for EMI mode");
+            }
+        }
 
         // --------------------- 3. PLOT CHECK ------------------
-        $plot = $this->db->get_where('plots', ['id' => $input['plot_id']])->row();
+        $plot = $this->db->get_where('plots', ['id' => $input['plot_id'], 'admin_id' => $admin_id])->row();
         if (!$plot) {
             return $this->respond(false, 400, "Plot not found");
         }
@@ -1104,16 +1141,16 @@ class Api extends CI_Controller
         }
 
         // --------------------- 4. DUPLICATE BUYER -------------
-        $this->db->where('plot_id', $input['plot_id']);
-        $this->db->group_start()
-            ->where('aadhar', $buyer['aadhar'])
-            ->or_where('mobile', $buyer['mobile'])
-            ->group_end();
+        $existing_active_buyer = $this->db
+            ->where('plot_id', $input['plot_id'])
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->order_by('id', 'DESC')
+            ->get('buyer')
+            ->row();
 
-        $existing = $this->db->get('buyer')->row();
-
-        if ($existing) {
-            return $this->respond(false, 400, "Buyer already exists for this plot");
+        if ($existing_active_buyer) {
+            return $this->respond(false, 400, "This plot already has an active buyer");
         }
 
         // --------------------- 5. INSERT BUYER ----------------
@@ -1144,18 +1181,18 @@ class Api extends CI_Controller
             'plot_id'          => $input['plot_id'],
             'admin_id'         => $admin_id,
             'total_price'      => $input['total_price'],
-            'payment_mode'     => $payment['payment_mode'], // cash or emi
-            'down_payment'     => $payment['down_payment']      ?? 0,
-            'remaining_amount' => $payment['remaining_amount']  ?? 0,
+            'payment_mode'     => $payment_mode,
+            'down_payment'     => $down_payment,
+            'remaining_amount' => $remaining_amount,
             'notes'            => $payment['notes']             ?? null,
             'created_on'       => date('Y-m-d H:i:s'),
         ];
 
         // Add EMI-specific fields only if EMI mode
-        if (strtolower($payment['payment_mode']) === 'emi') {
-            $paymentData['emi_duration']        = $payment['emi_duration']        ?? null; // e.g. 12
-            $paymentData['emi_start_date']      = date('Y-m-d', strtotime($payment['emi_start_date']));
-            $paymentData['installment_amount']  = $payment['insatallment_amount'] ?? null; // fix typo in DB col name
+        if ($payment_mode === 'EMI') {
+            $paymentData['emi_duration']        = $emi_duration;
+            $paymentData['emi_start_date']      = $emi_start_date;
+            $paymentData['installment_amount']  = $installment_amount;
         }
 
         $this->db->insert('payment_details', $paymentData);
@@ -1166,13 +1203,14 @@ class Api extends CI_Controller
         }
 
         // --------------------- CASH LOG -------------------------
-        if (strtolower($payment['payment_mode']) === 'cash') {
+        if ($payment_mode === 'CASH') {
             $cashLog = [
-
+                'admin_id'         => $admin_id,
+                'user_id'          => $user_id,
                 'buyer_id'         => $buyer_id,
                 'plot_id'          => $input['plot_id'],
-                'paid_amount'      => $payment['down_payment'],
-                'remaining_amount' => $payment['remaining_amount'],
+                'paid_amount'      => $down_payment,
+                'remaining_amount' => $remaining_amount,
                 'total_price'      => $input['total_price'],
                 'status'           => 'pending',
                 'notes'            => $payment['notes'] ?? null,
@@ -1184,20 +1222,10 @@ class Api extends CI_Controller
         // --------------------- EMI LOGS -------------------------
         $emiRows = [];
 
-        if (strtolower($payment['payment_mode']) === 'emi') {
-
-            // Validate required EMI fields
-            if (
-                empty($payment['emi_start_date']) ||
-                empty($payment['emi_duration']) ||
-                empty($payment['insatallment_amount'])
-            ) {
-                return $this->respond(false, 400, "emi_start_date, emi_duration and insatallment_amount are required for EMI mode");
-            }
-
-            $start_date   = date('Y-m-d', strtotime($payment['emi_start_date']));
-            $months       = (int) $payment['emi_duration'];        // e.g. 12
-            $monthly_emi  = (float) $payment['insatallment_amount']; // e.g. 1000
+        if ($payment_mode === 'EMI') {
+            $start_date   = $emi_start_date;
+            $months       = $emi_duration;
+            $monthly_emi  = $installment_amount;
 
             for ($i = 1; $i <= $months; $i++) {
                 // Each EMI date is i months after start date
@@ -1283,6 +1311,123 @@ class Api extends CI_Controller
             }
         }
 
+        $payment_mode = strtolower(trim((string) ($input['payment_mode'] ?? '')));
+        $amount = (float) ($input['amount'] ?? 0);
+        if ($amount <= 0) {
+            return $this->respond(false, 400, "amount must be greater than 0");
+        }
+
+        $notes = $input['notes'] ?? null;
+        if ($payment_mode === 'emi') {
+            $payment_id = (int) ($input['payment_id'] ?? 0);
+            $month_no = (int) ($input['month_no'] ?? 0);
+
+            if ($payment_id <= 0 || $month_no <= 0) {
+                return $this->respond(false, 400, "payment_id and month_no are required for EMI payment");
+            }
+
+            $payment = $this->db->get_where('payment_details', [
+                'id' => $payment_id,
+                'buyer_id' => (int) $input['buyer_id'],
+                'plot_id' => (int) $input['plot_id']
+            ])->row();
+            if (!$payment) {
+                return $this->respond(false, 400, "Invalid payment_id for this buyer/plot");
+            }
+
+            $duration = (int) ($payment->emi_duration ?? 0);
+            if ($duration > 0 && $month_no > $duration) {
+                return $this->respond(false, 400, "month_no exceeds EMI duration");
+            }
+
+            $emi_row = $this->db->order_by('id', 'DESC')->get_where('emi_logs', [
+                'payment_id' => $payment_id,
+                'buyer_id' => (int) $input['buyer_id'],
+                'plot_id' => (int) $input['plot_id'],
+                'month_no' => $month_no
+            ])->row();
+            if ($emi_row && strtolower((string) ($emi_row->status ?? 'pending')) === 'approve') {
+                return $this->respond(false, 400, "This installment month is already approved");
+            }
+
+            // Canonical marker to lock one request per payment/month.
+            $marker = "[EMI:{$payment_id}:{$month_no}]";
+            $duplicate = $this->db->from('cash_payment_logs')
+                ->where('buyer_id', (int) $input['buyer_id'])
+                ->where('plot_id', (int) $input['plot_id'])
+                ->where_in('status', ['pending', 'approve'])
+                ->like('notes', $marker)
+                ->count_all_results();
+            if ((int) $duplicate > 0) {
+                return $this->respond(false, 400, "Installment for month {$month_no} is already submitted");
+            }
+
+            // Backward-compatible duplicate guard for legacy notes
+            // (e.g. "Paid second EMI installment" without marker).
+            $legacy_logs = $this->db->select('id, notes')
+                ->from('cash_payment_logs')
+                ->where('buyer_id', (int) $input['buyer_id'])
+                ->where('plot_id', (int) $input['plot_id'])
+                ->where_in('status', ['pending', 'approve'])
+                ->like('notes', 'emi')
+                ->get()
+                ->result();
+
+            $ordinals = [
+                'first' => 1,
+                'second' => 2,
+                'third' => 3,
+                'fourth' => 4,
+                'fifth' => 5,
+                'sixth' => 6,
+                'seventh' => 7,
+                'eighth' => 8,
+                'ninth' => 9,
+                'tenth' => 10,
+                'eleventh' => 11,
+                'twelfth' => 12,
+                'thirteenth' => 13,
+                'fourteenth' => 14,
+                'fifteenth' => 15,
+                'sixteenth' => 16,
+                'seventeenth' => 17,
+                'eighteenth' => 18,
+                'nineteenth' => 19,
+                'twentieth' => 20
+            ];
+
+            foreach ($legacy_logs as $lg) {
+                $note = strtolower((string) ($lg->notes ?? ''));
+                if ($note === '') {
+                    continue;
+                }
+
+                // marker-based check in case previous data used same marker format.
+                if (preg_match('/\[emi:(\d+):(\d+)\]/i', $note, $m)) {
+                    if ((int) $m[1] === $payment_id && (int) $m[2] === $month_no) {
+                        return $this->respond(false, 400, "Installment for month {$month_no} is already submitted");
+                    }
+                }
+
+                // numeric month hint check (e.g. "month 2", "month_no:2").
+                if (preg_match('/month(?:_no)?\s*[:\-]?\s*(\d+)/i', $note, $m2)) {
+                    if ((int) $m2[1] === $month_no) {
+                        return $this->respond(false, 400, "Installment for month {$month_no} is already submitted");
+                    }
+                }
+
+                // word-based month check (e.g. "second EMI installment").
+                foreach ($ordinals as $word => $num) {
+                    if ($num === $month_no && strpos($note, $word) !== false && strpos($note, 'emi') !== false) {
+                        return $this->respond(false, 400, "Installment for month {$month_no} is already submitted");
+                    }
+                }
+            }
+
+            $clean_notes = trim((string) ($notes ?? ''));
+            $notes = $marker . ($clean_notes !== '' ? (' | ' . $clean_notes) : '');
+        }
+
 
 
         // ---------------------- 3. INSERT CASH LOG ----------------
@@ -1291,11 +1436,11 @@ class Api extends CI_Controller
             'user_id' => $user_id,
             'buyer_id' => $input['buyer_id'],
             'plot_id' => $input['plot_id'],
-            'paid_amount' => $input['amount'],
+            'paid_amount' => $amount,
             'remaining_amount' => $input['remaining_amount'],
             'total_price' => $input['total_price'],
             'status' => 'pending', // default status
-            'notes' => $input['notes'] ?? null,
+            'notes' => $notes,
             'created_on' => date('Y-m-d H:i:s'),
         ];
 
@@ -1304,6 +1449,27 @@ class Api extends CI_Controller
 
         if (!$log_id) {
             return $this->respond(false, 400, "Failed to create cash payment log");
+        }
+
+        // Keep EMI schedule row in sync for EMI installment requests.
+        if ($payment_mode === 'emi') {
+            $payment_id = (int) ($input['payment_id'] ?? 0);
+            $month_no = (int) ($input['month_no'] ?? 0);
+            if ($payment_id > 0 && $month_no > 0) {
+                $target_emi = $this->db->order_by('id', 'DESC')->get_where('emi_logs', [
+                    'payment_id' => $payment_id,
+                    'buyer_id' => (int) $input['buyer_id'],
+                    'plot_id' => (int) $input['plot_id'],
+                    'month_no' => $month_no
+                ])->row();
+
+                if ($target_emi && strtolower((string) ($target_emi->status ?? 'pending')) !== 'approve') {
+                    $this->db->where('id', (int) $target_emi->id)->update('emi_logs', [
+                        'emi_amount' => $amount,
+                        'status' => 'pending'
+                    ]);
+                }
+            }
         }
 
         return $this->respond(true, 200, "Cash payment log created successfully", $cashLog);

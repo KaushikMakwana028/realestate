@@ -27,7 +27,7 @@
                 <div class="form-body mt-4">
                     <div class="row">
                         <div class="col">
-                            <form id="editPlotForm" method="post"  novalidate>
+                            <form id="editPlotForm" method="post" novalidate>
 
                                 <!-- Hidden ID -->
                                 <input type="hidden" name="id" value="<?= isset($plots->id) ? $plots->id : ''; ?>">
@@ -53,8 +53,8 @@
                                 <div class="mb-3">
                                     <label for="plotNumber" class="form-label">Plot Number</label>
                                     <input type="text" name="plot_number" class="form-control" id="plotNumber"
-                                           placeholder="Enter plot number"
-                                           value="<?= isset($plots->plot_number) ? htmlspecialchars($plots->plot_number) : ''; ?>" required>
+                                        placeholder="Enter plot number"
+                                        value="<?= isset($plots->plot_number) ? htmlspecialchars($plots->plot_number) : ''; ?>" required>
                                     <div class="invalid-feedback">Please enter the plot number.</div>
                                 </div>
 
@@ -62,8 +62,8 @@
                                 <div class="mb-3">
                                     <label for="plotSize" class="form-label">Size</label>
                                     <input type="text" name="size" class="form-control" id="plotSize"
-                                           placeholder="Enter plot size (e.g. 1200 sq.ft)"
-                                           value="<?= isset($plots->size) ? htmlspecialchars($plots->size) : ''; ?>" required>
+                                        placeholder="Enter plot size (e.g. 1200 sq.ft)"
+                                        value="<?= isset($plots->size) ? htmlspecialchars($plots->size) : ''; ?>" required>
                                     <div class="invalid-feedback">Please enter the plot size.</div>
                                 </div>
 
@@ -71,8 +71,8 @@
                                 <div class="mb-3">
                                     <label for="plotDimension" class="form-label">Dimension</label>
                                     <input type="text" name="dimension" class="form-control" id="plotDimension"
-                                           placeholder="Enter dimension (e.g. 30x40)"
-                                           value="<?= isset($plots->dimension) ? htmlspecialchars($plots->dimension) : ''; ?>" required>
+                                        placeholder="Enter dimension (e.g. 30x40)"
+                                        value="<?= isset($plots->dimension) ? htmlspecialchars($plots->dimension) : ''; ?>" required>
                                     <div class="invalid-feedback">Please enter the plot dimension.</div>
                                 </div>
 
@@ -83,8 +83,14 @@
                                         <option value="">Select Facing</option>
                                         <?php
                                         $facings = [
-                                            'East', 'West', 'North', 'South',
-                                            'North-East', 'North-West', 'South-East', 'South-West'
+                                            'East',
+                                            'West',
+                                            'North',
+                                            'South',
+                                            'North-East',
+                                            'North-West',
+                                            'South-East',
+                                            'South-West'
                                         ];
                                         foreach ($facings as $face): ?>
                                             <option value="<?= $face; ?>"
@@ -100,8 +106,8 @@
                                 <div class="mb-3">
                                     <label for="plotPrice" class="form-label">Price</label>
                                     <input type="number" name="price" class="form-control" id="plotPrice"
-                                           placeholder="Enter price (₹)" min="0"
-                                           value="<?= isset($plots->price) ? htmlspecialchars($plots->price) : ''; ?>" required>
+                                        placeholder="Enter price (₹)" min="0"
+                                        value="<?= isset($plots->price) ? htmlspecialchars($plots->price) : ''; ?>" required>
                                     <div class="invalid-feedback">Please enter the plot price.</div>
                                 </div>
 

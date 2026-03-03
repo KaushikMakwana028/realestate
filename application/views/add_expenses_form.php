@@ -27,57 +27,57 @@
                 <div class="form-body mt-4">
                     <div class="row">
                         <div class="col">
-                        <form id="addexpForm" method="post" enctype="multipart/form-data" novalidate>
+                            <form id="addexpForm" method="post" enctype="multipart/form-data" novalidate>
 
-    
-                        
-    <div class="mb-3">
-        <label for="siteName" class="form-label">Site Name</label>
-        <select name="site_id" id="siteName" class="form-select" required>
-            <option value="">Select Site</option>
-            <?php if (isset($sites) && !empty($sites)): ?>
-                <?php foreach ($sites as $site): ?>
-                    <option value="<?= $site->id; ?>"><?= $site->name; ?></option>
-                <?php endforeach; ?>
-            <?php endif; ?>
-        </select>
-        <div class="invalid-feedback">Please select a site name.</div>
-    </div>
 
-    <div class="mb-3 d-none" id="expenseImageFieldWrap">
-        <label for="expenseImage" class="form-label">Expense Image</label>
-        <input type="file" name="expense_image" class="form-control" id="expenseImage" accept="image/*">
-        <div class="form-text">Upload image for this expense (optional).</div>
-        <div id="expenseImagePreview" class="mt-2"></div>
-    </div>
 
-   
-    <div class="mb-3">
-        <label for="expPrice" class="form-label">Price</label>
-        <input type="number" name="price" class="form-control" id="expPrice" placeholder="Enter price (INR)" min="0" required>
-        <div class="invalid-feedback">Please enter the Amount.</div>
-    </div>
+                                <div class="mb-3">
+                                    <label for="siteName" class="form-label">Site Name</label>
+                                    <select name="site_id" id="siteName" class="form-select" required>
+                                        <option value="">Select Site</option>
+                                        <?php if (isset($sites) && !empty($sites)): ?>
+                                            <?php foreach ($sites as $site): ?>
+                                                <option value="<?= $site->id; ?>"><?= $site->name; ?></option>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </select>
+                                    <div class="invalid-feedback">Please select a site name.</div>
+                                </div>
 
-   
-    <div class="mb-3">
-        <label for="expDescription" class="form-label">Description</label>
-        <textarea name="description" id="expDescription" class="form-control" placeholder="Enter expense description" rows="3" required></textarea>
-        <div class="invalid-feedback">Please enter a description.</div>
-    </div>
+                                <div class="mb-3 d-none" id="expenseImageFieldWrap">
+                                    <label for="expenseImage" class="form-label">Expense Image</label>
+                                    <input type="file" name="expense_image" class="form-control" id="expenseImage" accept="image/*">
+                                    <div class="form-text">Upload image for this expense (optional).</div>
+                                    <div id="expenseImagePreview" class="mt-2"></div>
+                                </div>
 
-    
-    <div class="mb-3">
-        <label for="expDate" class="form-label">Date</label>
-        <input type="date" name="date" id="expDate" class="form-control" required>
-        <div class="invalid-feedback">Please select a date.</div>
-    </div>
 
-    
-    <div class="mb-3">
-        <button type="submit" class="btn btn-primary w-100">Save Expenses</button>
-    </div>
+                                <div class="mb-3">
+                                    <label for="expPrice" class="form-label">Price</label>
+                                    <input type="number" name="price" class="form-control" id="expPrice" placeholder="Enter price (INR)" min="0" required>
+                                    <div class="invalid-feedback">Please enter the Amount.</div>
+                                </div>
 
-</form>
+
+                                <div class="mb-3">
+                                    <label for="expDescription" class="form-label">Description</label>
+                                    <textarea name="description" id="expDescription" class="form-control" placeholder="Enter expense description" rows="3" required></textarea>
+                                    <div class="invalid-feedback">Please enter a description.</div>
+                                </div>
+
+
+                                <div class="mb-3">
+                                    <label for="expDate" class="form-label">Date</label>
+                                    <input type="date" name="date" id="expDate" class="form-control" required>
+                                    <div class="invalid-feedback">Please select a date.</div>
+                                </div>
+
+
+                                <div class="mb-3">
+                                    <button type="submit" class="btn btn-primary w-100">Save Expenses</button>
+                                </div>
+
+                            </form>
 
 
 
