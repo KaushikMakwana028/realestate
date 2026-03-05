@@ -16,18 +16,18 @@
         </div>
 
         <!-- Top Profile Card -->
-        <div class="card border-0 shadow-sm mb-4" style="border-radius: 16px; overflow: hidden;">
+        <div class="card border-0 shadow-sm mb-4 buyer-hero-card" style="border-radius: 16px; overflow: hidden;">
             <div class="card-body p-0">
-                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 30px 60px 30px;">
-                    <div class="d-flex align-items-center gap-3">
+                <div class="buyer-hero-head" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px 30px 60px 30px;">
+                    <div class="d-flex align-items-center gap-3 buyer-hero-top">
                         <div style="width: 64px; height: 64px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(10px);">
                             <i class="bx bx-user text-white" style="font-size: 28px;"></i>
                         </div>
-                        <div>
+                        <div class="buyer-hero-text">
                             <h4 class="text-white mb-1 fw-bold">
                                 <?= isset($buyer->name) ? $buyer->name : "Unknown" ?>
                             </h4>
-                            <div class="d-flex align-items-center gap-3">
+                            <div class="d-flex align-items-center gap-3 buyer-hero-meta">
                                 <span class="text-white-50">
                                     <i class="bx bx-phone me-1"></i><?= isset($buyer->mobile) ? $buyer->mobile : "-" ?>
                                 </span>
@@ -40,20 +40,20 @@
                 </div>
 
                 <!-- Quick Action Buttons (overlapping) -->
-                <div style="margin-top: -30px; padding: 0 30px 20px;">
-                    <div class="d-flex gap-2 flex-wrap">
+                <div class="buyer-hero-actions-wrap" style="margin-top: -30px; padding: 0 30px 20px;">
+                    <div class="d-flex gap-2 flex-wrap buyer-hero-actions">
                         <a href="https://wa.me/91<?= $buyer->mobile ?>" target="_blank"
-                            class="btn btn-success shadow-sm px-4"
+                            class="btn btn-success shadow-sm px-4 buyer-action-btn"
                             style="border-radius: 50px; font-weight: 600;">
                             <i class="lni lni-whatsapp me-1"></i> WhatsApp
                         </a>
                         <a href="tel:<?= $buyer->mobile ?>"
-                            class="btn btn-light shadow-sm px-4"
+                            class="btn btn-light shadow-sm px-4 buyer-action-btn"
                             style="border-radius: 50px; font-weight: 600;">
                             <i class="bx bx-phone-call me-1"></i> Call Now
                         </a>
                         <a href="<?= base_url('payment_data/' . $buyer->id) ?>"
-                            class="btn btn-primary shadow-sm px-4"
+                            class="btn btn-primary shadow-sm px-4 buyer-action-btn"
                             style="border-radius: 50px; font-weight: 600;">
                             <i class="lni lni-wallet me-1"></i> Payment Data
                         </a>
@@ -347,6 +347,33 @@
 </div>
 
 <style>
+    .buyer-hero-text {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .buyer-hero-text h4 {
+        word-break: break-word;
+    }
+
+    .buyer-hero-meta {
+        flex-wrap: wrap;
+        row-gap: 6px;
+    }
+
+    .buyer-hero-meta span {
+        min-width: 0;
+        word-break: break-word;
+    }
+
+    .buyer-hero-actions {
+        width: 100%;
+    }
+
+    .buyer-action-btn {
+        white-space: nowrap;
+    }
+
     .emi-mini-card {
         border: 1px solid #dfe6f5;
         border-radius: 12px;
@@ -393,8 +420,60 @@
     }
 
     @media (max-width: 576px) {
-        .d-flex.gap-2.flex-wrap .btn {
+        .buyer-hero-head {
+            padding: 18px 14px 44px 14px !important;
+        }
+
+        .buyer-hero-top {
+            align-items: flex-start !important;
+            gap: 10px !important;
+        }
+
+        .buyer-hero-text h4 {
+            font-size: 22px;
+            line-height: 1.25;
+        }
+
+        .buyer-hero-meta {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 4px !important;
+        }
+
+        .buyer-hero-actions-wrap {
+            margin-top: -24px !important;
+            padding: 0 14px 14px !important;
+        }
+
+        .buyer-hero-actions .buyer-action-btn {
             flex: 1 1 100%;
+            width: 100%;
+            justify-content: center;
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+            font-size: 14px;
+        }
+
+        .buyer-section-card .card-body {
+            padding-left: 14px !important;
+            padding-right: 14px !important;
+        }
+
+        .buyer-section-card .card-body .d-flex.justify-content-between {
+            flex-direction: column;
+            align-items: flex-start !important;
+            gap: 6px;
+        }
+
+        .buyer-section-card .card-body .d-flex.justify-content-between>span:last-child {
+            width: 100%;
+            text-align: left !important;
+            max-width: 100% !important;
+            word-break: break-word;
+        }
+
+        .emi-mini-value {
+            font-size: 20px;
         }
     }
 </style>

@@ -36,10 +36,14 @@
                                     <select name="user_id" id="userSelect" class="form-control" required>
                                         <option value="">-- Select User --</option>
 
-                                        <?php if (!empty($admin)) : ?>
-                                            <option value="<?= $admin->id; ?>">
-                                                <?= $admin->name; ?>
-                                            </option>
+                                        <?php if (!empty($users)) : ?>
+                                            <?php foreach ($users as $user) : ?>
+                                                <option value="<?= $user->id; ?>">
+                                                    <?= $user->name; ?>
+                                                </option>
+                                            <?php endforeach; ?>
+                                        <?php else : ?>
+                                            <option value="" disabled>No active users found</option>
                                         <?php endif; ?>
 
                                     </select>

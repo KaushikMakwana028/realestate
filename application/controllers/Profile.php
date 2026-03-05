@@ -28,7 +28,8 @@ class Profile extends My_Controller
 
     // Pass data to view
     $data = [
-        "admin" => $admin
+        "admin" => $admin,
+        "role"  => $admin->role
     ];
 // echo "<pre>";
 // print_r($data);

@@ -16,7 +16,7 @@
 		<!--end breadcrumb-->
 
 		<!-- Stats Cards -->
-		<div class="row g-3 mb-4">
+		<div class="row g-3 mb-4 usr-stats-row">
 			<div class="col-6 col-lg-3">
 				<div class="usr-stat-card usr-stat--total">
 					<div class="usr-stat__icon">
@@ -305,6 +305,7 @@
 		display: flex;
 		flex-direction: column;
 		flex: 1;
+		min-width: 0;
 	}
 
 	.usr-stat__value {
@@ -320,6 +321,7 @@
 		font-weight: 500;
 		text-transform: uppercase;
 		letter-spacing: 0.5px;
+		line-height: 1.2;
 	}
 
 	.usr-stat__trend {
@@ -1244,6 +1246,45 @@
 	}
 
 	@media (max-width: 767px) {
+		.usr-stats-row {
+			margin-bottom: 14px !important;
+		}
+
+		.usr-stats-row>div {
+			display: flex;
+		}
+
+		.usr-stat-card {
+			width: 100%;
+			padding: 14px 12px;
+			gap: 10px;
+			min-height: 82px;
+		}
+
+		.usr-stat__icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 10px;
+			font-size: 18px;
+		}
+
+		.usr-stat__value {
+			font-size: 17px;
+			word-break: break-word;
+		}
+
+		.usr-stat__label {
+			font-size: 10px;
+			letter-spacing: 0.3px;
+		}
+
+		.usr-stat__trend {
+			width: 26px;
+			height: 26px;
+			font-size: 13px;
+			flex-shrink: 0;
+		}
+
 		.usr-detail-grid {
 			grid-template-columns: 1fr;
 		}
@@ -1276,8 +1317,45 @@
 	}
 
 	@media (max-width: 575px) {
+		.usr-stat-card {
+			padding: 12px 10px;
+			min-height: 76px;
+		}
+
+		.usr-stat__trend {
+			display: none;
+		}
+
+		.usr-stat__value {
+			font-size: 16px;
+		}
+
 		.usr-main-card .card-body {
 			padding: 16px;
+		}
+
+		.usr-toolbar__left {
+			min-width: 0;
+		}
+
+		.usr-toolbar__right {
+			width: 100%;
+			gap: 8px;
+		}
+
+		.usr-filter-group {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
+		.usr-add-btn {
+			width: 100%;
+			justify-content: center;
+		}
+
+		.usr-add-btn span {
+			display: inline !important;
 		}
 
 		.usr-table thead th {
@@ -1330,7 +1408,7 @@
 				emptyState.classList.toggle('d-none', hasVisible);
 			}
 		});
-	});
+	}); 
 
 	// ═══════════════════════════════════════
 	// Search with debounce

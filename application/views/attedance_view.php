@@ -51,7 +51,7 @@
 						<div>
 							<p class="mb-0 text-muted"
 								style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Present
-								Today</p>
+							</p>
 							<h4 class="mb-0 fw-bold" id="presentToday" style="color: #10b981;">--</h4>
 						</div>
 					</div>
@@ -67,8 +67,7 @@
 						</div>
 						<div>
 							<p class="mb-0 text-muted"
-								style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Late
-								Arrivals</p>
+								style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Pending</p>
 							<h4 class="mb-0 fw-bold" id="lateArrivals" style="color: #f59e0b;">--</h4>
 						</div>
 					</div>
@@ -85,7 +84,7 @@
 						<div>
 							<p class="mb-0 text-muted"
 								style="font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px;">Absent
-								Today</p>
+							</p>
 							<h4 class="mb-0 fw-bold" id="absentToday" style="color: #ef4444;">--</h4>
 						</div>
 					</div>
@@ -114,7 +113,7 @@
 						<div class="position-relative">
 							<i class="bx bx-calendar position-absolute"
 								style="left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem;"></i>
-							<input type="date" id="dateFilter" class="form-control ps-5"
+							<input type="month" id="dateFilter" class="form-control ps-5"
 								style="border-radius: 10px; border: 2px solid #e2e8f0; padding: 10px 15px 10px 42px; background: #f8fafc;">
 						</div>
 					</div>
@@ -499,20 +498,21 @@
 	</div>
 </div>
 
-<!-- Photo Preview Modal -->
-<div class="modal fade" id="photoModal" tabindex="-1" aria-hidden="true">
-	<div class="modal-dialog modal-dialog-centered modal-sm">
-		<div class="modal-content border-0" style="border-radius: 16px; overflow: hidden;">
-			<div class="modal-header border-0 pb-0" style="background: linear-gradient(135deg, #6366f1, #818cf8);">
-				<h6 class="modal-title text-white"><i class="bx bx-camera me-2"></i>Attendance Photo</h6>
-				<button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-			</div>
-			<div class="modal-body text-center p-4">
-				<img id="previewPhoto" src="" alt="Attendance Photo" class="rounded-3 shadow"
-					style="max-width: 100%; max-height: 300px; object-fit: cover;">
-				<div class="mt-3">
-					<small class="text-muted"><i class="bx bx-time me-1"></i>Captured at 09:00 AM</small>
-				</div>
+<!-- Full Image Modal (Expense-like) -->
+<div class="modal fade" id="siteImageModal" tabindex="-1" aria-hidden="true">
+	<div class="modal-dialog modal-fullscreen">
+		<div class="modal-content" style="background: rgba(0,0,0,0.92);">
+			<div class="modal-body p-0 d-flex justify-content-center align-items-center position-relative">
+				<button type="button"
+					class="btn position-absolute d-flex align-items-center justify-content-center"
+					data-bs-dismiss="modal" aria-label="Close"
+					style="top: 20px; right: 20px; width: 44px; height: 44px; background: rgba(255,255,255,0.15); border: none; border-radius: 12px; z-index: 10; transition: all 0.3s;"
+					onmouseover="this.style.background='rgba(255,255,255,0.3)';"
+					onmouseout="this.style.background='rgba(255,255,255,0.15)';">
+					<i class="bx bx-x text-white" style="font-size: 1.5rem;"></i>
+				</button>
+				<img id="siteImageModalImg" src="" alt="Attendance Photo"
+					style="max-width: 90vw; max-height: 90vh; object-fit: contain; border-radius: 8px;" />
 			</div>
 		</div>
 	</div>
@@ -586,6 +586,56 @@
 		border-radius: 50% !important;
 	}
 
+	.attendance-photo-thumb {
+		width: 60px;
+		height: 60px;
+		object-fit: cover;
+		border-radius: 8px;
+		cursor: pointer;
+		border: 2px solid #e2e8f0;
+	}
+
+	.attendance-action-wrap .action-btn {
+		width: 34px;
+		height: 34px;
+		border-radius: 8px;
+		border: none;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+	}
+
+	.attendance-action-wrap .action-btn i {
+		font-size: 1.1rem;
+	}
+
+	.attendance-action-wrap .action-btn-delete {
+		background: rgba(239, 68, 68, 0.1);
+		color: #ef4444;
+	}
+
+	.attendance-action-wrap .action-btn-delete:hover {
+		background: #ef4444;
+		color: #fff;
+	}
+
+	.attendance-action-wrap .action-btn-menu {
+		background: #f1f5f9;
+		color: #334155;
+	}
+
+	.attendance-action-wrap .action-btn-menu:hover {
+		background: #e2e8f0;
+		color: #0f172a;
+	}
+
+	.attendance-action-wrap .dropdown-menu {
+		border-radius: 10px;
+		border: 1px solid #e2e8f0;
+		box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
+	}
+
 	@media (max-width: 768px) {
 		.page-breadcrumb {
 			flex-direction: column;
@@ -647,8 +697,8 @@
 
 <script>
 	function viewPhoto(src) {
-		document.getElementById('previewPhoto').src = src;
-		new bootstrap.Modal(document.getElementById('photoModal')).show();
+		document.getElementById('siteImageModalImg').src = src;
+		new bootstrap.Modal(document.getElementById('siteImageModal')).show();
 	}
 
 	function refreshTable() {

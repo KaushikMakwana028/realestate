@@ -53,7 +53,13 @@
  *
  * NOTE: If you change these, also change the error_reporting() code below
  */
-	define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'development');
+define('ENVIRONMENT', isset($_SERVER['CI_ENV']) ? $_SERVER['CI_ENV'] : 'development');
+
+/*
+ * Keep all PHP date()/time() values aligned with India time
+ * so created_at fields (e.g. UPAD logs) store expected local time.
+ */
+date_default_timezone_set('Asia/Kolkata');
 
 /*
  *---------------------------------------------------------------

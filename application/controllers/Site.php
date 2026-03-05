@@ -847,7 +847,17 @@ class Site extends My_Controller
 
     public function add_expenses()
     {
-        $data['sites'] = $this->general_model->getAll('sites', ['isActive' => '1']);
+        $admin_id = $this->admin['user_id'] ?? null;
+        $data['sites'] = [];
+
+        if ($admin_id) {
+            $data['sites'] = $this->db
+                ->where('admin_id', $admin_id)
+                ->where('isActive', 1)
+                ->order_by('name', 'ASC')
+                ->get('sites')
+                ->result();
+        }
 
         $this->load->view('header');
         $this->load->view('add_expenses_form', $data);
@@ -872,6 +882,25 @@ class Site extends My_Controller
         $desc = trim($this->input->post('description'));
         $date = trim($this->input->post('date'));
         $expense_image = null;
+
+        if (empty($site_id) || $amount === '' || $desc === '' || $date === '') {
+            $response['message'] = 'All fields are required';
+            echo json_encode($response);
+            return;
+        }
+
+        $site = $this->db
+            ->where('id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->get('sites')
+            ->row();
+
+        if (!$site) {
+            $response['message'] = 'Invalid site selected';
+            echo json_encode($response);
+            return;
+        }
 
         if (!empty($_FILES['expense_image']['name'])) {
             $upload_path = FCPATH . 'uploads/expenses/';

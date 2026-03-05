@@ -439,7 +439,8 @@
               <div class="mt-3">
                 <h4 class="profile-name" id="userName"><?= $name ?></h4>
                 <span class="profile-role-badge" id="userRole">
-                  <i class="bx bx-shield-quarter" style="margin-right:4px;"></i> Admin
+                  <i class="bx bx-shield-quarter" style="margin-right:4px;"></i>
+                  <?= isset($admin->role) ? ucfirst($admin->role) : '' ?>
                 </span>
               </div>
 
@@ -674,7 +675,7 @@
     } else {
       pwd.type = 'password';
       icon.classList.replace('bx-hide', 'bx-show');
-    } 
+    }
   }
 
   // Click avatar image to trigger file upload

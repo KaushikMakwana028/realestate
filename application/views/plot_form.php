@@ -36,7 +36,7 @@
                                         <option value="">Select Site</option>
                                         <?php if (isset($sites) && !empty($sites)): ?>
                                             <?php foreach ($sites as $site): ?>
-                                                <option value="<?= $site->id; ?>"><?= $site->name; ?></option>
+                                                <option value="<?= $site->id; ?>"><?= $site->name; ?></option> 
                                             <?php endforeach; ?>
                                         <?php endif; ?>
                                     </select>

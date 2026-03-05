@@ -517,6 +517,8 @@
 		justify-content: center;
 		font-size: 28px;
 		flex-shrink: 0;
+		position: relative;
+		z-index: 1;
 	}
 
 	.stats-card-primary .stats-icon {
@@ -542,6 +544,8 @@
 	.stats-info {
 		flex: 1;
 		min-width: 0;
+		position: relative;
+		z-index: 1;
 	}
 
 	.stats-label {
@@ -568,6 +572,8 @@
 		width: 52px;
 		height: 52px;
 		opacity: 0.4;
+		z-index: 0;
+		pointer-events: none;
 	}
 
 	.stats-card-primary .stats-ring {
@@ -1638,6 +1644,13 @@
 	}
 
 	@media (max-width: 767px) {
+
+		.page-header-section .d-flex.gap-2.flex-wrap .btn,
+		.page-header-section .d-flex.gap-2.flex-wrap label.btn {
+			padding: 8px 12px !important;
+			font-size: 12px;
+		}
+
 		.page-main-title {
 			font-size: 18px;
 		}
@@ -1652,6 +1665,7 @@
 
 		.stats-card {
 			padding: 16px;
+			padding-right: 52px;
 		}
 
 		.stats-icon {
@@ -1663,6 +1677,9 @@
 		.stats-ring {
 			width: 40px;
 			height: 40px;
+			right: 10px;
+			top: 10px;
+			opacity: 0.22;
 		}
 
 		.plot-main-card .card-body {
@@ -1675,12 +1692,28 @@
 
 		.search-box {
 			max-width: 100%;
+			min-width: 0;
 		}
 
 		.toolbar-actions {
 			flex-wrap: wrap;
 			width: 100%;
 			gap: 8px;
+			justify-content: flex-start;
+		}
+
+		.toolbar-actions .btn-group,
+		.toolbar-actions .btn {
+			flex: 1 1 auto;
+		}
+
+		.toolbar-actions .view-toggle {
+			width: 100%;
+			display: flex;
+		}
+
+		.toolbar-actions .view-toggle .btn {
+			width: 50%;
 		}
 
 		.btn-action::after {
@@ -1725,12 +1758,21 @@
 		.stats-card {
 			padding: 14px;
 			gap: 10px;
+			padding-right: 42px;
 		}
 
 		.stats-icon {
 			width: 40px;
 			height: 40px;
 			font-size: 18px;
+		}
+
+		.stats-ring {
+			width: 28px;
+			height: 28px;
+			right: 8px;
+			top: 8px;
+			opacity: 0.16;
 		}
 
 		.stats-label {
@@ -1745,6 +1787,14 @@
 			padding: 6px 12px;
 			font-size: 11px;
 			gap: 4px;
+			white-space: nowrap;
+		}
+
+		.plot-filter-tabs {
+			flex-wrap: nowrap;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			padding-bottom: 2px;
 		}
 
 		.filter-count {
@@ -1773,6 +1823,16 @@
 
 		#plotStatsRow {
 			grid-template-columns: 1fr !important;
+		}
+
+		.plot-main-card .card-footer .d-flex {
+			flex-direction: column;
+			align-items: stretch !important;
+		}
+
+		.pagination-modern {
+			justify-content: center;
+			flex-wrap: wrap;
 		}
 	}
 

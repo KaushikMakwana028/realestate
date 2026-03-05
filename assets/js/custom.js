@@ -1776,12 +1776,61 @@ $(document).ready(function () {
 	// Run only when upad table exists
 	if ($("#upad_table").length === 0) return;
 
-	let user_id = $("#user_id").val();
-	// let admin_id = "<?= $this->admin['user_id'] ?>";
+	const user_id = $("#user_id").val();
+	const $pagination = $(".upad-pagination").length
+		? $(".upad-pagination")
+		: $(".pagination");
 
 	let allData = [];
+	let filteredData = [];
 	let currentPage = 1;
-	let perPage = 10;
+	const perPage = 10;
+
+	function formatInr(value) {
+		const amount = Number(value || 0);
+		return "INR " + amount.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+	}
+
+	function formatDateTime(value) {
+		if (!value) return "-";
+		const dt = new Date(String(value).replace(" ", "T"));
+		if (isNaN(dt.getTime())) return value;
+		return dt.toLocaleString("en-IN", {
+			day: "2-digit",
+			month: "short",
+			year: "numeric",
+			hour: "2-digit",
+			minute: "2-digit",
+		});
+	}
+
+	function getInitials(name) {
+		const clean = String(name || "").trim();
+		return clean ? clean.charAt(0).toUpperCase() : "U";
+	}
+
+	function escapeHtml(value) {
+		return String(value ?? "")
+			.replace(/&/g, "&amp;")
+			.replace(/</g, "&lt;")
+			.replace(/>/g, "&gt;")
+			.replace(/"/g, "&quot;")
+			.replace(/'/g, "&#039;");
+	}
+
+	function updateStats(data) {
+		const rows = Array.isArray(data) ? data : [];
+		const count = rows.length;
+		const totalAmount = rows.reduce(
+			(sum, row) => sum + Number(row.amount || 0),
+			0,
+		);
+		const latestDate = rows.length ? formatDateTime(rows[0].created_at) : "-";
+
+		$("#upadStatCount").text(count);
+		$("#upadStatAmount").text(formatInr(totalAmount));
+		$("#upadStatLatest").text(latestDate);
+	}
 
 	function loadUpad() {
 		$.ajax({
@@ -1790,15 +1839,9 @@ $(document).ready(function () {
 			data: { user_id },
 			success: function (res) {
 				let response = typeof res === "string" ? JSON.parse(res) : res;
-
-				if (response.status === false || response.data.length === 0) {
-					$("#upad_table").html(`
-                        <tr><td colspan="6" class="text-center">No UPAD Records Found</td></tr>
-                    `);
-					return;
-				}
-
-				allData = response.data;
+				allData = Array.isArray(response.data) ? response.data : [];
+				filteredData = [...allData];
+				updateStats(allData);
 				renderTable();
 			},
 		});
@@ -1809,29 +1852,55 @@ $(document).ready(function () {
 		let start = (currentPage - 1) * perPage;
 		let end = start + perPage;
 
-		let sliced = allData.slice(start, end);
+		let sliced = filteredData.slice(start, end);
 		let html = "";
 
+		if (!sliced.length) {
+			$("#upad_table").html(`
+				<tr>
+					<td colspan="6">
+						<div class="upad-empty">
+							<i class="bx bx-folder-open"></i>
+							<h6>No UPAD Records Found</h6>
+							<p>Try a different search or add a new UPAD entry.</p>
+						</div>
+					</td>
+				</tr>
+			`);
+			$pagination.html("");
+			return;
+		}
+
 		sliced.forEach((r, i) => {
+			const rawName = r.user_name || "User";
+			const safeName = escapeHtml(rawName);
+			const safeNotes = escapeHtml(r.notes || "");
+			const noteText = safeNotes
+				? `<span class="upad-note">${safeNotes}</span>`
+				: `<span class="upad-note upad-note--empty">No notes</span>`;
+
 			html += `
                 <tr>
-                    <td>${start + i + 1}</td>
-                    <td>${r.user_name}</td>
-                    <td>â‚¹${r.amount}</td>
-                    <td>${r.created_at}</td>
-                    <td>${r.notes ?? ""}</td>
-                   <td>
-    <div class="d-flex order-actions">
-        <a href="javascript:;" class="editUpad" data-id="${r.id}">
-            <i class="bx bxs-edit"></i>
-        </a>
-
-        <a href="javascript:;" class="ms-3 deleteUpad" data-id="${r.id}">
-            <i class="bx bxs-trash"></i>
-        </a>
-    </div>
-</td>
-
+                    <td><span class="upad-index">${start + i + 1}</span></td>
+                    <td>
+						<div class="upad-user">
+							<span class="upad-user__avatar">${getInitials(rawName)}</span>
+							<span class="upad-user__name">${safeName}</span>
+						</div>
+					</td>
+                    <td><span class="upad-amount">${formatInr(r.amount)}</span></td>
+                    <td><span class="upad-date">${formatDateTime(r.created_at)}</span></td>
+                    <td>${noteText}</td>
+                    <td>
+						<div class="upad-actions">
+							<a href="javascript:;" class="upad-action-btn upad-action-btn--edit editUpad" data-id="${r.id}" title="Edit">
+								<i class="bx bxs-edit"></i>
+							</a>
+							<a href="javascript:;" class="upad-action-btn upad-action-btn--delete deleteUpad" data-id="${r.id}" title="Delete">
+								<i class="bx bxs-trash"></i>
+							</a>
+						</div>
+					</td>
                 </tr>
             `;
 		});
@@ -1842,7 +1911,11 @@ $(document).ready(function () {
 
 	// Pagination logic (3 buttons + next / prev)
 	function renderPagination() {
-		let totalPages = Math.ceil(allData.length / perPage);
+		let totalPages = Math.ceil(filteredData.length / perPage);
+		if (totalPages <= 1) {
+			$pagination.html("");
+			return;
+		}
 		let html = "";
 
 		// Prev
@@ -1866,7 +1939,7 @@ $(document).ready(function () {
                     <a class="page-link nextPage" href="javascript:;">Next</a>
                  </li>`;
 
-		$(".pagination").html(html);
+		$pagination.html(html);
 	}
 
 	// Pagination click
@@ -1883,7 +1956,7 @@ $(document).ready(function () {
 	});
 
 	$(document).on("click", ".nextPage", function () {
-		let totalPages = Math.ceil(allData.length / perPage);
+		let totalPages = Math.ceil(filteredData.length / perPage);
 		if (currentPage < totalPages) {
 			currentPage++;
 			renderTable();
@@ -1894,14 +1967,13 @@ $(document).ready(function () {
 	$("#serchupad").on("keyup", function () {
 		let q = $(this).val().toLowerCase();
 
-		let filtered = allData.filter(
+		filteredData = allData.filter(
 			(x) =>
-				x.user_name.toLowerCase().includes(q) ||
+				String(x.user_name || "").toLowerCase().includes(q) ||
 				x.amount.toString().includes(q) ||
 				(x.notes ?? "").toLowerCase().includes(q),
 		);
 
-		allData = filtered;
 		currentPage = 1;
 		renderTable();
 	});
@@ -2009,6 +2081,7 @@ $(document).ready(function () {
 					$("#expensesTable").html(
 						'<tr><td colspan="9" class="text-center text-danger fw-bold py-3">Failed to load records</td></tr>',
 					);
+					$("#emptyState").addClass("d-none");
 					buildPagination(0, 10, 1);
 					updateExpenseSummary({});
 					return;
@@ -2017,16 +2090,11 @@ $(document).ready(function () {
 
 				$("#expensesTable").html("");
 				if (res.records.length === 0) {
-					$("#expensesTable").html(`
-        <tr>
-            <td colspan="9" class="text-center text-danger fw-bold py-3">
-                No Record Found
-            </td>
-        </tr>
-    `);
+					$("#emptyState").removeClass("d-none");
 					buildPagination(0, res.limit, res.page);
 					return;
 				}
+				$("#emptyState").addClass("d-none");
 
 				let indexStart = (page - 1) * 10 + 1;
 
@@ -2475,7 +2543,7 @@ $(document).ready(function () {
 	if (!document.getElementById("inquiryTableBody")) return;
 
 	let currentPage = 1;
-	let lastData = [];
+	let searchTimer = null;
 
 	function esc(v) {
 		return String(v ?? "")
@@ -2486,114 +2554,103 @@ $(document).ready(function () {
 			.replace(/'/g, "&#39;");
 	}
 
-	function updateStats(rows) {
-		const total = rows.length;
-		const now = new Date();
-		const today = now.toISOString().slice(0, 10);
-		const day = now.getDay();
-		const diffToMonday = day === 0 ? 6 : day - 1;
-		const weekStart = new Date(now);
-		weekStart.setDate(now.getDate() - diffToMonday);
-		weekStart.setHours(0, 0, 0, 0);
-
-		let todayCount = 0;
-		let weekCount = 0;
-
-		rows.forEach((r) => {
-			const dt = String(r.created_at || "").slice(0, 10);
-			if (dt === today) todayCount += 1;
-			const d = r.created_at ? new Date(r.created_at.replace(" ", "T")) : null;
-			if (d && d >= weekStart) weekCount += 1;
-		});
-
-		$("#statTotalEnquiries").text(total);
-		$("#statTodayEnquiries").text(todayCount);
-		$("#statWeekEnquiries").text(weekCount);
-		$("#statPendingEnquiries").text(total);
+	function updateStats(stats) {
+		const s = stats || {};
+		$("#statTotalEnquiries").text(Number(s.total_enquiries || 0));
+		$("#statTodayEnquiries").text(Number(s.today_enquiries || 0));
+		$("#statWeekEnquiries").text(Number(s.week_enquiries || 0));
+		$("#statPendingEnquiries").text(Number(s.pending_enquiries || 0));
 	}
 
-	function applyClientFilters() {
-		const selectedSite = ($("#filterSite").val() || "").toLowerCase();
-		const selectedDate = ($("#filterDate").val() || "").toLowerCase();
-		const now = new Date();
-		let visible = 0;
-
-		$("#inquiryTableBody tr").each(function () {
-			const site = String($(this).data("site") || "").toLowerCase();
-			const dateStr = String($(this).data("date") || "");
-			let siteOk = !selectedSite || site === selectedSite;
-			let dateOk = true;
-
-			if (selectedDate && dateStr) {
-				const d = new Date(dateStr + "T00:00:00");
-				const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-				if (selectedDate === "today") {
-					dateOk =
-						d.getFullYear() === today.getFullYear() &&
-						d.getMonth() === today.getMonth() &&
-						d.getDate() === today.getDate();
-				} else if (selectedDate === "week") {
-					const day = today.getDay();
-					const diffToMonday = day === 0 ? 6 : day - 1;
-					const weekStart = new Date(today);
-					weekStart.setDate(today.getDate() - diffToMonday);
-					dateOk = d >= weekStart;
-				} else if (selectedDate === "month") {
-					dateOk =
-						d.getFullYear() === today.getFullYear() &&
-						d.getMonth() === today.getMonth();
-				}
-			}
-
-			const show = siteOk && dateOk;
-			$(this).toggle(show);
-			if (show) visible += 1;
-		});
-
-		$("#enqEmptyState").toggleClass("d-none", visible > 0);
+	function setDefaultInquiryMonth() {
+		// Load current month by default.
+		if (!$("#filterMonth").val()) {
+			const d = new Date();
+			const yyyy = d.getFullYear();
+			const mm = String(d.getMonth() + 1).padStart(2, "0");
+			$("#filterMonth").val(`${yyyy}-${mm}`);
+		}
 	}
 
-	function populateSiteFilter(rows) {
+	function initSiteSelect() {
+		const $site = $("#filterSite");
+		if (!$site.length || typeof $.fn.select2 !== "function") return;
+		if ($site.data("select2")) return;
+		$site.select2({
+			placeholder: "All Sites",
+			allowClear: true,
+			width: "220px",
+			dropdownAutoWidth: true,
+		});
+	}
+
+	function populateSiteFilter(siteOptions) {
 		const $site = $("#filterSite");
 		if (!$site.length) return;
 		const current = $site.val() || "";
-		const uniqueSites = [...new Set(rows.map((r) => String(r.name || "").trim()).filter(Boolean))];
+
 		let html = '<option value="">All Sites</option>';
-		uniqueSites.forEach((s) => {
-			html += `<option value="${esc(s)}">${esc(s)}</option>`;
+		(siteOptions || []).forEach((site) => {
+			const siteId = String(site.id || "").trim();
+			const siteName = String(site.name || "").trim();
+			if (!siteId || !siteName) return;
+			html += `<option value="${esc(siteId)}">${esc(siteName)}</option>`;
 		});
+
 		$site.html(html);
-		$site.val(current);
+		if (current && $site.find(`option[value="${current}"]`).length > 0) {
+			$site.val(current);
+		} else {
+			$site.val("");
+		}
+		if ($site.data("select2")) {
+			$site.trigger("change.select2");
+		}
+	}
+
+	function getInquiryFilters() {
+		return {
+			site_filter: ($("#filterSite").val() || "").trim(),
+			month_filter: ($("#filterMonth").val() || "").trim(),
+		};
+	}
+
+	function toggleShowAllInquiryButton() {
+		const filters = getInquiryFilters();
+		const hasFilters =
+			!!($("#serchinquiry").val() || "").trim() ||
+			!!filters.site_filter ||
+			!!filters.month_filter;
+		$("#showAllInquiryBtn").toggleClass("d-none", !hasFilters);
 	}
 
 	function loadInquiries(page = 1, search = "") {
+		const filters = getInquiryFilters();
+		toggleShowAllInquiryButton();
 		$.ajax({
 			url: site_url + "dashboard/fetch_inquiries",
 			type: "POST",
-			data: { page: page, search: search },
+			data: {
+				page: page,
+				search: search,
+				site_filter: filters.site_filter,
+				month_filter: filters.month_filter,
+			},
 			dataType: "json",
 			success: function (res) {
 				let tbody = "";
+				populateSiteFilter(res.site_options || []);
+				updateStats(res.stats || null);
 
 				// If NO DATA, show message
 				if (!res.data || res.data.length === 0) {
-					tbody = `
-                    <tr>
-                        <td colspan="9" class="text-center text-danger fw-bold">
-                            No Record Found
-                        </td>
-                    </tr>`;
-					$("#inquiryTableBody").html(tbody);
+					$("#inquiryTableBody").html("");
 					$("#enqEmptyState").removeClass("d-none");
 					$("#enqPaginationInfo").text("No enquiries found");
-					$("#statTotalEnquiries, #statTodayEnquiries, #statWeekEnquiries, #statPendingEnquiries").text("0");
 					renderPagination(0, res.limit, res.page);
+					toggleShowAllInquiryButton();
 					return;
 				}
-
-				lastData = res.data;
-				populateSiteFilter(lastData);
-				updateStats(lastData);
 
 				res.data.forEach((row, index) => {
 					// Safe note handling
@@ -2648,7 +2705,7 @@ $(document).ready(function () {
 				const start = (page - 1) * (res.limit || 10) + 1;
 				const end = start + res.data.length - 1;
 				$("#enqPaginationInfo").text(`Showing ${start}-${end} of ${res.total} enquiries`);
-				applyClientFilters();
+				toggleShowAllInquiryButton();
 			},
 		});
 	}
@@ -2694,13 +2751,33 @@ $(document).ready(function () {
 	// Search
 	$("#serchinquiry").on("keyup", function () {
 		let keyword = $(this).val();
-		loadInquiries(1, keyword);
+		toggleShowAllInquiryButton();
+		clearTimeout(searchTimer);
+		searchTimer = setTimeout(function () {
+			loadInquiries(1, keyword);
+		}, 250);
 	});
-	$("#filterSite, #filterDate").on("change", function () {
-		applyClientFilters();
+
+	$("#filterSite, #filterMonth").on("change", function () {
+		toggleShowAllInquiryButton();
+		loadInquiries(1, $("#serchinquiry").val());
+	});
+
+	$(document).on("click", "#showAllInquiryBtn", function () {
+		$("#serchinquiry").val("");
+		$("#filterMonth").val("");
+		$("#filterSite").val("");
+		if ($("#filterSite").data("select2")) {
+			$("#filterSite").trigger("change.select2");
+		}
+		toggleShowAllInquiryButton();
+		loadInquiries(1, "");
 	});
 
 	// Initial Load
+	setDefaultInquiryMonth();
+	initSiteSelect();
+	toggleShowAllInquiryButton();
 	loadInquiries();
 	// DELETE INQUIRY (SOFT DELETE)
 	$(document).on("click", ".deleteInquiry", function () {
@@ -2740,6 +2817,7 @@ $(document).ready(function () {
 
 	let currentPage = 1;
 	let currentSearch = "";
+	let defaultAttendanceMonth = "";
 
 	function esc(v) {
 		return String(v ?? "")
@@ -2780,16 +2858,30 @@ $(document).ready(function () {
 	}
 
 	function getAttendanceFilters() {
+		const monthVal = ($("#dateFilter").val() || "").trim();
 		return {
-			date_filter: ($("#dateFilter").val() || "").trim(),
+			date_filter: monthVal,
+			month_filter: monthVal,
 			status_filter: ($("#statusFilter").val() || "").toLowerCase().trim(),
 		};
 	}
 
+	function setDefaultAttendanceMonth() {
+		const d = new Date();
+		const yyyy = d.getFullYear();
+		const mm = String(d.getMonth() + 1).padStart(2, "0");
+		defaultAttendanceMonth = `${yyyy}-${mm}`;
+		if (!$("#dateFilter").val()) {
+			$("#dateFilter").val(defaultAttendanceMonth);
+		}
+	}
+
 	function toggleShowAllButton() {
 		const filters = getAttendanceFilters();
+		const hasMonthOverride =
+			!!filters.month_filter && filters.month_filter !== defaultAttendanceMonth;
 		const hasFilters =
-			!!filters.date_filter || !!filters.status_filter || !!currentSearch.trim();
+			hasMonthOverride || !!filters.status_filter || !!currentSearch.trim();
 		$("#showAllAttendanceBtn").toggleClass("d-none", !hasFilters);
 	}
 
@@ -2832,6 +2924,7 @@ $(document).ready(function () {
 				page: page,
 				search: currentSearch,
 				date_filter: filters.date_filter,
+				month_filter: filters.month_filter,
 				status_filter: filters.status_filter,
 			},
 			dataType: "json",
@@ -2840,9 +2933,7 @@ $(document).ready(function () {
 				$("#loadingState").addClass("d-none");
 
 				if (!res.data || res.data.length === 0) {
-					$("#attedanceTableBody").html(
-						`<tr><td colspan="7" class="text-center text-danger">No Record Found</td></tr>`,
-					);
+					$("#attedanceTableBody").html("");
 					$("#totalRecords").text("0");
 					$("#attendancePagination").html("");
 					updateStats([], res.stats || null);
@@ -2856,22 +2947,29 @@ $(document).ready(function () {
 					const dateOnly = dt ? dt.split(" ")[0] : "";
 					const status = String(row.status || "").toLowerCase();
 
+					const imagePath = esc(row.image_path || "");
 					tbody += `<tr data-date="${esc(dateOnly)}" data-status="${esc(status)}">
 						<td>${(page - 1) * (res.limit || 10) + index + 1}</td>
 						<td>${esc(row.user_name || "-")}</td>
-						<td><img src="${esc(row.image_path || "")}" width="60" height="60" class="rounded"></td>
+						<td>
+							${
+								imagePath
+									? `<img src="${imagePath}" class="attendance-photo-thumb attendancePhotoPreview" data-full="${imagePath}" alt="Attendance Photo">`
+									: "-"
+							}
+						</td>
 						<td>${esc(dt)}</td>
 						<td>${getStatusUI(status)}</td>
 						<td>${esc(row.mobile || "-")}</td>
 						<td>
-							<div class="d-flex order-actions gap-2">
-								<a href="javascript:;" class="ms-3 text deleteAttendance" data-id="${row.id}">
+							<div class="d-flex justify-content-center align-items-center gap-2 attendance-action-wrap">
+								<button type="button" class="btn action-btn action-btn-delete deleteAttendance" data-id="${row.id}" title="Delete">
 									<i class="bx bxs-trash"></i>
-								</a>
+								</button>
 								<div class="dropdown">
-									<a href="javascript:;" class="text-dark" data-bs-toggle="dropdown">
+									<button type="button" class="btn action-btn action-btn-menu" data-bs-toggle="dropdown" aria-expanded="false" title="Change Status">
 										<i class="bx bx-dots-vertical-rounded font-20"></i>
-									</a>
+									</button>
 									<ul class="dropdown-menu dropdown-menu-end">
 										<li><a class="dropdown-item changeStatus" data-id="${row.id}" data-status="present"><i class="bx bx-check-circle me-2 text-success"></i> Present</a></li>
 										<li><a class="dropdown-item changeStatus" data-id="${row.id}" data-status="absent"><i class="bx bx-x-circle me-2 text-danger"></i> Absent</a></li>
@@ -2919,6 +3017,15 @@ $(document).ready(function () {
 		$("#dateFilter").val("");
 		$("#statusFilter").val("");
 		loadAttendance(1, "");
+	});
+
+	$(document).on("click", ".attendancePhotoPreview", function () {
+		const src = $(this).data("full") || $(this).attr("src");
+		$("#siteImageModalImg").attr("src", src || "");
+		const modalEl = document.getElementById("siteImageModal");
+		if (!modalEl) return;
+		const modal = new bootstrap.Modal(modalEl);
+		modal.show();
 	});
 
 	$(document).on("click", ".changeStatus", function () {
@@ -2981,6 +3088,7 @@ $(document).ready(function () {
 		loadAttendance(currentPage, currentSearch);
 	};
 
+	setDefaultAttendanceMonth();
 	toggleShowAllButton();
 	loadAttendance();
 });
@@ -3104,9 +3212,17 @@ $(document).ready(function () {
 					.toLowerCase();
 				const statusValue = rawStatus === "requested" ? "pending" : rawStatus;
 				const sourceValue = (log.log_source || "cash").toString().toLowerCase();
-				const notesText = (log.notes || "").toString().toLowerCase();
+				const notesRaw = (log.notes || "").toString();
+				const notesText = notesRaw.toLowerCase();
 				const isInstallmentEntry =
 					sourceValue === "emi" || notesText.indexOf("emi") !== -1;
+				const isDownPaymentFlag = parseInt(log.is_down_payment || 0, 10) === 1;
+				const isDownPayment =
+					isDownPaymentFlag ||
+					sourceValue === "cash" &&
+					!isInstallmentEntry &&
+					(notesText.indexOf("down payment") !== -1 ||
+						notesText.indexOf("initial payment") !== -1);
 				const isRequested = parseInt(log.is_requested || 0, 10) === 1;
 				const manualPaidByNote =
 					isRequested ||
@@ -3131,6 +3247,9 @@ $(document).ready(function () {
 						<option value="reject" ${optionSelected("reject")}>Reject</option>
 					</select>
 				`;
+				const paymentTypeBadge = isDownPayment
+					? '<span class="payment-type-tag">Down Payment</span>'
+					: "";
 
 				html += `
 					<tr class="${rowClass}" data-installment="${isInstallmentEntry ? 1 : 0}" data-manual-paid="${manualPaidByNote ? 1 : 0}">
@@ -3150,7 +3269,10 @@ $(document).ready(function () {
 						<td><span class="site-badge">${escapeHtml(siteName)}</span></td>
 						<td><span class="plot-badge">${escapeHtml(plotNumber)}</span></td>
 						<td><span class="${dateClass}">${safeDate}</span></td>
-						<td><span class="amount-cell">${safeAmount}</span></td>
+						<td>
+							<span class="amount-cell">${safeAmount}</span>
+							${paymentTypeBadge}
+						</td>
 						<td class="text-center">${actionHtml}</td>
 					</tr>
 				`;

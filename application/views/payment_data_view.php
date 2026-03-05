@@ -25,10 +25,10 @@
 
             <!-- Card Header -->
             <div class="card-header bg-white border-bottom py-3">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 payment-header-row">
 
                     <!-- Left: Title -->
-                    <div class="d-flex align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 payment-title-wrap">
                         <div class="header-icon-box">
                             <i class="bx bx-money"></i>
                         </div>
@@ -39,7 +39,7 @@
                     </div>
 
                     <!-- Right: Search + Print -->
-                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <div class="d-flex align-items-center gap-2 flex-wrap payment-actions">
 
                         <!-- Search -->
                         <div class="search-box position-relative">
@@ -124,7 +124,7 @@
                 </div>
 
                 <!-- Table Responsive -->
-                <div class="table-responsive">
+                <div class="table-responsive payment-table-wrap">
                     <table class="table payment-table mb-0" id="paymentTable">
 
                         <thead>
@@ -255,6 +255,10 @@
         background: #f8f9ff;
     }
 
+    .payment-actions {
+        justify-content: flex-end;
+    }
+
     .search-input:focus {
         border-color: #0f3460;
         box-shadow: 0 0 0 3px rgba(15, 52, 96, 0.1);
@@ -298,6 +302,7 @@
         padding: 14px 24px;
         border-right: 1px solid #eef0f8;
         flex: 1;
+        min-width: 0;
     }
 
     .stat-item:last-child {
@@ -446,6 +451,15 @@
         border-bottom: 1px solid #f0f2fa;
     }
 
+    .payment-table-wrap {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .payment-table {
+        min-width: 920px;
+    }
+
     /* Index badge */
     .index-badge {
         width: 28px;
@@ -524,6 +538,20 @@
         font-size: 13px;
         font-weight: 700;
         color: #27ae60;
+    }
+
+    .payment-type-tag {
+        display: inline-block;
+        margin-top: 5px;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background: #fff4d6;
+        border: 1px solid #f4c86a;
+        color: #9a6700;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
     }
 
     .emi-card-subvalue {
@@ -679,14 +707,144 @@
     }
 
     @media (max-width: 768px) {
+        .card-header {
+            padding: 12px !important;
+        }
+
+        .payment-header-row {
+            align-items: flex-start !important;
+        }
+
+        .payment-title-wrap {
+            width: 100%;
+        }
+
+        .payment-title-wrap h5 {
+            font-size: 16px;
+        }
+
+        .payment-title-wrap small {
+            font-size: 11px;
+        }
+
+        .payment-actions {
+            width: 100%;
+            justify-content: flex-start;
+            gap: 8px !important;
+        }
+
+        .search-box {
+            flex: 1 1 100%;
+            width: 100%;
+        }
+
+        .search-input {
+            width: 100%;
+            height: 36px;
+            font-size: 12px;
+        }
+
+        .btn-print {
+            width: 100%;
+            text-align: center;
+            padding: 8px 12px;
+            font-size: 12px;
+        }
+
+        .stats-strip {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+
+        .stat-item {
+            padding: 12px;
+            border-right: none;
+            border-bottom: 1px solid #eef0f8;
+        }
+
+        .stat-item:nth-child(odd) {
+            border-right: 1px solid #eef0f8;
+        }
+
+        .stat-item:last-child {
+            grid-column: 1 / -1;
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .stat-val {
+            font-size: 15px;
+        }
+
+        .stat-lbl {
+            font-size: 10px;
+        }
+
         .emi-summary-wrap {
             grid-template-columns: repeat(2, minmax(0, 1fr));
+            padding: 10px;
+            gap: 10px;
+        }
+
+        .emi-card {
+            min-height: 78px;
+            padding: 10px;
+        }
+
+        .emi-card-value {
+            font-size: 16px;
+        }
+
+        .payment-table thead th,
+        .payment-table tbody td {
+            font-size: 12px;
+            padding: 10px 11px;
+        }
+
+        .custom-pagination {
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        #paginationInfo {
+            width: 100%;
+            text-align: center;
         }
     }
 
     @media (max-width: 576px) {
+        .header-icon-box {
+            width: 36px;
+            height: 36px;
+            font-size: 17px;
+        }
+
+        .stats-strip {
+            grid-template-columns: 1fr;
+        }
+
+        .stat-item,
+        .stat-item:nth-child(odd),
+        .stat-item:last-child {
+            grid-column: auto;
+            border-right: none;
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
         .emi-summary-wrap {
             grid-template-columns: 1fr;
         }
+
+        .emi-card-label {
+            font-size: 10px;
+        }
+
+        .emi-card-value {
+            font-size: 15px;
+        }
     }
 </style>
+ 

@@ -57,6 +57,8 @@ class Api extends CI_Controller
         }
 
         $user = $this->db->get_where('users', ['mobile' => $mobile])->row();
+        // print_r($user);
+        // die;
 
         if (!$user) {
             return $this->output
@@ -1060,7 +1062,7 @@ class Api extends CI_Controller
     {
         header('Content-Type: application/json');
 
-        // ---------------------- 1. AUTH -----------------------
+        // 1) Auth
         $authHeader = $this->input->get_request_header('Authorization', TRUE);
         if (!$authHeader || !preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
             return $this->respond(false, 400, "Missing or invalid authorization header");
@@ -1073,27 +1075,23 @@ class Api extends CI_Controller
 
         $user_id = (int) $decoded->data->id;
 
-        // ---------------------- GET ADMIN ---------------------
-        $user = $this->db->get_where('users', ['id' => $user_id])->row();
-        if (!$user || !$user->admin_id) {
-            return $this->respond(false, 400, "Something went wrong");
-        }
-
-        $admin_id = $user->admin_id;
-
-        // --------------------- 2. INPUT -----------------------
+        // 2) Input
         $input = json_decode($this->input->raw_input_stream, true);
         if (empty($input)) {
             return $this->respond(false, 400, "Invalid or missing input data");
         }
 
-        // Required main fields
         $main_required = ['plot_id', 'plot_number', 'site_id', 'total_price'];
         foreach ($main_required as $field) {
             if (empty($input[$field])) {
                 return $this->respond(false, 400, "$field is required");
             }
         }
+
+        $plot_id = (int) $input['plot_id'];
+        $site_id = (int) $input['site_id'];
+        $input_plot_number = trim((string) $input['plot_number']);
+        $total_price = (float) $input['total_price'];
 
         if (empty($input['buyer']) || !is_array($input['buyer'])) {
             return $this->respond(false, 400, "buyer payload is required");
@@ -1102,13 +1100,48 @@ class Api extends CI_Controller
             return $this->respond(false, 400, "payment payload is required");
         }
 
-        // Buyer fields
+        // 3) Buyer validation
         $buyer = $input['buyer'];
         $buyer_required = ['name', 'mobile', 'email', 'address', 'aadhar'];
         foreach ($buyer_required as $field) {
             if (empty($buyer[$field])) {
                 return $this->respond(false, 400, "Buyer $field is required");
             }
+        }
+
+        // 4) Resolve access context
+        $user = $this->db->select('id, admin_id, isActive')
+            ->where('id', $user_id)
+            ->get('users')
+            ->row();
+        if (!$user || (int) $user->isActive !== 1) {
+            return $this->respond(false, 400, "User not found or inactive");
+        }
+
+        $site = $this->db->select('id, admin_id, isActive')
+            ->where('id', $site_id)
+            ->get('sites')
+            ->row();
+        if (!$site || (int) $site->isActive !== 1) {
+            return $this->respond(false, 400, "Site not found");
+        }
+
+        $site_admin_id = (int) $site->admin_id;
+        $user_admin_id = (int) ($user->admin_id ?? 0);
+        $admin_id = $user_admin_id;
+
+        // If user admin_id mismatches, allow only when assigned to this site under that admin.
+        if ($user_admin_id !== $site_admin_id) {
+            $assignment = $this->db
+                ->where('user_id', $user_id)
+                ->where('site_id', $site_id)
+                ->where('admin_id', $site_admin_id)
+                ->get('site_assignments')
+                ->row();
+            if (!$assignment) {
+                return $this->respond(false, 400, "You are not allowed to add buyer for this site");
+            }
+            $admin_id = $site_admin_id;
         }
 
         $payment = $input['payment'];
@@ -1129,20 +1162,29 @@ class Api extends CI_Controller
             }
         }
 
-        // --------------------- 3. PLOT CHECK ------------------
-        $plot = $this->db->get_where('plots', ['id' => $input['plot_id'], 'admin_id' => $admin_id])->row();
+        // 5) Plot access check
+        $plot = $this->db
+            ->where('id', $plot_id)
+            ->where('site_id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->get('plots')
+            ->row();
         if (!$plot) {
             return $this->respond(false, 400, "Plot not found");
         }
 
-        // ❗ If plot is already SOLD — stop entry
+        if ($input_plot_number !== '' && strcasecmp(trim((string) $plot->plot_number), $input_plot_number) !== 0) {
+            return $this->respond(false, 400, "plot_number does not match selected plot_id");
+        }
+
         if (strtolower($plot->status) === 'sold') {
             return $this->respond(false, 400, "This plot is already sold");
         }
 
-        // --------------------- 4. DUPLICATE BUYER -------------
+        // 6) Duplicate buyer guard
         $existing_active_buyer = $this->db
-            ->where('plot_id', $input['plot_id'])
+            ->where('plot_id', $plot_id)
             ->where('admin_id', $admin_id)
             ->where('isActive', 1)
             ->order_by('id', 'DESC')
@@ -1153,11 +1195,11 @@ class Api extends CI_Controller
             return $this->respond(false, 400, "This plot already has an active buyer");
         }
 
-        // --------------------- 5. INSERT BUYER ----------------
+        // 7) Insert buyer
         $buyerData = [
             'user_id' => $user_id,
             'admin_id' => $admin_id,
-            'plot_id' => $input['plot_id'],
+            'plot_id' => $plot_id,
             'name' => $buyer['name'],
             'mobile' => $buyer['mobile'],
             'email' => $buyer['email'],
@@ -1174,25 +1216,24 @@ class Api extends CI_Controller
             return $this->respond(false, 400, "Failed to insert buyer");
         }
 
-        // --------------------- 6. INSERT PAYMENT DETAILS ------
+        // 8) Insert payment details
         $paymentData = [
             'user_id'          => $user_id,
             'buyer_id'         => $buyer_id,
-            'plot_id'          => $input['plot_id'],
+            'plot_id'          => $plot_id,
             'admin_id'         => $admin_id,
-            'total_price'      => $input['total_price'],
+            'total_price'      => $total_price,
             'payment_mode'     => $payment_mode,
             'down_payment'     => $down_payment,
             'remaining_amount' => $remaining_amount,
-            'notes'            => $payment['notes']             ?? null,
+            'notes'            => $payment['notes'] ?? null,
             'created_on'       => date('Y-m-d H:i:s'),
         ];
 
-        // Add EMI-specific fields only if EMI mode
         if ($payment_mode === 'EMI') {
-            $paymentData['emi_duration']        = $emi_duration;
-            $paymentData['emi_start_date']      = $emi_start_date;
-            $paymentData['installment_amount']  = $installment_amount;
+            $paymentData['emi_duration']       = $emi_duration;
+            $paymentData['emi_start_date']     = $emi_start_date;
+            $paymentData['installment_amount'] = $installment_amount;
         }
 
         $this->db->insert('payment_details', $paymentData);
@@ -1202,16 +1243,16 @@ class Api extends CI_Controller
             return $this->respond(false, 400, "Failed to insert payment details");
         }
 
-        // --------------------- CASH LOG -------------------------
+        // 9) Cash log
         if ($payment_mode === 'CASH') {
             $cashLog = [
                 'admin_id'         => $admin_id,
                 'user_id'          => $user_id,
                 'buyer_id'         => $buyer_id,
-                'plot_id'          => $input['plot_id'],
+                'plot_id'          => $plot_id,
                 'paid_amount'      => $down_payment,
                 'remaining_amount' => $remaining_amount,
-                'total_price'      => $input['total_price'],
+                'total_price'      => $total_price,
                 'status'           => 'pending',
                 'notes'            => $payment['notes'] ?? null,
                 'created_on'       => date('Y-m-d H:i:s'),
@@ -1219,23 +1260,21 @@ class Api extends CI_Controller
             $this->db->insert('cash_payment_logs', $cashLog);
         }
 
-        // --------------------- EMI LOGS -------------------------
+        // 10) EMI rows
         $emiRows = [];
 
         if ($payment_mode === 'EMI') {
-            $start_date   = $emi_start_date;
-            $months       = $emi_duration;
-            $monthly_emi  = $installment_amount;
+            $start_date = $emi_start_date;
+            $months = $emi_duration;
+            $monthly_emi = $installment_amount;
 
             for ($i = 1; $i <= $months; $i++) {
-                // Each EMI date is i months after start date
                 $emi_date = date('Y-m-d', strtotime("+$i month", strtotime($start_date)));
 
                 $emiRows[] = [
                     'payment_id' => $payment_id,
                     'buyer_id'   => $buyer_id,
-                    'plot_id'    => $input['plot_id'],
-                    // 'admin_id'   => $admin_id,
+                    'plot_id'    => $plot_id,
                     'month_no'   => $i,
                     'emi_date'   => $emi_date,
                     'emi_amount' => $monthly_emi,
@@ -1247,18 +1286,17 @@ class Api extends CI_Controller
             $this->db->insert_batch('emi_logs', $emiRows);
         }
 
-        // --------------------- UPDATE PLOT STATUS → SOLD --------
-        $this->db->where('id', $input['plot_id']);
+        // 11) Mark plot sold
+        $this->db->where('id', $plot_id);
         $this->db->update('plots', ['status' => 'sold']);
 
-        // --------------------- SUCCESS --------------------------
+        // 12) Success
         return $this->respond(true, 200, "Buyer & payment saved successfully", [
-            "buyer"     => $buyerData,
-            "payment"   => $paymentData,
-            "emi_rows"  => $emiRows,
+            "buyer" => $buyerData,
+            "payment" => $paymentData,
+            "emi_rows" => $emiRows,
         ]);
     }
-
 
     private function respond($status, $code, $message, $data = null)
     {

@@ -80,12 +80,11 @@
 							<select class="form-select enq-filter-select" id="filterSite">
 								<option value="">All Sites</option>
 							</select>
-							<select class="form-select enq-filter-select" id="filterDate">
-								<option value="">All Time</option>
-								<option value="today">Today</option>
-								<option value="week">This Week</option>
-								<option value="month">This Month</option>
-							</select>
+							<input type="month" class="form-control enq-filter-select" id="filterMonth">
+							<button type="button" class="btn btn-outline-primary enq-show-all-btn d-none"
+								id="showAllInquiryBtn" title="Show all enquiries data">
+								<i class="bx bx-list-ul me-1"></i>Show All Data
+							</button>
 						</div>
 						<!-- <button class="btn enq-export-btn" title="Export">
 							<i class="bx bx-download"></i>
@@ -396,6 +395,35 @@
 	.enq-filter-select:focus {
 		border-color: #6366f1;
 		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+	}
+
+	.enq-filter-group .select2-container {
+		min-width: 220px !important;
+	}
+
+	.enq-filter-group .select2-container .select2-selection--single {
+		height: 40px;
+		border-radius: 10px;
+		border: 1.5px solid #e5e7eb;
+		background: #f9fafb;
+	}
+
+	.enq-filter-group .select2-container .select2-selection__rendered {
+		line-height: 37px;
+		font-size: 13px;
+		color: #374151;
+		padding-left: 12px;
+	}
+
+	.enq-filter-group .select2-container .select2-selection__arrow {
+		height: 38px;
+	}
+
+	.enq-show-all-btn {
+		height: 40px;
+		border-radius: 10px;
+		white-space: nowrap;
+		font-size: 13px;
 	}
 
 	.enq-export-btn {
@@ -1015,42 +1043,6 @@
 </style>
 
 <script>
-	// ═══════════════════════════════════════
-	// Search with debounce
-	// ═══════════════════════════════════════
-	(function() {
-		var searchTimer;
-		var searchInput = document.getElementById('serchinquiry');
-		if (searchInput) {
-			searchInput.addEventListener('input', function() {
-				clearTimeout(searchTimer);
-				var val = this.value.toLowerCase();
-				searchTimer = setTimeout(function() {
-					var rows = document.querySelectorAll('#inquiryTableBody tr');
-					var hasVisible = false;
-					rows.forEach(function(row) {
-						var text = row.textContent.toLowerCase();
-						if (text.indexOf(val) > -1) {
-							row.style.display = '';
-							hasVisible = true;
-						} else {
-							row.style.display = 'none';
-						}
-					});
-
-					var emptyState = document.getElementById('enqEmptyState');
-					if (emptyState) {
-						if (!hasVisible && val.length > 0) {
-							emptyState.classList.remove('d-none');
-						} else {
-							emptyState.classList.add('d-none');
-						}
-					}
-				}, 300);
-			});
-		}
-	})();
-
 	// ═══════════════════════════════════════
 	// Enquiry Detail Modal
 	// ═══════════════════════════════════════

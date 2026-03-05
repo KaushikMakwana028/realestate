@@ -41,8 +41,17 @@ class Plots extends My_Controller
 
     public function add_plot()
     {
+        $admin_id = $this->admin['user_id'] ?? null;
+        $data['sites'] = [];
 
-        $data['sites'] = $this->general_model->getAll('sites', ['isActive' => '1']);
+        if ($admin_id) {
+            $data['sites'] = $this->db
+                ->where('admin_id', $admin_id)
+                ->where('isActive', 1)
+                ->order_by('name', 'ASC')
+                ->get('sites')
+                ->result();
+        }
 
         $this->load->view('header');
 
@@ -83,6 +92,19 @@ class Plots extends My_Controller
         }
 
         // ❗ OPTIONAL: Avoid duplicate plot number inside same site
+        $site = $this->db
+            ->where('id', $site_id)
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->get('sites')
+            ->row();
+
+        if (!$site) {
+            $response['message'] = 'Invalid site selected';
+            echo json_encode($response);
+            return;
+        }
+
         $exists = $this->general_model->getOne('plots', [
             'site_id' => $site_id,
             'plot_number' => $plot_number
@@ -923,6 +945,8 @@ class Plots extends My_Controller
         $payment_installment_map = [];
         $payment_meta_map = [];
         $total_installments_expected = 0;
+        $payment_rows = [];
+        $down_payment_seed_logs = [];
         if (!empty($payment_ids)) {
             $payment_fields = $this->db->list_fields("payment_details");
             $installment_col = null;
@@ -932,7 +956,23 @@ class Plots extends My_Controller
                 $installment_col = "insatallment_amount";
             }
 
-            $select_cols = "id, buyer_id, plot_id, emi_duration, emi_start_date, remaining_amount, total_price, down_payment";
+            $base_cols = [
+                "id",
+                "buyer_id",
+                "plot_id",
+                "emi_duration",
+                "emi_start_date",
+                "remaining_amount",
+                "total_price",
+                "down_payment"
+            ];
+            if (in_array("created_on", $payment_fields, true)) {
+                $base_cols[] = "created_on";
+            }
+            if (in_array("created_at", $payment_fields, true)) {
+                $base_cols[] = "created_at";
+            }
+            $select_cols = implode(", ", $base_cols);
             if ($installment_col !== null) {
                 $select_cols .= ", {$installment_col} AS installment_amount";
             }
@@ -976,6 +1016,51 @@ class Plots extends My_Controller
                 if ($duration > $total_installments_expected) {
                     $total_installments_expected = $duration;
                 }
+            }
+
+            // Guarantee down payment visibility even when cash logs already exist.
+            foreach ($payment_rows as $p) {
+                $down_payment = (float) ($p->down_payment ?? 0);
+                if ($down_payment <= 0) {
+                    continue;
+                }
+
+                $has_down_payment_log = false;
+                foreach ($cash_logs as $cash_log) {
+                    $cash_amount = (float) ($cash_log->paid_amount ?? 0);
+                    if ($cash_amount <= 0) {
+                        continue;
+                    }
+
+                    $cash_notes = strtolower((string) ($cash_log->notes ?? ""));
+                    $note_marks_down_payment =
+                        strpos($cash_notes, "down payment") !== false ||
+                        strpos($cash_notes, "initial payment") !== false;
+                    $amount_matches_down_payment = abs($cash_amount - $down_payment) < 0.01;
+
+                    if ($note_marks_down_payment || $amount_matches_down_payment) {
+                        $cash_log->is_down_payment = 1;
+                        $has_down_payment_log = true;
+                        break;
+                    }
+                }
+
+                if ($has_down_payment_log) {
+                    continue;
+                }
+
+                $virtual_down = new stdClass();
+                $virtual_down->id = 0;
+                $virtual_down->log_source = "cash";
+                $virtual_down->buyer_id = (int) ($p->buyer_id ?? $buyer_id);
+                $virtual_down->plot_id = (int) ($p->plot_id ?? $plot_id);
+                $virtual_down->paid_amount = $down_payment;
+                $virtual_down->status = "approve";
+                $virtual_down->created_on = $p->created_on ?? ($p->created_at ?? date('Y-m-d H:i:s'));
+                $virtual_down->notes = "Initial down payment";
+                $virtual_down->is_requested = 0;
+                $virtual_down->is_down_payment = 1;
+                $down_payment_seed_logs[] = $virtual_down;
             }
         }
 
@@ -1199,6 +1284,10 @@ class Plots extends My_Controller
 
             $merged_logs[] = $entry;
             $effective_emi_rows[] = $entry;
+        }
+
+        foreach ($down_payment_seed_logs as $seed) {
+            $other_cash_logs[] = $seed;
         }
 
         foreach ($other_cash_logs as $log) {
