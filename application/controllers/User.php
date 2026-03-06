@@ -194,10 +194,9 @@ class User extends My_Controller
         }
 
         // Check duplicate email or mobile
-        $exists = $this->general_model->getOne('users', array(
-            'email' => $email,
-            'mobile' => $mobile
-        ));
+        $this->db->where('email', $email);
+        $this->db->or_where('mobile', $mobile);
+        $exists = $this->db->get('users')->row();
 
         if ($exists) {
             $response['message'] = 'Email or mobile number already registered';

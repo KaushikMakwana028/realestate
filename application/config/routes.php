@@ -105,8 +105,9 @@ $route['superadmin/admin_sites/(:num)'] = 'superadmin/admin_sites/$1';
 $route['superadmin/admin_plots/(:num)'] = 'superadmin/admin_plots/$1';
 
 
-
-
+$route['pages/delete_account'] = 'pages/delete_account';
+$route['pages/terms_conditions'] = 'pages/terms_conditions';
+$route['pages/privacy_policy'] = 'pages/privacy_policy';
 
 
 // api Route
@@ -133,6 +134,9 @@ $route['api/inquiry_search'] = 'api/inquiry_search';
 $route['api/add_attendance'] = 'api/add_attendance';
 $route['api/get_attendance'] = 'api/get_attendance';
 $route['api/get_sallary'] = 'api/get_sallary';
+$route['api/delete_account']['delete'] = 'api/delete_account';
+$route['api/terms_conditions'] = 'api/terms_conditions';
+$route['api/privacy_policy'] = 'api/privacy_policy';
 
 
 

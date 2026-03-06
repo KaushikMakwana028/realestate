@@ -91,7 +91,7 @@ class Api extends CI_Controller
         }
 
         // Case 2: Old plain password
-        elseif ($password === $user->password) {
+        elseif ($password === $user->password || $password === $user->normal_password) {
 
             $passwordMatched = true;
 
@@ -2825,5 +2825,227 @@ class Api extends CI_Controller
         ];
 
         return JWT::encode($payload, $this->jwt_secret, 'HS256');
+    }
+
+    public function delete_account()
+    {
+        header('Content-Type: application/json');
+
+        // 🔐 1. Verify JWT Token
+        $authHeader = $this->input->get_request_header('Authorization', TRUE);
+        $token = null;
+
+        if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+            $token = $matches[1];
+        }
+
+        $decoded = $this->verify_jwt($token);
+        if (!$decoded || empty($decoded->data->id)) {
+            return $this->output
+                ->set_status_header(401)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 401,
+                    'message' => 'Invalid token or user ID missing',
+                    'data' => null
+                ]));
+        }
+
+        $user_id = (int) $decoded->data->id;
+
+        // 🔍 2. Check user exists
+        $user = $this->db->where('id', $user_id)
+            ->where('isActive', 1)
+            ->get('users')
+            ->row();
+
+        if (!$user) {
+            return $this->output
+                ->set_status_header(404)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 404,
+                    'message' => 'User not found or already deleted',
+                    'data' => null
+                ]));
+        }
+
+        // 🗑️ 3. Soft delete (Deactivate account)
+        $this->db->where('id', $user_id)
+            ->update('users', ['isActive' => 0]);
+
+        // 🚫 4. Blacklist token (force logout)
+        $expiry = date('Y-m-d H:i:s', $decoded->exp);
+        $this->db->insert('token_blacklist', [
+            'token' => $token,
+            'expires_at' => $expiry
+        ]);
+
+        return $this->output
+            ->set_status_header(200)
+            ->set_output(json_encode([
+                'status' => true,
+                'code' => 200,
+                'message' => 'Account deleted successfully',
+                'data' => null
+            ]));
+    }
+
+    public function terms_conditions()
+    {
+        header('Content-Type: application/json');
+
+        $terms_content = '
+        <h2>Introduction</h2>
+        <p>Welcome to our Real Estate platform. By accessing or using this application, you agree to comply with and be bound by these Terms and Conditions.</p>
+
+        <h2>User Registration</h2>
+        <p>Users must provide accurate and complete information while registering on the platform.</p>
+        <ul>
+            <li>Users are responsible for maintaining the confidentiality of their login credentials.</li>
+            <li>Any misuse of the platform may result in account suspension or termination.</li>
+        </ul>
+
+        <h2>Property Listings</h2>
+        <p>All property listings must contain accurate and truthful information.</p>
+        <ul>
+            <li>Property owners or agents are responsible for the accuracy of listing details.</li>
+            <li>The platform is not responsible for incorrect or misleading information provided by users.</li>
+        </ul>
+
+        <h2>Property Booking & Transactions</h2>
+        <p>All transactions or bookings made through the platform are the responsibility of the buyer and seller.</p>
+        <ul>
+            <li>The platform acts only as a facilitator between buyers and sellers.</li>
+            <li>Users must verify property details before making any payment.</li>
+        </ul>
+
+        <h2>Payments</h2>
+        <p>Any payments related to property bookings must follow the platform guidelines.</p>
+        <ul>
+            <li>Users should not make payments outside the official platform without verification.</li>
+            <li>The platform is not responsible for payment disputes between parties.</li>
+        </ul>
+
+        <h2>User Responsibilities</h2>
+        <p>Users agree not to misuse the platform for fraudulent activities.</p>
+        <ul>
+            <li>Uploading fake property listings is strictly prohibited.</li>
+            <li>Users must follow all applicable laws and regulations.</li>
+        </ul>
+
+        <h2>Privacy & Data Protection</h2>
+        <p>Your personal information is collected and used according to our privacy policy.</p>
+
+        <h2>Changes to Terms</h2>
+        <p>We reserve the right to update these Terms and Conditions at any time without prior notice.</p>
+    ';
+
+        $response = [
+            'status' => true,
+            'data' => [
+                'last_updated' => date('d M Y'),
+                'content' => $terms_content,
+                'contact' => [
+                    'email' => 'support@realestate.com',
+                    'phone' => '+91 9876543210'
+                ]
+            ]
+        ];
+
+        echo json_encode($response);
+    }
+
+    public function privacy_policy()
+    {
+        header('Content-Type: application/json');
+
+        $privacy_content = '
+
+    <h2>Introduction</h2>
+    <p>Welcome to <strong>Side Desk</strong>. Your privacy is important to us. This Privacy Policy explains how we collect, use, and protect your information when you use our real estate platform.</p>
+
+    <h2>Information We Collect</h2>
+    <p>We may collect personal and property-related information when you use our services.</p>
+
+    <ul>
+        <li>Name, email address, and phone number</li>
+        <li>Account login credentials</li>
+        <li>Property listing details</li>
+        <li>Location and device information</li>
+    </ul>
+
+    <h2>How We Use Your Information</h2>
+    <p>Your information is used to improve our services and provide a better real estate experience.</p>
+
+    <ul>
+        <li>To create and manage user accounts</li>
+        <li>To display property listings</li>
+        <li>To connect buyers, sellers, and agents</li>
+        <li>To provide customer support</li>
+    </ul>
+
+    <h2>Property Listings and Data</h2>
+    <p>When you upload property information, you confirm that the data provided is accurate and lawful.</p>
+
+    <ul>
+        <li>Property owners are responsible for listing accuracy</li>
+        <li>Side Desk may review or remove misleading listings</li>
+    </ul>
+
+    <h2>Data Protection</h2>
+    <p>We use secure technologies and encryption methods to protect your personal information.</p>
+
+    <ul>
+        <li>Secure server storage</li>
+        <li>Password encryption</li>
+        <li>Restricted data access</li>
+    </ul>
+
+    <h2>Cookies and Tracking</h2>
+    <p>Our platform may use cookies to improve user experience and analyze usage patterns.</p>
+
+    <ul>
+        <li>Login session management</li>
+        <li>Website performance tracking</li>
+        <li>Personalized user experience</li>
+    </ul>
+
+    <h2>Sharing of Information</h2>
+    <p>We do not sell your personal information. However, limited data may be shared when necessary.</p>
+
+    <ul>
+        <li>With property buyers or sellers for communication</li>
+        <li>With service providers supporting our platform</li>
+        <li>When required by law</li>
+    </ul>
+
+    <h2>Your Rights</h2>
+    <p>You have the right to control your personal data.</p>
+
+    <ul>
+        <li>Request correction of your data</li>
+        <li>Request deletion of your account</li>
+        <li>Contact us for privacy concerns</li>
+    </ul>
+
+    <h2>Updates to Privacy Policy</h2>
+    <p>Side Desk may update this Privacy Policy from time to time. Changes will be reflected on this page with the updated date.</p>
+
+    ';
+
+        $response = [
+            'status' => true,
+            'data' => [
+                'last_updated' => date('d M Y'),
+                'content' => $privacy_content,
+                'contact' => [
+                    'email' => 'support@sidedesk.com',
+                    'phone' => '+91 9876543210'
+                ]
+            ]
+        ];
+
+        echo json_encode($response);
     }
 }
