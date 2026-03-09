@@ -85,10 +85,14 @@ $route['edit_user/(:num)'] = 'user/edit_user/$1';
 $route['payment_data/(:num)'] = 'plots/payment_data/$1';
 // $route['profile'] = 'user/add_upad';
 
-$route['superadmin/admins'] = 'superadmin/admins';
+// Super Admin Routes
 $route['superadmin'] = 'superadmin/admins';
-$route['superadmin/dashboard'] = 'dashboard';
+$route['superadmin/dashboard'] = 'dashboard/index';
+$route['superadmin/admins'] = 'superadmin/admins';
 $route['superadmin/sites'] = 'superadmin/sites';
+$route['superadmin/profile'] = 'profile/index';
+$route['superadmin/admin_sites'] = 'superadmin/admin_sites';
+$route['superadmin/admin_plots'] = 'superadmin/admin_plots';
 $route['superadmin/login_as_admin/(:num)'] = 'superadmin/login_as_admin/$1';
 $route['superadmin/get_admins'] = 'superadmin/get_admins';
 $route['superadmin/get_admin_detail/(:num)'] = 'superadmin/get_admin_detail/$1';
@@ -103,6 +107,13 @@ $route['superadmin/download_site_image/(:num)'] = 'superadmin/download_site_imag
 $route['superadmin/change_admin_status/(:num)'] = 'superadmin/change_admin_status/$1';
 $route['superadmin/admin_sites/(:num)'] = 'superadmin/admin_sites/$1';
 $route['superadmin/admin_plots/(:num)'] = 'superadmin/admin_plots/$1';
+
+// Optional kebab-case aliases for Super Admin URLs
+$route['super-admin'] = 'superadmin/admins';
+$route['super-admin/dashboard'] = 'dashboard/index';
+$route['super-admin/admins'] = 'superadmin/admins';
+$route['super-admin/sites'] = 'superadmin/sites';
+$route['super-admin/profile'] = 'profile/index';
 
 
 $route['pages/delete_account'] = 'pages/delete_account';

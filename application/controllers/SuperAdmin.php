@@ -53,9 +53,9 @@ class SuperAdmin extends My_Controller
         $data['admin_start_index'] = $offset + 1;
         $data['admin_search'] = $search;   // ✅ IMPORTANT
 
-        $this->load->view('header');
+        $this->load->view('superadmin/header');
         $this->load->view('superadmin/admins_view', $data);
-        $this->load->view('footer');
+        $this->load->view('superadmin/footer');
     }
 
     public function change_admin_status($admin_id = null)
@@ -182,9 +182,9 @@ class SuperAdmin extends My_Controller
         $data['admin_sites_start_index'] = $offset + 1;
         $data['admin_sites_search'] = $search;
 
-        $this->load->view('header');
+        $this->load->view('superadmin/header');
         $this->load->view('superadmin/admin_sites_view', $data);
-        $this->load->view('footer');
+        $this->load->view('superadmin/footer');
     }
 
     public function admin_plots($admin_id = null)
@@ -255,9 +255,9 @@ class SuperAdmin extends My_Controller
         $data['admin_plots_start_index'] = $offset + 1;
         $data['admin_plots_search'] = $search;
 
-        $this->load->view('header');
+        $this->load->view('superadmin/header');
         $this->load->view('superadmin/admin_plots_view', $data);
-        $this->load->view('footer');
+        $this->load->view('superadmin/footer');
     }
 
 
@@ -309,9 +309,9 @@ class SuperAdmin extends My_Controller
         $data['site_start_index'] = $offset + 1;
         $data['site_search'] = $search;   // ✅ IMPORTANT
 
-        $this->load->view('header');
+        $this->load->view('superadmin/header');
         $this->load->view('superadmin/sites_view', $data);
-        $this->load->view('footer');
+        $this->load->view('superadmin/footer');
     }
 
     public function login_as_admin($admin_id = null)

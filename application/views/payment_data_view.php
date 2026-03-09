@@ -129,14 +129,14 @@
 
                         <thead>
                             <tr>
-                                <th>#</th>
-                                <th>User Name</th>
-                                <th>Buyer Name</th>
-                                <th>Site Name</th>
-                                <th>Plot Number</th>
-                                <th>Paid At</th>
-                                <th>Paid Amount</th>
-                                <th class="text-center">Actions</th>
+                                <th class="text-dark">#</th>
+                                <th class="text-dark">User Name</th>
+                                <th class="text-dark">Buyer Name</th>
+                                <th class="text-dark">Site Name</th>
+                                <th class="text-dark">Plot Number</th>
+                                <th class="text-dark">Paid At</th>
+                                <th class="text-dark text-center">Paid Amount</th>
+                                <th class="text-center text-dark">Actions</th>
                             </tr>
                         </thead>
 
@@ -442,6 +442,19 @@
         background: #dbeeff !important;
     }
 
+    .payment-table tbody tr.payment-mode-row-cash td,
+    .payment-table tbody tr.payment-mode-row-emi td {
+        border-left: none !important;
+    }
+
+    .payment-table tbody tr.payment-mode-row-cash td:first-child {
+        box-shadow: inset 3px 0 0 #22c55e;
+    }
+
+    .payment-table tbody tr.payment-mode-row-emi td:first-child {
+        box-shadow: inset 3px 0 0 #3b82f6;
+    }
+
     .payment-table tbody td {
         padding: 12px 14px;
         font-size: 13px;
@@ -449,6 +462,11 @@
         vertical-align: middle;
         border: none;
         border-bottom: 1px solid #f0f2fa;
+        transition: background-color 0.18s ease;
+    }
+
+    .payment-table tbody tr:nth-child(even):not(.installment-approve-row):not(.installment-reject-row):not(.installment-request-row):not(.installment-pending-row) td {
+        background: #fcfdff;
     }
 
     .payment-table-wrap {
@@ -540,6 +558,55 @@
         color: #27ae60;
     }
 
+    .amount-cell.amount-cash {
+        color: #15803d;
+    }
+
+    .amount-cell.amount-emi {
+        color: #1d4ed8;
+    }
+
+    .payment-mode-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        margin-right: 5px;
+        padding: 3px 9px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
+        line-height: 1;
+        box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    .payment-mode-chip i {
+        font-size: 12px;
+        line-height: 1;
+    }
+
+    .payment-mode-chip-cash {
+        background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+        border: 1px solid #86efac;
+        color: #166534;
+    }
+
+    .payment-mode-chip-emi {
+        background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+        border: 1px solid #93c5fd;
+        color: #1e40af;
+    }
+
+    .payment-table tbody tr.payment-mode-row-cash:hover td {
+        background-color: #f4fff8 !important;
+    }
+
+    .payment-table tbody tr.payment-mode-row-emi:hover td {
+        background-color: #f3f8ff !important;
+    }
+
     .payment-type-tag {
         display: inline-block;
         margin-top: 5px;
@@ -552,6 +619,32 @@
         font-weight: 700;
         letter-spacing: 0.3px;
         text-transform: uppercase;
+    }
+
+    .installment-seq-tag {
+        display: inline-block;
+        margin-top: 5px;
+        margin-right: 5px;
+        padding: 2px 9px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.2px;
+        text-transform: none;
+        border: 1px solid transparent;
+        line-height: 1.25;
+    }
+
+    .installment-seq-emi {
+        background: #eef4ff;
+        border-color: #bfdbfe;
+        color: #1d4ed8;
+    }
+
+    .installment-seq-cash {
+        background: #ecfdf3;
+        border-color: #a7f3d0;
+        color: #166534;
     }
 
     .emi-card-subvalue {
@@ -847,4 +940,3 @@
         }
     }
 </style>
- 

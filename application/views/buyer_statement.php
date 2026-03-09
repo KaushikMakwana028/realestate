@@ -1,290 +1,250 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 
 <head>
     <meta charset="utf-8">
-    <title>Party Statement</title>
+    <title>Buyer Statement</title>
 
-    <style>
+        <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 12px;
-            color: #1a1a2e;
+            color: #1f2937;
             background: #fff;
-            padding: 20px;
+            padding: 18px;
         }
-
-        /* ===== HEADER ===== */
         .header-wrapper {
-            background: #f3f6fc;
-            border: 1px solid #d5ddf0;
-            border-radius: 8px;
-            padding: 20px 25px;
-            margin-bottom: 20px;
-            color: #1a1a2e;
+            background: #f3f8ff;
+            border: 1px solid #d8e6f7;
+            border-radius: 10px;
+            padding: 16px 20px;
+            margin-bottom: 14px;
+            color: #1f2937;
         }
-
         .header-inner {
             display: table;
             width: 100%;
         }
-
         .header-logo {
             display: table-cell;
             vertical-align: middle;
             width: 70px;
         }
-
         .header-logo img {
             width: 55px;
             height: 55px;
-            border-radius: 50%;
-            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            border: 1px solid #d6e4f3;
             object-fit: cover;
+            background: #fff;
         }
-
         .header-logo .logo-placeholder {
             width: 55px;
             height: 55px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.15);
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: #0f2b46;
+            border: 1px solid #0b2238;
             display: table-cell;
             vertical-align: middle;
             text-align: center;
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             color: #fff;
         }
-
         .header-content {
             display: table-cell;
             vertical-align: middle;
             text-align: center;
         }
-
         .company-name {
-            font-size: 20px;
+            font-size: 18px;
             font-weight: bold;
-            color: #0f3460;
-            letter-spacing: 1.5px;
+            color: #0f2b46;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
         }
-
         .company-tagline {
             font-size: 10px;
-            color: #5f6b85;
+            color: #64748b;
             margin-top: 3px;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.2px;
         }
-
         .header-contact {
             display: table-cell;
             vertical-align: middle;
             text-align: left;
-            width: 270px;
+            width: 290px;
+            background: #fff;
+            border: 1px solid #dce7f5;
+            border-radius: 8px;
+            padding: 9px 10px;
         }
-
         .contact-item {
             font-size: 10px;
-            color: #1a1a2e;
+            color: #334155;
             margin-bottom: 4px;
             word-wrap: break-word;
         }
-
         .contact-item .contact-label {
-            color: #0f3460;
+            color: #0f2b46;
             font-weight: bold;
             display: inline-block;
-            width: 62px;
+            width: 58px;
         }
-
-        /* ===== DIVIDER ===== */
         .divider {
-            height: 3px;
-            background: linear-gradient(to right, #e94560, #0f3460, #e94560);
+            height: 2px;
+            background: #dce8f6;
             border-radius: 2px;
-            margin: 0 0 18px 0;
+            margin: 0 0 12px 0;
             border: none;
         }
-
-        /* ===== TITLE ===== */
         .title-block {
             text-align: center;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
         }
-
         .title-block .title-text {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: bold;
-            color: #0f3460;
-            letter-spacing: 1px;
+            color: #0f2b46;
+            letter-spacing: 0.8px;
             text-transform: uppercase;
             display: inline-block;
-            padding: 6px 25px;
-            border: 2px solid #0f3460;
-            border-radius: 4px;
-            background: #f0f4ff;
+            padding: 6px 18px;
+            border: 1px solid #cfe0f4;
+            border-radius: 20px;
+            background: #f7fbff;
         }
-
-        /* ===== PARTY INFO CARD ===== */
         .party-card {
-            background: #f8faff;
-            border: 1px solid #d0d8f0;
-            border-left: 4px solid #0f3460;
-            border-radius: 6px;
-            padding: 14px 18px;
-            margin-bottom: 18px;
+            background: #f9fcff;
+            border: 1px solid #d9e8f8;
+            border-left: 3px solid #0f2b46;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 12px;
         }
-
         .party-card-header {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: bold;
-            color: #0f3460;
-            margin-bottom: 10px;
+            color: #0f2b46;
+            margin-bottom: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            border-bottom: 1px dashed #b0bce0;
-            padding-bottom: 7px;
+            letter-spacing: 0.4px;
+            border-bottom: 1px dashed #cad8ea;
+            padding-bottom: 6px;
         }
-
         .info-grid {
             width: 100%;
             border-collapse: collapse;
         }
-
         .info-grid td {
             padding: 4px 6px;
             vertical-align: top;
             font-size: 11px;
         }
-
         .info-grid .label {
-            color: #555;
+            color: #64748b;
             font-weight: bold;
             width: 100px;
             white-space: nowrap;
         }
-
         .info-grid .colon {
             width: 10px;
-            color: #555;
+            color: #64748b;
         }
-
         .info-grid .value {
-            color: #1a1a2e;
+            color: #1f2937;
             font-weight: bold;
         }
-
-        /* ===== STATS ROW ===== */
         .stats-row {
             display: table;
             width: 100%;
-            margin-bottom: 18px;
+            margin-bottom: 12px;
             border-collapse: separate;
-            border-spacing: 8px;
+            border-spacing: 6px;
         }
-
         .stat-box {
             display: table-cell;
             background: #fff;
-            border: 1px solid #d0d8f0;
-            border-radius: 6px;
-            padding: 10px 14px;
+            border: 1px solid #d7e4f3;
+            border-radius: 8px;
+            padding: 8px 10px;
             text-align: center;
             width: 33.33%;
         }
-
         .stat-box.debit {
-            border-top: 3px solid #e94560;
+            border-top: 3px solid #ef4444;
         }
-
         .stat-box.credit {
-            border-top: 3px solid #28a745;
+            border-top: 3px solid #16a34a;
         }
-
         .stat-box.balance {
-            border-top: 3px solid #0f3460;
+            border-top: 3px solid #0f2b46;
         }
-
         .stat-label {
             font-size: 9px;
-            color: #777;
+            color: #64748b;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            letter-spacing: 0.4px;
+            margin-bottom: 3px;
         }
-
         .stat-value {
             font-size: 13px;
             font-weight: bold;
-            color: #1a1a2e;
+            color: #1f2937;
         }
-
         .stat-value.red {
-            color: #e94560;
+            color: #dc2626;
         }
-
         .stat-value.green {
-            color: #28a745;
+            color: #15803d;
         }
-
         .stat-value.blue {
-            color: #0f3460;
+            color: #0f2b46;
         }
-
-        /* ===== LEDGER TABLE ===== */
         .table-title {
             font-size: 11px;
             font-weight: bold;
-            color: #0f3460;
+            color: #0f2b46;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.4px;
             margin-bottom: 6px;
             padding-left: 2px;
         }
-
         .down-payment-box {
-            border: 1px solid #cde7d6;
-            border-left: 4px solid #28a745;
-            background: #effcf2;
-            border-radius: 6px;
+            border: 1px solid #cae7d4;
+            border-left: 3px solid #16a34a;
+            background: #f3fff6;
+            border-radius: 8px;
             padding: 8px 12px;
-            margin: 2px 0 10px 0;
+            margin: 2px 0 8px 0;
         }
-
         .down-payment-label {
             font-size: 10px;
-            color: #1f6b34;
+            color: #166534;
             text-transform: uppercase;
             letter-spacing: 0.4px;
             margin-bottom: 2px;
             font-weight: bold;
         }
-
         .down-payment-value {
             font-size: 14px;
             font-weight: bold;
-            color: #1b8f3d;
+            color: #15803d;
         }
-
         .ledger-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-
         .ledger-table thead tr {
-            background: linear-gradient(135deg, #1a1a2e, #0f3460);
+            background: #0f2b46;
             color: #fff;
         }
-
         .ledger-table th {
             padding: 9px 8px;
             font-size: 10px;
@@ -292,138 +252,112 @@
             font-weight: bold;
             letter-spacing: 0.4px;
             text-transform: uppercase;
-            border: 1px solid #0a2545;
+            border: 1px solid #123a5e;
         }
-
         .ledger-table td {
-            border: 1px solid #d5ddf0;
+            border: 1px solid #dbe6f5;
             padding: 7px 8px;
             font-size: 11px;
-            color: #1a1a2e;
+            color: #1f2937;
         }
-
         .ledger-table tbody tr:nth-child(even) {
-            background-color: #f5f7ff;
+            background-color: #f9fbff;
         }
-
         .ledger-table tbody tr:hover {
-            background-color: #eef1fb;
+            background-color: #f1f6fd;
         }
-
-        /* Opening row */
         .row-opening {
-            background-color: #fff8e1 !important;
+            background-color: #fff9eb !important;
         }
-
-        /* Payment row */
         .row-payment td {
-            background-color: #f0fff4;
+            background-color: #f4fff7;
         }
-
-        /* Total row */
         .total-row {
-            background: linear-gradient(135deg, #1a1a2e, #0f3460) !important;
+            background: #0f2b46 !important;
             color: #fff !important;
         }
-
         .total-row td {
             background: transparent !important;
             color: #fff !important;
             font-weight: bold;
-            border: 1px solid #0a2545;
+            border: 1px solid #123a5e;
             padding: 9px 8px;
             font-size: 11px;
         }
-
         .text-right {
             text-align: right;
         }
-
         .text-center {
             text-align: center;
         }
-
         .text-left {
             text-align: left;
         }
-
-        /* Amount badges */
         .amt-debit {
-            color: #c0392b;
+            color: #c2410c;
             font-weight: bold;
         }
-
         .amt-credit {
-            color: #27ae60;
+            color: #15803d;
             font-weight: bold;
         }
-
         .badge-dr {
             display: inline-block;
-            background: #fdecea;
-            color: #c0392b;
-            border: 1px solid #f5c6cb;
+            background: #fff0ed;
+            color: #c2410c;
+            border: 1px solid #fecaca;
             border-radius: 3px;
             padding: 1px 5px;
             font-size: 9px;
             font-weight: bold;
             margin-left: 3px;
         }
-
         .badge-cr {
             display: inline-block;
-            background: #eafaf1;
-            color: #27ae60;
-            border: 1px solid #c3e6cb;
+            background: #ecfdf3;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
             border-radius: 3px;
             padding: 1px 5px;
             font-size: 9px;
             font-weight: bold;
             margin-left: 3px;
         }
-
-        /* ===== FOOTER ===== */
         .footer {
-            margin-top: 25px;
-            border-top: 2px solid #d0d8f0;
-            padding-top: 12px;
+            margin-top: 16px;
+            border-top: 1px solid #d6e4f5;
+            padding-top: 10px;
         }
-
         .footer-inner {
             display: table;
             width: 100%;
         }
-
         .footer-left {
             display: table-cell;
             vertical-align: bottom;
             font-size: 9px;
-            color: #888;
+            color: #64748b;
         }
-
         .footer-right {
             display: table-cell;
             vertical-align: bottom;
             text-align: right;
         }
-
         .sign-line {
-            border-top: 1px solid #333;
+            border-top: 1px solid #475569;
             width: 150px;
             margin-left: auto;
-            margin-top: 30px;
+            margin-top: 24px;
             margin-bottom: 4px;
         }
-
         .sign-label {
             font-size: 10px;
-            color: #555;
+            color: #475569;
             text-align: center;
         }
-
         .generated-note {
             font-size: 8px;
-            color: #aaa;
+            color: #94a3b8;
             margin-top: 6px;
         }
     </style>
@@ -444,8 +378,16 @@
 
             <!-- Logo -->
             <div class="header-logo">
-                <?php if (!empty($user->profile_image)) { ?>
-                    <img src="<?= base_url($user->profile_image) ?>" alt="Logo">
+                <?php if (!empty($user->profile_image_data_uri) || !empty($user->profile_image)) {
+                    if (!empty($user->profile_image_data_uri)) {
+                        $logoSrc = (string) $user->profile_image_data_uri;
+                    } else {
+                        $logoPath = (string) $user->profile_image;
+                        $isAbsoluteLogo = preg_match('/^https?:\/\//i', $logoPath);
+                        $logoSrc = $isAbsoluteLogo ? $logoPath : base_url($logoPath);
+                    }
+                ?>
+                    <img src="<?= $logoSrc ?>" alt="Logo">
                 <?php } else { ?>
                     <div class="logo-placeholder">
                         <?= strtoupper(substr($admin_business, 0, 1)) ?>
@@ -485,13 +427,13 @@
 
     <!-- ================= TITLE ================= -->
     <div class="title-block">
-        <div class="title-text">Party Statement</div>
+        <div class="title-text">Buyer Statement</div>
     </div>
 
     <!-- ================= PARTY DETAILS ================= -->
     <div class="party-card">
         <div class="party-card-header">
-            &#128100; Party Information
+            Party Information
         </div>
 
         <?php
@@ -527,7 +469,7 @@
 
     <?php
     /* ===================================================
-   LOGIC — kept exactly as original
+   LOGIC kept exactly as original
    =================================================== */
     $total_debit  = 0;
     $total_credit = 0;
@@ -585,7 +527,7 @@
         </div>
     <?php endif; ?>
 
-    <div class="table-title">&#128203; Transaction Ledger</div>
+    <div class="table-title">Transaction Ledger</div>
 
     <table class="ledger-table">
         <thead>
@@ -600,7 +542,7 @@
 
         <tbody>
 
-            <!-- 🔹 OPENING / RECEIVABLE ROW — logic untouched -->
+            <!-- OPENING / RECEIVABLE ROW -->
             <tr class="row-opening">
                 <td class="text-center">
                     <?= !empty($logs)
@@ -616,7 +558,7 @@
                     &#8377; <?= number_format($opening_balance, 2) ?>
                 </td>
 
-                <td class="text-center" style="color:#aaa;">—</td>
+                <td class="text-center" style="color:#aaa;">-</td>
 
                 <td class="text-right">
                     <strong>&#8377; <?= number_format($running_balance, 2) ?></strong>
@@ -624,7 +566,7 @@
                 </td>
             </tr>
 
-            <!-- 🔹 PAYMENT ROWS — logic untouched -->
+            <!-- PAYMENT ROWS -->
             <?php foreach ($logs as $log) :
 
                 $credit = (float)($log->paid_amount ?? 0);
@@ -639,10 +581,10 @@
                     </td>
 
                     <td class="text-left">
-                        &#9989; Payment Received
+                        Payment Received
                     </td>
 
-                    <td class="text-center" style="color:#aaa;">—</td>
+                    <td class="text-center" style="color:#aaa;">-</td>
 
                     <td class="text-right amt-credit">
                         &#8377; <?= number_format($credit, 2) ?>
@@ -659,10 +601,10 @@
                 </tr>
             <?php endforeach; ?>
 
-            <!-- 🔹 TOTAL ROW — logic untouched -->
+            <!-- TOTAL ROW -->
             <tr class="total-row">
                 <td colspan="2" class="text-right">
-                    &#128200; TOTAL
+                    TOTAL
                 </td>
 
                 <td class="text-right">

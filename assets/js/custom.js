@@ -3092,6 +3092,15 @@ $(document).ready(function () {
 	toggleShowAllButton();
 	loadAttendance();
 });
+
+function getInstallmentRowClass(statusValue, isInstallmentEntry, manualPaidByNote) {
+	if (!isInstallmentEntry) return "";
+	if (statusValue === "approve") return "installment-approve-row";
+	if (statusValue === "reject") return "installment-reject-row";
+	if (manualPaidByNote) return "installment-request-row";
+	return "";
+}
+
 $(document).ready(function () {
 	// Run code ONLY if #payment_data table exists
 	if ($("#payment_data").length > 0) {
@@ -3141,12 +3150,15 @@ $(document).ready(function () {
 			return raw;
 		}
 
-		function getInstallmentRowClass(statusValue, isInstallmentEntry, manualPaidByNote) {
-			if (!isInstallmentEntry) return "";
-			if (statusValue === "approve") return "installment-approve-row";
-			if (statusValue === "reject") return "installment-reject-row";
-			if (manualPaidByNote) return "installment-request-row";
-			return "";
+		function formatOrdinal(num) {
+			const n = parseInt(num, 10);
+			if (!Number.isFinite(n) || n <= 0) return "-";
+			const mod10 = n % 10;
+			const mod100 = n % 100;
+			if (mod10 === 1 && mod100 !== 11) return `${n}st`;
+			if (mod10 === 2 && mod100 !== 12) return `${n}nd`;
+			if (mod10 === 3 && mod100 !== 13) return `${n}rd`;
+			return `${n}th`;
 		}
 
 		function setStats(totalRecords, totalPaid, uniqueBuyers) {
@@ -3201,6 +3213,7 @@ $(document).ready(function () {
 			let index = (page - 1) * 10 + 1;
 			let html = "";
 			let pagePaid = 0;
+			let emiDisplayCounter = 0;
 
 			logs.forEach((log) => {
 				const amount = toAmount(log.paid_amount);
@@ -3232,6 +3245,16 @@ $(document).ready(function () {
 					isInstallmentEntry,
 					manualPaidByNote,
 				);
+				const paymentMode = isInstallmentEntry ? "emi" : "cash";
+				const modeLabel = paymentMode === "emi" ? "EMI" : "Cash";
+				const modeIcon =
+					paymentMode === "emi" ? "bx-credit-card-front" : "bx-wallet";
+				const modeClass =
+					paymentMode === "emi" ? "payment-mode-chip-emi" : "payment-mode-chip-cash";
+				const rowModeClass =
+					paymentMode === "emi" ? "payment-mode-row-emi" : "payment-mode-row-cash";
+				const amountClass =
+					paymentMode === "emi" ? "amount-cell amount-emi" : "amount-cell amount-cash";
 				const safeDate = escapeHtml(formatDateOnly(log.created_on || "-"));
 				const dateClass = statusValue === "approve" ? "date-cell paid-date" : "date-cell";
 				const statusDataAttr = log.id
@@ -3247,12 +3270,23 @@ $(document).ready(function () {
 						<option value="reject" ${optionSelected("reject")}>Reject</option>
 					</select>
 				`;
+				const paymentModeBadge = `<span class="payment-mode-chip ${modeClass}"><i class="bx ${modeIcon}" aria-hidden="true"></i>${modeLabel}</span>`;
 				const paymentTypeBadge = isDownPayment
 					? '<span class="payment-type-tag">Down Payment</span>'
 					: "";
+				let installmentBadge = "";
+				if (isInstallmentEntry) {
+					const monthNoRaw = parseInt(log.month_no || 0, 10);
+					const installmentNo =
+						monthNoRaw > 0 ? monthNoRaw : ++emiDisplayCounter;
+					const installmentClass =
+						paymentMode === "emi" ? "installment-seq-emi" : "installment-seq-cash";
+					installmentBadge = `<span class="installment-seq-tag ${installmentClass}">${escapeHtml(formatOrdinal(installmentNo))} Installment</span>`;
+				}
+				const combinedRowClass = [rowClass, rowModeClass].filter(Boolean).join(" ");
 
 				html += `
-					<tr class="${rowClass}" data-installment="${isInstallmentEntry ? 1 : 0}" data-manual-paid="${manualPaidByNote ? 1 : 0}">
+					<tr class="${combinedRowClass}" data-installment="${isInstallmentEntry ? 1 : 0}" data-manual-paid="${manualPaidByNote ? 1 : 0}">
 						<td class="text-center"><span class="index-badge">${index++}</span></td>
 						<td>
 							<div class="name-cell">
@@ -3270,7 +3304,9 @@ $(document).ready(function () {
 						<td><span class="plot-badge">${escapeHtml(plotNumber)}</span></td>
 						<td><span class="${dateClass}">${safeDate}</span></td>
 						<td>
-							<span class="amount-cell">${safeAmount}</span>
+							<span class="${amountClass}">${safeAmount}</span>
+							${paymentModeBadge}
+							${installmentBadge}
 							${paymentTypeBadge}
 						</td>
 						<td class="text-center">${actionHtml}</td>
@@ -3534,28 +3570,34 @@ $(document).on("click", ".update_form", function () {
 	let password = $("#password").val().trim();
 
 	let isValid = true;
+	const setFieldError = function (selector, message) {
+		const $field = $(selector);
+		const $legacyError = $field.closest(".col-sm-9").find(".error-msg");
+		if ($legacyError.length) {
+			$legacyError.text(message);
+			return;
+		}
+		const $nearestError = $field
+			.closest(".col-sm-9, .col-md-6, .col-12, .form-group-animated")
+			.find(".error-msg")
+			.first();
+		if ($nearestError.length) {
+			$nearestError.text(message);
+		}
+	};
 
 	// âœ… Name validation
 	if (name === "") {
-		$("#fullName")
-			.closest(".col-sm-9")
-			.find(".error-msg")
-			.text("Full name is required");
+		setFieldError("#fullName", "Full name is required");
 		isValid = false;
 	}
 
 	// âœ… Email validation
 	if (email === "") {
-		$("#email")
-			.closest(".col-sm-9")
-			.find(".error-msg")
-			.text("Email is required");
+		setFieldError("#email", "Email is required");
 		isValid = false;
 	} else if (!validateEmail(email)) {
-		$("#email")
-			.closest(".col-sm-9")
-			.find(".error-msg")
-			.text("Enter a valid email address");
+		setFieldError("#email", "Enter a valid email address");
 		isValid = false;
 	}
 
@@ -3645,31 +3687,13 @@ if (printBtn) {
 			return;
 		}
 
-		fetch(site_url + "plots/download_pdf/" + buyer_id, {
-			method: "GET",
-		})
-			.then((response) => response.blob())
-			.then((blob) => {
-				const url = window.URL.createObjectURL(blob);
-				const a = document.createElement("a");
-
-				a.style.display = "none";
-				a.href = url;
-				a.download = "Buyer_Statement_" + buyer_id + ".pdf";
-
-				document.body.appendChild(a);
-				a.click();
-
-				window.URL.revokeObjectURL(url);
-				a.remove();
-			})
-			.catch(() => {
-				Swal.fire({
-					icon: "error",
-					title: "Download failed",
-					text: "Unable to generate PDF",
-				});
-			});
+		const downloadUrl = site_url + "plots/download_pdf/" + buyer_id;
+		const tempLink = document.createElement("a");
+		tempLink.href = downloadUrl;
+		tempLink.style.display = "none";
+		document.body.appendChild(tempLink);
+		tempLink.click();
+		tempLink.remove();
 	});
 }
 

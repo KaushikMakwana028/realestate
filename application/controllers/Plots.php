@@ -1539,6 +1539,48 @@ class Plots extends My_Controller
             ->from('user_master')
             ->where('id', $admin_id)
             ->get()->row();
+        if ($user) {
+            $user->profile_image_data_uri = null;
+            $resolveDataUri = function ($path) {
+                if (empty($path)) {
+                    return null;
+                }
+                $clean = str_replace('\\', '/', (string) $path);
+                $candidates = [];
+                $candidates[] = FCPATH . ltrim($clean, '/');
+                $candidates[] = FCPATH . 'uploads/profile/' . basename($clean);
+                foreach ($candidates as $candidate) {
+                    if (!is_file($candidate)) {
+                        continue;
+                    }
+                    $imageData = @file_get_contents($candidate);
+                    if ($imageData === false) {
+                        continue;
+                    }
+                    $mime = function_exists('mime_content_type')
+                        ? mime_content_type($candidate)
+                        : 'image/png';
+                    if (empty($mime)) {
+                        $mime = 'image/png';
+                    }
+                    // Dompdf can fail with unsupported formats (ex: webp). Use safe fallback mime.
+                    if (stripos($mime, 'webp') !== false) {
+                        return null;
+                    }
+                    return 'data:' . $mime . ';base64,' . base64_encode($imageData);
+                }
+                return null;
+            };
+
+            if (!empty($user->profile_image)) {
+                $user->profile_image_data_uri = $resolveDataUri($user->profile_image);
+            }
+
+            // Guaranteed fallback: app main logo
+            if (empty($user->profile_image_data_uri)) {
+                $user->profile_image_data_uri = $resolveDataUri('assets/images/main_logo.png');
+            }
+        }
 
 
         // ---- Payment Logs ----
@@ -1600,6 +1642,38 @@ class Plots extends My_Controller
             'payment' => $payment
         ];
 
+        // ---- PDF Cache (fast repeat downloads) ----
+        $latestLogAt = '';
+        foreach ($logs as $entry) {
+            $created = (string) ($entry->created_on ?? '');
+            if ($created > $latestLogAt) {
+                $latestLogAt = $created;
+            }
+        }
+        $paymentFingerprint = '';
+        if ($payment) {
+            $paymentFingerprint = implode('|', [
+                (string) ($payment->id ?? ''),
+                (string) ($payment->down_payment ?? ''),
+                (string) ($payment->total_price ?? ''),
+                (string) ($payment->created_on ?? ''),
+            ]);
+        }
+        $templateVersion = 'buyer-statement-logo-fix-v2';
+        $cacheKey = md5($templateVersion . '|' . $buyer_id . '|' . $latestLogAt . '|' . $paymentFingerprint . '|' . count($logs));
+        $cacheDir = FCPATH . 'uploads/statements/';
+        if (!is_dir($cacheDir)) {
+            @mkdir($cacheDir, 0755, true);
+        }
+        $cacheFile = $cacheDir . 'Buyer_Statement_' . $buyer_id . '_' . $cacheKey . '.pdf';
+        if (is_file($cacheFile)) {
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="Buyer_Statement_' . $buyer_id . '.pdf"');
+            header('Content-Length: ' . filesize($cacheFile));
+            readfile($cacheFile);
+            exit;
+        }
+
 
         // ---- Load View ----
         $html = $this->load->view('buyer_statement', $data, true);
@@ -1607,7 +1681,7 @@ class Plots extends My_Controller
 
 
         $options = new Options();
-        $options->set('isRemoteEnabled', true);
+        $options->set('isRemoteEnabled', false);
         $options->set('defaultFont', 'DejaVu Sans');
 
         $dompdf = new Dompdf($options);
@@ -1617,13 +1691,16 @@ class Plots extends My_Controller
 
 
         $dompdf->render();
+        $pdfOutput = $dompdf->output();
+        if (is_dir($cacheDir) && is_writable($cacheDir)) {
+            @file_put_contents($cacheFile, $pdfOutput);
+        }
 
-
-
-        $dompdf->stream(
-            "Buyer_Statement_{$buyer_id}.pdf",
-            ["Attachment" => true]
-        );
+        header('Content-Type: application/pdf');
+        header('Content-Disposition: attachment; filename="Buyer_Statement_' . $buyer_id . '.pdf"');
+        header('Content-Length: ' . strlen($pdfOutput));
+        echo $pdfOutput;
+        exit;
     }
 
     public function download_sample_format()

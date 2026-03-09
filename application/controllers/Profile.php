@@ -34,10 +34,17 @@ class Profile extends My_Controller
 // echo "<pre>";
 // print_r($data);
 // die;
+        $isSuperAdmin = (($admin->role ?? '') === 'superadmin');
+
+        if ($isSuperAdmin) {
+            $this->load->view('superadmin/header');
+            $this->load->view('superadmin/profile_view', $data);
+            $this->load->view('superadmin/footer');
+            return;
+        }
+
         $this->load->view('header');
-
         $this->load->view('profile_view',$data);
-
         $this->load->view('footer');
 
     }

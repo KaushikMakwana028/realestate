@@ -241,13 +241,15 @@ $data['attendance_approved'] = $this->db->count_all_results('attendance');
         unset($site);
     }
     // Load role-wise dashboard view
-    $this->load->view('header');
     if (!empty($data['is_superadmin'])) {
+        $this->load->view('superadmin/header');
         $this->load->view('superadmin/superadmin_dashboard_view', $data);
+        $this->load->view('superadmin/footer');
     } else {
+        $this->load->view('header');
         $this->load->view('dashboard_view', $data);
+        $this->load->view('footer');
     }
-    $this->load->view('footer');
 }
 
 public function get_admins()
