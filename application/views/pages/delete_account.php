@@ -1131,11 +1131,11 @@
     <div class="main-container">
 
         <!-- Breadcrumb -->
-        <div class="breadcrumb animate-on-scroll">
+        <!-- <div class="breadcrumb animate-on-scroll">
             <a href="<?= base_url('dashboard') ?>">Home</a>
             <span class="separator">›</span>
             <span>Delete Account</span>
-        </div>
+        </div> -->
 
         <!-- Warning Banner -->
         <div class="warning-banner animate-on-scroll">

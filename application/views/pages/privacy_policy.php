@@ -2028,7 +2028,7 @@
 
     <script>
         // ================= API URL =================
-        const API_URL = "http://localhost/kaushik/realestate/api/privacy_policy";
+        const API_URL = "http://localhost/kaushik_php/ci_project/realestate/api/privacy_policy";
 
         // ================= DOM ELEMENTS =================
         const loadingContainer = document.getElementById('loadingContainer');

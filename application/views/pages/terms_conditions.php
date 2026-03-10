@@ -2020,7 +2020,7 @@
 
     <script>
         // API URL
-        const API_URL = "http://localhost/kaushik/realestate/api/terms_conditions";
+        const API_URL = "http://localhost/kaushik_php/ci_project/realestate/api/terms_conditions";
 
         // DOM Elements
         const loadingContainer = document.getElementById('loadingContainer');
