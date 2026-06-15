@@ -7,14 +7,14 @@
     <link href="<?= base_url('assets/css/bootstrap.min.css') ?>" rel="stylesheet">
     <link href="<?= base_url('assets/css/bootstrap-extended.css') ?>" rel="stylesheet">
     <link href="<?= base_url('assets/css/icons.css') ?>" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <title>Forgot Password</title>
     <style>
         body {
             margin: 0;
-            font-family: 'Inter', sans-serif;
             background: linear-gradient(135deg, #0f172a, #1e293b);
             min-height: 100vh;
+            font-family: 'Roboto', sans-serif !important;
         }
         .wrapper {
             min-height: 100vh;
@@ -32,7 +32,6 @@
             padding: 32px;
         }
         .title {
-            font-family: 'Playfair Display', serif;
             font-size: 30px;
             margin-bottom: 6px;
             color: #111827;

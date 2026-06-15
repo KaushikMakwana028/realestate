@@ -35,6 +35,7 @@
 	<link href="<?= base_url('assets/plugins/perfect-scrollbar/css/perfect-scrollbar.css') ?>" rel="stylesheet">
 
 	<link href="<?= base_url('assets/plugins/metismenu/css/metisMenu.min.css') ?>" rel="stylesheet">
+	<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
 	<?php
 	$routerClass = $this->router->class ?? '';
 	$routerMethod = $this->router->method ?? '';
@@ -88,6 +89,11 @@
 
 
 	<style>
+		body,
+		* {
+			font-family: 'Roboto', sans-serif !important;
+		}
+
 		.sidebar-brand-img {
 			display: flex;
 			justify-content: center;
@@ -121,11 +127,11 @@
 		}
 
 		/* Prevent initial flash where all sidebar submenu items appear before metisMenu init. */
-		#menu > li > ul {
+		#menu>li>ul {
 			display: none;
 		}
 
-		#menu > li > ul.mm-show {
+		#menu>li>ul.mm-show {
 			display: block;
 		}
 	</style>

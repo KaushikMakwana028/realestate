@@ -451,7 +451,6 @@
 	.expense-amount-text {
 		font-weight: 800;
 		color: #1e293b;
-		font-family: 'JetBrains Mono', 'SF Mono', monospace;
 	}
 
 	/* ===== Category Badge ===== */

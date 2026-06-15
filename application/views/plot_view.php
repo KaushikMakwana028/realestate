@@ -997,7 +997,6 @@
 
 	/* Dimension display */
 	.dimension-display {
-		font-family: 'JetBrains Mono', 'SF Mono', monospace;
 		font-size: 12.5px;
 		font-weight: 600;
 		color: var(--plot-gray-600);
@@ -1035,7 +1034,6 @@
 	/* Money cell */
 	.money-cell {
 		font-weight: 700;
-		font-family: 'JetBrains Mono', 'SF Mono', monospace;
 		font-size: 13px;
 		color: var(--plot-gray-800);
 	}

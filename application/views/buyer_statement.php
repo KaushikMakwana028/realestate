@@ -3,6 +3,7 @@
 
 <head>
     <meta charset="utf-8">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <title>Buyer Statement</title>
 
         <style>
@@ -10,9 +11,9 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            font-family: 'Roboto', sans-serif !important;
         }
         body {
-            font-family: DejaVu Sans, sans-serif;
             font-size: 12px;
             color: #1f2937;
             background: #fff;

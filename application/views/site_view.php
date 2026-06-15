@@ -249,7 +249,6 @@
 	.value-cell {
 		font-weight: 700;
 		color: var(--site-gray-900);
-		font-family: 'JetBrains Mono', 'SF Mono', monospace;
 	}
 
 	.count-pill {

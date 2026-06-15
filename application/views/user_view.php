@@ -424,7 +424,6 @@
 		padding: 2px 8px;
 		border-radius: 6px;
 		font-size: 11px;
-		font-family: inherit;
 		pointer-events: none;
 		border: 1px solid #d1d5db;
 	}
