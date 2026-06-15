@@ -1,7 +1,7 @@
 <?php
 require_once(APPPATH . 'core/My_Controller.php');
 
-class SuperAdmin extends My_Controller
+class Superadmin extends My_Controller
 {
     public function __construct()
     {

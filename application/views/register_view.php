@@ -444,7 +444,7 @@
                     <div class="alert alert-danger"><?= $this->session->flashdata('error'); ?></div>
                 <?php endif; ?>
 
-                <form action="<?= base_url('login/sign_up') ?>" method="post">
+                <form action="<?= base_url('sign-up') ?>" method="post">
                     <div class="form-grid">
                         <div class="field">
                             <label for="full_name">Full Name <span class="required-star">*</span></label>

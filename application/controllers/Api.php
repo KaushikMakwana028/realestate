@@ -37,115 +37,256 @@ class Api extends CI_Controller
         $this->load->library('email');
         $this->load->library(['form_validation']);
     }
-    public function login()
-    {
-        header('Content-Type: application/json');
+   public function send_login_otp()
+{
+    $this->output->set_content_type('application/json');
 
-        $input_data = json_decode($this->input->raw_input_stream, true);
-        $mobile = trim($input_data['mobile'] ?? '');
-        $password = trim($input_data['password'] ?? '');
+    $input_data = json_decode($this->input->raw_input_stream, true);
 
-        if (empty($mobile) || empty($password)) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Mobile and password are required',
-                    'data' => null
-                ]));
-        }
+    $mobile = trim($input_data['mobile'] ?? '');
 
-        $user = $this->db->get_where('users', ['mobile' => $mobile])->row();
-        // print_r($user);
-        // die;
-
-        if (!$user) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'User not found',
-                    'data' => null
-                ]));
-        }
-
-        if ($user->isActive == 0) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Your account is not active. Please contact admin.',
-                    'data' => null
-                ]));
-        }
-
-        // 🔐 PASSWORD CHECK (Supports old plain passwords too)
-        $passwordMatched = false;
-
-        // Case 1: Already hashed
-        if (password_verify($password, $user->password)) {
-            $passwordMatched = true;
-        }
-
-        // Case 2: Old plain password
-        elseif ($password === $user->password || $password === $user->normal_password) {
-
-            $passwordMatched = true;
-
-            // Auto convert to hash
-            $newHash = password_hash($password, PASSWORD_BCRYPT);
-
-            $this->db->where('id', $user->id)
-                ->update('users', ['password' => $newHash]);
-        }
-
-        if (!$passwordMatched) {
-            return $this->output
-                ->set_status_header(400)
-                ->set_output(json_encode([
-                    'status' => false,
-                    'code' => 400,
-                    'message' => 'Invalid password',
-                    'data' => null
-                ]));
-        }
-
-        // Profile Image
-        $profile_image = !empty($user->profile_image)
-            ? (strpos($user->profile_image, 'uploads/') === false
-                ? base_url('uploads/users/' . $user->profile_image)
-                : base_url($user->profile_image))
-            : base_url('uploads/users/default.png');
-
-        $token = $this->generate_jwt($user);
-
+    if (empty($mobile)) {
         return $this->output
-            ->set_status_header(200)
+            ->set_status_header(400)
             ->set_output(json_encode([
-                'status' => true,
-                'code' => 200,
-                'message' => 'Login successful',
-                'data' => [
-                    'token' => $token,
-                    'user' => [
-                        'id' => $user->id,
-                        'admin_id' => $user->admin_id,
-                        'name' => $user->name,
-                        'email' => $user->email,
-                        'mobile' => $user->mobile,
-                        'location' => $user->location,
-                        'bio' => $user->bio,
-                        'daily_salary' => $user->daily_salary,
-                        'isActive' => $user->isActive,
-                        'created_at' => $user->created_at,
-                        'profile_image' => $profile_image
-                    ]
-                ]
+                'status' => false,
+                'code' => 400,
+                'message' => 'Mobile number is required'
             ]));
     }
+
+    $user = $this->db
+        ->where('mobile', $mobile)
+        ->get('users')
+        ->row();
+
+    if (!$user) {
+        return $this->output
+            ->set_status_header(404)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 404,
+                'message' => 'User not found'
+            ]));
+    }
+
+    if ($user->isActive == 0) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Your account is not active. Please contact admin.'
+            ]));
+    }
+
+    // Production
+    $otp = rand(100000, 999999);
+
+    // Testing
+    // $otp = 123456;
+
+    // Delete old OTP
+    $this->db
+        ->where('mobile', $mobile)
+        ->delete('login_otps');
+
+    // Save OTP
+    $this->db->insert('login_otps', [
+        'mobile'     => $mobile,
+        'otp'        => $otp,
+'expires_at' => date('Y-m-d H:i:s', time() + (30 * 60)),
+        'created_at' => date('Y-m-d H:i:s')
+    ]);
+
+    // Send SMS
+    $this->send_otp_via_sms($mobile, $otp);
+
+    return $this->output
+        ->set_status_header(200)
+        ->set_output(json_encode([
+            'status' => true,
+            'code' => 200,
+            'message' => 'OTP sent successfully',
+            'masked_mobile' => '******' . substr($mobile, -4),
+
+            // Uncomment for testing
+            // 'otp' => $otp
+        ]));
+}
+public function verify_login_otp()
+{
+    $this->output->set_content_type('application/json');
+
+    $input_data = json_decode($this->input->raw_input_stream, true);
+
+    $mobile = trim($input_data['mobile'] ?? '');
+    $otp    = trim($input_data['otp'] ?? '');
+
+    if (empty($mobile) || empty($otp)) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Mobile and OTP are required',
+                'data' => null
+            ]));
+    }
+
+    $otp_row = $this->db
+        ->where('mobile', $mobile)
+        ->where('otp', $otp)
+        ->where('expires_at >=', date('Y-m-d H:i:s'))
+        ->get('login_otps')
+        ->row();
+
+    if (!$otp_row) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Invalid or expired OTP',
+                'data' => null
+            ]));
+    }
+
+    $user = $this->db
+        ->where('mobile', $mobile)
+        ->get('users')
+        ->row();
+
+    if (!$user) {
+        return $this->output
+            ->set_status_header(404)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 404,
+                'message' => 'User not found',
+                'data' => null
+            ]));
+    }
+
+    if ($user->isActive == 0) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Your account is not active. Please contact admin.',
+                'data' => null
+            ]));
+    }
+
+    // Delete Used OTP
+    $this->db
+        ->where('mobile', $mobile)
+        ->delete('login_otps');
+
+    // Profile Image
+    $profile_image = !empty($user->profile_image)
+        ? (strpos($user->profile_image, 'uploads/') === false
+            ? base_url('uploads/users/' . $user->profile_image)
+            : base_url($user->profile_image))
+        : base_url('uploads/users/default.png');
+
+    $token = $this->generate_jwt($user);
+
+    return $this->output
+        ->set_status_header(200)
+        ->set_output(json_encode([
+            'status' => true,
+            'code' => 200,
+            'message' => 'Login successful',
+            'data' => [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'admin_id' => $user->admin_id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'mobile' => $user->mobile,
+                    'location' => $user->location,
+                    'bio' => $user->bio,
+                    'daily_salary' => $user->daily_salary,
+                    'isActive' => $user->isActive,
+                    'created_at' => $user->created_at,
+                    'profile_image' => $profile_image
+                ]
+            ]
+        ]));
+}
+    public function send_otp_via_sms($mobileNo, $otp)
+{
+
+    $message = "Hi $mobileNo\n\nYour Verification OTP is $otp Do not share this OTP with anyone for security reasons.\n\nRegards\nOMKARENT";
+
+
+
+    $params = [
+
+        'user' => 'Fitcketsp',
+
+        'key' => '81a6b2f99cXX',
+
+        'mobile' => '91' . $mobileNo,
+
+        'message' => $message,
+
+        'senderid' => 'OENTER',
+
+        'accusage' => '1',
+
+        'entityid' => '1401487200000053882',
+
+        'tempid' => '1407168611506367587'
+
+    ];
+
+
+
+    $url = 'http://mobicomm.dove-sms.com/submitsms.jsp?' . http_build_query($params);
+
+
+
+    $ch = curl_init();
+
+    curl_setopt($ch, CURLOPT_URL, $url);
+
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    $response = curl_exec($ch);
+
+
+
+    if (curl_errno($ch)) {
+
+        log_message('error', 'OTP SMS cURL Error: ' . curl_error($ch));
+
+        curl_close($ch);
+
+        return false;
+    }
+
+
+
+    curl_close($ch);
+
+    log_message('info', "OTP sent to $mobileNo. Response: $response");
+
+    // echo "<pre>";
+
+    // print_r($response);
+
+    // exit;
+
+    // redirect('provider/dashboard');
+
+
+
+    return $response;
+}
 
 
     public function logout()

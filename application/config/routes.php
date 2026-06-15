@@ -52,6 +52,13 @@ defined('BASEPATH') or exit('No direct script access allowed');
 */
 $route['default_controller'] = 'login';
 $route['register'] = 'login/register';
+
+// ── OTP Login & Register Routes ──────────────────────
+$route['send-login-otp']      = 'login/send_login_otp';
+$route['resend-otp/(:any)']   = 'login/resend_otp/$1';
+$route['verify-login-otp']    = 'login/verify_login_otp';
+$route['sign-up']             = 'login/sign_up';
+$route['verify-register-otp'] = 'login/verify_register_otp';
 $route['forgot-password'] = 'login/forgot_password';
 $route['profile'] = 'profile';
 $route['logout'] = 'login/logout';
