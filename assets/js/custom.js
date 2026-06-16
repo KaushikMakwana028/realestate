@@ -18,6 +18,14 @@ $(document).ready(function () {
 			}
 		});
 	}
+
+	if ($("#siteName").is("select") && typeof $.fn.select2 === "function") {
+		$("#siteName").select2({
+			placeholder: "Select Site",
+			allowClear: true,
+			width: "100%"
+		});
+	}
 });
 
 // Image preview
@@ -358,18 +366,12 @@ $(document).ready(function () {
 				Swal.close();
 
 				if (response.status === "success") {
-					Swal.fire({
-						icon: "success",
-						title: "Updated!",
-						text: response.message,
-					}).then(() => {
-						const siteId = formData.get("site_id");
-						if (siteId) {
-							window.location.href = site_url + "plots/" + siteId;
-						} else {
-							window.location.href = site_url + "plots";
-						}
-					});
+					const siteId = formData.get("site_id");
+					if (siteId) {
+						window.location.href = site_url + "plots/" + siteId;
+					} else {
+						window.location.href = site_url + "plots";
+					}
 				} else {
 					Swal.fire({
 						icon: "error",

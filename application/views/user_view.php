@@ -1407,7 +1407,7 @@
 				emptyState.classList.toggle('d-none', hasVisible);
 			}
 		});
-	}); 
+	});
 
 	// ═══════════════════════════════════════
 	// Search with debounce

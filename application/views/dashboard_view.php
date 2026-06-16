@@ -875,65 +875,7 @@
             <?php endif; ?>
 
             <!-- MAP DATA -->
-            <div class="col-md-6 fade-in-up">
-                <div class="card data-card h-100">
-                    <div class="card-body">
-
-                        <div class="d-flex align-items-center justify-content-between mb-4">
-                            <h6 class="section-title">
-                                <span class="title-dot"
-                                    style="background: linear-gradient(135deg, #8b5cf6, #7c3aed);"></span>
-                                Map Data
-                            </h6>
-                            <span class="badge rounded-pill"
-                                style="background: rgba(139,92,246,0.1); color: #8b5cf6; font-size: 11px; padding: 6px 14px;">
-                                <i class="bx bx-map-pin"></i> Geographic
-                            </span>
-                        </div>
-
-                        <div class="d-flex align-items-center gap-3 mb-4 p-3 rounded-4"
-                            style="background: linear-gradient(135deg, #f5f3ff, #ede9fe);">
-                            <div class="main-stat-icon"
-                                style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: #fff; box-shadow: 0 6px 20px rgba(139,92,246,0.3);">
-                                <i class="bx bx-map"></i>
-                            </div>
-                            <div>
-                                <h3 class="main-stat-value"><?= $maps_total ?? 0 ?></h3>
-                                <p class="main-stat-label mb-0">Total Maps Available</p>
-                            </div>
-                        </div>
-
-                        <div class="row row-cols-1 row-cols-lg-2 g-3">
-                            <div class="col">
-                                <div class="stat-mini-card mini-warning">
-                                    <div class="mini-icon" style="background: rgba(245,158,11,0.12); color: #f59e0b;">
-                                        <i class="bx bx-hourglass"></i>
-                                    </div>
-                                    <div class="mini-value"><?= $maps_pending ?? 0 ?></div>
-                                    <div class="mini-label">Pending</div>
-                                    <div class="sparkle-line"
-                                        style="background: linear-gradient(90deg, #f59e0b, #fbbf24); margin: 8px auto 0;">
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col">
-                                <div class="stat-mini-card mini-success">
-                                    <div class="mini-icon" style="background: rgba(16,185,129,0.12); color: #10b981;">
-                                        <i class="bx bx-check-circle"></i>
-                                    </div>
-                                    <div class="mini-value"><?= $maps_uploaded ?? 0 ?></div>
-                                    <div class="mini-label">Approved</div>
-                                    <div class="sparkle-line"
-                                        style="background: linear-gradient(90deg, #10b981, #34d399); margin: 8px auto 0;">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
-
+         
         </div>
         <!-- END DATA SECTION -->
 

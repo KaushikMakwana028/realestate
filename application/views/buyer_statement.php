@@ -6,19 +6,21 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500&display=swap" rel="stylesheet">
     <title>Buyer Statement</title>
 
-        <style>
+    <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
             font-family: 'Roboto', sans-serif !important;
         }
+
         body {
             font-size: 12px;
             color: #1f2937;
             background: #fff;
             padding: 18px;
         }
+
         .header-wrapper {
             background: #f3f8ff;
             border: 1px solid #d8e6f7;
@@ -27,15 +29,18 @@
             margin-bottom: 14px;
             color: #1f2937;
         }
+
         .header-inner {
             display: table;
             width: 100%;
         }
+
         .header-logo {
             display: table-cell;
             vertical-align: middle;
             width: 70px;
         }
+
         .header-logo img {
             width: 55px;
             height: 55px;
@@ -44,6 +49,7 @@
             object-fit: cover;
             background: #fff;
         }
+
         .header-logo .logo-placeholder {
             width: 55px;
             height: 55px;
@@ -57,11 +63,13 @@
             font-weight: bold;
             color: #fff;
         }
+
         .header-content {
             display: table-cell;
             vertical-align: middle;
             text-align: center;
         }
+
         .company-name {
             font-size: 18px;
             font-weight: bold;
@@ -69,12 +77,14 @@
             letter-spacing: 0.8px;
             text-transform: uppercase;
         }
+
         .company-tagline {
             font-size: 10px;
             color: #64748b;
             margin-top: 3px;
             letter-spacing: 0.2px;
         }
+
         .header-contact {
             display: table-cell;
             vertical-align: middle;
@@ -85,18 +95,21 @@
             border-radius: 8px;
             padding: 9px 10px;
         }
+
         .contact-item {
             font-size: 10px;
             color: #334155;
             margin-bottom: 4px;
             word-wrap: break-word;
         }
+
         .contact-item .contact-label {
             color: #0f2b46;
             font-weight: bold;
             display: inline-block;
             width: 58px;
         }
+
         .divider {
             height: 2px;
             background: #dce8f6;
@@ -104,10 +117,12 @@
             margin: 0 0 12px 0;
             border: none;
         }
+
         .title-block {
             text-align: center;
             margin-bottom: 12px;
         }
+
         .title-block .title-text {
             font-size: 14px;
             font-weight: bold;
@@ -120,6 +135,7 @@
             border-radius: 20px;
             background: #f7fbff;
         }
+
         .party-card {
             background: #f9fcff;
             border: 1px solid #d9e8f8;
@@ -128,6 +144,7 @@
             padding: 12px 15px;
             margin-bottom: 12px;
         }
+
         .party-card-header {
             font-size: 12px;
             font-weight: bold;
@@ -138,29 +155,35 @@
             border-bottom: 1px dashed #cad8ea;
             padding-bottom: 6px;
         }
+
         .info-grid {
             width: 100%;
             border-collapse: collapse;
         }
+
         .info-grid td {
             padding: 4px 6px;
             vertical-align: top;
             font-size: 11px;
         }
+
         .info-grid .label {
             color: #64748b;
             font-weight: bold;
             width: 100px;
             white-space: nowrap;
         }
+
         .info-grid .colon {
             width: 10px;
             color: #64748b;
         }
+
         .info-grid .value {
             color: #1f2937;
             font-weight: bold;
         }
+
         .stats-row {
             display: table;
             width: 100%;
@@ -168,6 +191,7 @@
             border-collapse: separate;
             border-spacing: 6px;
         }
+
         .stat-box {
             display: table-cell;
             background: #fff;
@@ -177,15 +201,19 @@
             text-align: center;
             width: 33.33%;
         }
+
         .stat-box.debit {
             border-top: 3px solid #ef4444;
         }
+
         .stat-box.credit {
             border-top: 3px solid #16a34a;
         }
+
         .stat-box.balance {
             border-top: 3px solid #0f2b46;
         }
+
         .stat-label {
             font-size: 9px;
             color: #64748b;
@@ -193,20 +221,25 @@
             letter-spacing: 0.4px;
             margin-bottom: 3px;
         }
+
         .stat-value {
             font-size: 13px;
             font-weight: bold;
             color: #1f2937;
         }
+
         .stat-value.red {
             color: #dc2626;
         }
+
         .stat-value.green {
             color: #15803d;
         }
+
         .stat-value.blue {
             color: #0f2b46;
         }
+
         .table-title {
             font-size: 11px;
             font-weight: bold;
@@ -216,6 +249,7 @@
             margin-bottom: 6px;
             padding-left: 2px;
         }
+
         .down-payment-box {
             border: 1px solid #cae7d4;
             border-left: 3px solid #16a34a;
@@ -224,6 +258,7 @@
             padding: 8px 12px;
             margin: 2px 0 8px 0;
         }
+
         .down-payment-label {
             font-size: 10px;
             color: #166534;
@@ -232,20 +267,24 @@
             margin-bottom: 2px;
             font-weight: bold;
         }
+
         .down-payment-value {
             font-size: 14px;
             font-weight: bold;
             color: #15803d;
         }
+
         .ledger-table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
+
         .ledger-table thead tr {
             background: #0f2b46;
             color: #fff;
         }
+
         .ledger-table th {
             padding: 9px 8px;
             font-size: 10px;
@@ -255,28 +294,35 @@
             text-transform: uppercase;
             border: 1px solid #123a5e;
         }
+
         .ledger-table td {
             border: 1px solid #dbe6f5;
             padding: 7px 8px;
             font-size: 11px;
             color: #1f2937;
         }
+
         .ledger-table tbody tr:nth-child(even) {
             background-color: #f9fbff;
         }
+
         .ledger-table tbody tr:hover {
             background-color: #f1f6fd;
         }
+
         .row-opening {
             background-color: #fff9eb !important;
         }
+
         .row-payment td {
             background-color: #f4fff7;
         }
+
         .total-row {
             background: #0f2b46 !important;
             color: #fff !important;
         }
+
         .total-row td {
             background: transparent !important;
             color: #fff !important;
@@ -285,23 +331,29 @@
             padding: 9px 8px;
             font-size: 11px;
         }
+
         .text-right {
             text-align: right;
         }
+
         .text-center {
             text-align: center;
         }
+
         .text-left {
             text-align: left;
         }
+
         .amt-debit {
             color: #c2410c;
             font-weight: bold;
         }
+
         .amt-credit {
             color: #15803d;
             font-weight: bold;
         }
+
         .badge-dr {
             display: inline-block;
             background: #fff0ed;
@@ -313,6 +365,7 @@
             font-weight: bold;
             margin-left: 3px;
         }
+
         .badge-cr {
             display: inline-block;
             background: #ecfdf3;
@@ -324,26 +377,31 @@
             font-weight: bold;
             margin-left: 3px;
         }
+
         .footer {
             margin-top: 16px;
             border-top: 1px solid #d6e4f5;
             padding-top: 10px;
         }
+
         .footer-inner {
             display: table;
             width: 100%;
         }
+
         .footer-left {
             display: table-cell;
             vertical-align: bottom;
             font-size: 9px;
             color: #64748b;
         }
+
         .footer-right {
             display: table-cell;
             vertical-align: bottom;
             text-align: right;
         }
+
         .sign-line {
             border-top: 1px solid #475569;
             width: 150px;
@@ -351,11 +409,13 @@
             margin-top: 24px;
             margin-bottom: 4px;
         }
+
         .sign-label {
             font-size: 10px;
             color: #475569;
             text-align: center;
         }
+
         .generated-note {
             font-size: 8px;
             color: #94a3b8;

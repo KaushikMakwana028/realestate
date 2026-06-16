@@ -116,10 +116,10 @@
 			<div class="col-6 col-lg-3">
 				<div class="stats-card stats-card-warning">
 					<div class="stats-icon"><i class="bx bx-bookmark"></i></div>
-					<div class="stats-info">
+					<!-- <div class="stats-info">
 						<span class="stats-label">Booked</span>
 						<h4 class="stats-value" id="statBooked">--</h4>
-					</div>
+					</div> -->
 					<div class="stats-ring">
 						<svg viewBox="0 0 36 36">
 							<path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
@@ -161,10 +161,7 @@
 				<i class="bx bx-check-circle"></i> Available
 				<span class="filter-count filter-count-success" id="countAvailable">0</span>
 			</button>
-			<button class="filter-tab" data-filter="booked">
-				<i class="bx bx-bookmark"></i> Booked
-				<span class="filter-count filter-count-warning" id="countBooked">0</span>
-			</button>
+			
 			<button class="filter-tab" data-filter="sold">
 				<i class="bx bx-badge-check"></i> Sold
 				<span class="filter-count filter-count-danger" id="countSold">0</span>

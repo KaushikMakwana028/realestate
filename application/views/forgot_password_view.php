@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="en" data-bs-theme="light">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -16,6 +17,7 @@
             min-height: 100vh;
             font-family: 'Roboto', sans-serif !important;
         }
+
         .wrapper {
             min-height: 100vh;
             display: flex;
@@ -23,6 +25,7 @@
             justify-content: center;
             padding: 20px;
         }
+
         .card-box {
             background: #fff;
             border-radius: 12px;
@@ -31,16 +34,19 @@
             max-width: 460px;
             padding: 32px;
         }
+
         .title {
             font-size: 30px;
             margin-bottom: 6px;
             color: #111827;
         }
+
         .sub {
             color: #6b7280;
             font-size: 14px;
             margin-bottom: 24px;
         }
+
         .btn-main {
             background: #0f172a;
             border: none;
@@ -49,19 +55,23 @@
             border-radius: 8px;
             width: 100%;
         }
+
         .btn-main:hover {
             background: #1e293b;
             color: #fff;
         }
+
         .back-link {
             font-size: 14px;
             color: #0f172a;
             text-decoration: none;
             font-weight: 500;
         }
+
         .back-link:hover {
             text-decoration: underline;
         }
+
         .error {
             color: #dc3545;
             font-size: 13px;
@@ -69,6 +79,7 @@
         }
     </style>
 </head>
+
 <body>
     <div class="wrapper">
         <div class="card-box">
@@ -119,4 +130,5 @@
         </div>
     </div>
 </body>
+
 </html>

@@ -439,14 +439,190 @@ public function inquiry(){
     $this->load->view('footer');
 }
 
+public function add_inquiry_web()
+{
+    header('Content-Type: application/json');
+    
+    $admin_id = $this->admin['user_id'];
+    $user_id = $this->session->userdata('user_id'); // Current logged-in user
+    
+    $site_id = (int)$this->input->post('site_id');
+    $plot_id = (int)$this->input->post('plot_id');
+    $customer_name = trim($this->input->post('customer_name'));
+    $mobile = trim($this->input->post('mobile'));
+    $address = trim($this->input->post('address'));
+    $note = trim($this->input->post('note'));
+    $status = trim($this->input->post('status')) ?: 'pending';
+    
+    // Validation
+    if (empty($site_id) || empty($plot_id) || empty($customer_name) || empty($mobile)) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Site, plot, customer name, and mobile are required'
+        ]);
+        return;
+    }
+    
+    // Validate mobile
+    if (!preg_match('/^[0-9]{10}$/', $mobile)) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Please enter a valid 10-digit mobile number'
+        ]);
+        return;
+    }
+    
+    // Check if plot exists under the same site
+    $plot_exists = $this->db->get_where('plots', [
+        'id' => $plot_id,
+        'site_id' => $site_id,
+        'isActive' => 1
+    ])->row();
+    
+    if (!$plot_exists) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Invalid plot ID or plot not found under this site'
+        ]);
+        return;
+    }
+    
+    // Check duplicate inquiry
+    $exists = $this->db->get_where('inquiries', [
+        'site_id' => $site_id,
+        'plot_id' => $plot_id,
+        'mobile' => $mobile,
+        'isActive' => 1
+    ])->row();
+    
+    if ($exists) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Inquiry for this plot and mobile already exists'
+        ]);
+        return;
+    }
+    
+    // Insert inquiry
+    $data = [
+        'admin_id' => $admin_id,
+        'user_id' => $user_id,
+        'site_id' => $site_id,
+        'plot_id' => $plot_id,
+        'customer_name' => $customer_name,
+        'mobile' => $mobile,
+        'address' => $address,
+        'note' => $note,
+        'status' => $status,
+        'isActive' => 1,
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+    
+    if ($this->db->insert('inquiries', $data)) {
+        echo json_encode([
+            'status' => true,
+            'message' => 'Inquiry added successfully'
+        ]);
+    } else {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Failed to add inquiry'
+        ]);
+    }
+}
+
+// Update inquiry function for web
+public function update_inquiry_web()
+{
+    header('Content-Type: application/json');
+    
+    $admin_id = $this->admin['user_id'];
+    $inquiry_id = (int)$this->input->post('inquiry_id');
+    $site_id = (int)$this->input->post('site_id');
+    $plot_id = (int)$this->input->post('plot_id');
+    $customer_name = trim($this->input->post('customer_name'));
+    $mobile = trim($this->input->post('mobile'));
+    $address = trim($this->input->post('address'));
+    $note = trim($this->input->post('note'));
+    $status = trim($this->input->post('status'));
+    
+    // Validation
+    if (empty($inquiry_id) || empty($site_id) || empty($plot_id) || empty($customer_name) || empty($mobile)) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'All required fields must be filled'
+        ]);
+        return;
+    }
+    
+    // Check if inquiry exists
+    $inquiry = $this->db->get_where('inquiries', [
+        'id' => $inquiry_id,
+        'admin_id' => $admin_id,
+        'isActive' => 1
+    ])->row();
+    
+    if (!$inquiry) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Inquiry not found'
+        ]);
+        return;
+    }
+    
+    // Check duplicate (exclude current inquiry)
+    $this->db->where('site_id', $site_id);
+    $this->db->where('plot_id', $plot_id);
+    $this->db->where('mobile', $mobile);
+    $this->db->where('id !=', $inquiry_id);
+    $this->db->where('isActive', 1);
+    $exists = $this->db->get('inquiries')->row();
+    
+    if ($exists) {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Another inquiry with same plot and mobile already exists'
+        ]);
+        return;
+    }
+    
+    // Update inquiry
+    $data = [
+        'site_id' => $site_id,
+        'plot_id' => $plot_id,
+        'customer_name' => $customer_name,
+        'mobile' => $mobile,
+        'address' => $address,
+        'note' => $note,
+        'status' => $status,
+        'updated_at' => date('Y-m-d H:i:s')
+    ];
+    
+    $this->db->where('id', $inquiry_id);
+    if ($this->db->update('inquiries', $data)) {
+        echo json_encode([
+            'status' => true,
+            'message' => 'Inquiry updated successfully'
+        ]);
+    } else {
+        echo json_encode([
+            'status' => false,
+            'message' => 'Failed to update inquiry'
+        ]);
+    }
+}
+
+// Updated fetch_inquiries function with status filter
 public function fetch_inquiries()
 {
     header('Content-Type: application/json');
 
     $page   = intval($this->input->post("page")) ?: 1;
-    $search = trim($this->input->post("search"));
+$search = trim($this->input->post("search") ?? '');
+$month_filter = trim($this->input->post("month_filter") ?? '');
+$status_filter = trim($this->input->post("status_filter") ?? '');
     $site_filter = intval($this->input->post("site_filter"));
-    $month_filter = trim($this->input->post("month_filter"));
+   
     $limit  = 10;
     $offset = ($page - 1) * $limit;
 
@@ -471,7 +647,7 @@ public function fetch_inquiries()
     $this->db->join("plots", "plots.id = inquiries.plot_id", "left");
 
     $this->db->where("inquiries.admin_id", $admin_id);
-    $this->db->where("inquiries.isActive", 1); // <-- Only active inquiries
+    $this->db->where("inquiries.isActive", 1);
 
     if (!empty($search)) {
         $this->db->group_start();
@@ -479,6 +655,7 @@ public function fetch_inquiries()
         $this->db->or_like("sites.name", $search);
         $this->db->or_like("plots.plot_number", $search);
         $this->db->or_like("inquiries.customer_name", $search);
+        $this->db->or_like("inquiries.mobile", $search);
         $this->db->group_end();
     }
     if ($site_filter > 0) {
@@ -487,6 +664,9 @@ public function fetch_inquiries()
     if (!empty($month_filter)) {
         $this->db->where("MONTH(inquiries.created_at)", $month);
         $this->db->where("YEAR(inquiries.created_at)", $year);
+    }
+    if (!empty($status_filter)) { // NEW
+        $this->db->where("inquiries.status", $status_filter);
     }
 
     $total = $this->db->count_all_results("", FALSE);
@@ -500,9 +680,7 @@ public function fetch_inquiries()
     $dayOfWeek = (int) date('N');
     $week_start = date('Y-m-d', strtotime('-' . ($dayOfWeek - 1) . ' days'));
 
-    // Cards should follow the same active filters as table (search/site/month),
-    // while remaining independent from pagination.
-    $applyInquiryScope = function () use ($admin_id, $search, $site_filter, $month_filter, $month, $year) {
+    $applyInquiryScope = function () use ($admin_id, $search, $site_filter, $month_filter, $status_filter, $month, $year) {
         $this->db->from("inquiries");
         $this->db->join("users", "users.id = inquiries.user_id", "left");
         $this->db->join("sites", "sites.id = inquiries.site_id", "left");
@@ -516,6 +694,7 @@ public function fetch_inquiries()
             $this->db->or_like("sites.name", $search);
             $this->db->or_like("plots.plot_number", $search);
             $this->db->or_like("inquiries.customer_name", $search);
+            $this->db->or_like("inquiries.mobile", $search);
             $this->db->group_end();
         }
         if ($site_filter > 0) {
@@ -524,6 +703,9 @@ public function fetch_inquiries()
         if (!empty($month_filter)) {
             $this->db->where("MONTH(inquiries.created_at)", $month);
             $this->db->where("YEAR(inquiries.created_at)", $year);
+        }
+        if (!empty($status_filter)) { // NEW
+            $this->db->where("inquiries.status", $status_filter);
         }
     };
 
@@ -541,16 +723,12 @@ public function fetch_inquiries()
         ->where("DATE(inquiries.created_at) <= '{$today}'", NULL, FALSE)
         ->count_all_results();
 
-    if ($this->db->field_exists('status', 'inquiries')) {
-        $applyInquiryScope();
-        $pending_enquiries = (int) $this->db
-            ->where('LOWER(inquiries.status)', 'pending')
-            ->count_all_results();
-    } else {
-        $pending_enquiries = $total_enquiries;
-    }
+    $applyInquiryScope();
+    $pending_enquiries = (int) $this->db
+        ->where('inquiries.status', 'pending')
+        ->count_all_results();
 
-    // Site options for searchable dropdown (all sites under this admin).
+    // Site options
     $this->db->select("id, name");
     $this->db->from("sites");
     $this->db->where("admin_id", $admin_id);
@@ -574,6 +752,226 @@ public function fetch_inquiries()
         ],
         "site_options" => $site_options
     ]);
+}
+
+// Get plots by site
+public function get_plots_by_site()
+{
+    header('Content-Type: application/json');
+    
+    $site_id = (int)$this->input->post('site_id');
+    $admin_id = $this->admin['user_id'];
+    
+    if (empty($site_id)) {
+        echo json_encode(['status' => false, 'data' => []]);
+        return;
+    }
+    
+    $this->db->select('id, plot_number');
+    $this->db->from('plots');
+    $this->db->where('site_id', $site_id);
+    $this->db->where('isActive', 1);
+    $this->db->order_by('plot_number', 'ASC');
+    $plots = $this->db->get()->result();
+    
+    echo json_encode([
+        'status' => true,
+        'data' => $plots
+    ]);
+}
+
+// Updated API add_inquiry with status
+public function add_inquiry()
+{
+    header('Content-Type: application/json');
+
+    $authHeader = $this->input->get_request_header('Authorization', TRUE);
+    $token = null;
+    if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        $token = $matches[1];
+    }
+
+    $decoded = $this->verify_jwt($token);
+    if (!$decoded || empty($decoded->data->id)) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Invalid token or user ID missing',
+                'data' => null
+            ]));
+    }
+
+    $user_id = (int) $decoded->data->id;
+
+    $user = $this->db->select('admin_id')->where('id', $user_id)->get('users')->row();
+    if (!$user) {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'User not found',
+                'data' => null
+            ]));
+    }
+    $admin_id = (int) $user->admin_id;
+
+    $input = json_decode($this->input->raw_input_stream, true);
+    $site_id = isset($input['site_id']) ? (int) $input['site_id'] : null;
+    $plot_id = isset($input['plot_id']) ? (int) $input['plot_id'] : null;
+    $customer_name = trim((string) ($input['customer_name'] ?? ''));
+    $mobile = trim((string) ($input['mobile'] ?? ''));
+    $address = trim((string) ($input['address'] ?? ''));
+    $note = trim((string) ($input['note'] ?? ''));
+    $status = isset($input['status']) ? trim($input['status']) : 'pending'; // NEW
+
+    if (empty($site_id) || empty($plot_id) || $customer_name === '' || $mobile === '') {
+        return $this->output
+            ->set_status_header(400)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 400,
+                'message' => 'Site, plot, customer name, and mobile are required',
+                'data' => null
+            ]));
+    }
+
+    $site_belongs = $this->db->get_where('site_assignments', [
+        'site_id' => $site_id,
+        'user_id' => $user_id,
+        'admin_id' => $admin_id
+    ])->row();
+
+    if (!$site_belongs) {
+        return $this->output
+            ->set_status_header(403)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 403,
+                'message' => 'You are not assigned to this site',
+                'data' => null
+            ]));
+    }
+
+    $plot_exists = $this->db->get_where('plots', [
+        'id' => $plot_id,
+        'site_id' => $site_id,
+        'isActive' => 1
+    ])->row();
+
+    if (!$plot_exists) {
+        return $this->output
+            ->set_status_header(404)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 404,
+                'message' => 'Invalid plot ID or plot not found under this site',
+                'data' => null
+            ]));
+    }
+
+    $exists = $this->db->get_where('inquiries', [
+        'site_id' => $site_id,
+        'plot_id' => $plot_id,
+        'mobile' => $mobile,
+        'isActive' => 1
+    ])->row();
+
+    if ($exists) {
+        return $this->output
+            ->set_status_header(409)
+            ->set_output(json_encode([
+                'status' => false,
+                'code' => 409,
+                'message' => 'Inquiry for this plot and mobile already exists',
+                'data' => null
+            ]));
+    }
+
+    $data = [
+        'admin_id' => $admin_id,
+        'user_id' => $user_id,
+        'site_id' => $site_id,
+        'plot_id' => $plot_id,
+        'customer_name' => $customer_name,
+        'mobile' => $mobile,
+        'address' => $address,
+        'note' => $note,
+        'status' => $status, // NEW
+        'isActive' => 1,
+        'created_at' => date('Y-m-d H:i:s')
+    ];
+
+    if ($this->db->insert('inquiries', $data)) {
+        return $this->output
+            ->set_status_header(200)
+            ->set_output(json_encode([
+                'status' => true,
+                'code' => 200,
+                'message' => 'Inquiry added successfully',
+                'data' => $data
+            ]));
+    }
+
+    return $this->output
+        ->set_status_header(500)
+        ->set_output(json_encode([
+            'status' => false,
+            'code' => 500,
+            'message' => 'Failed to add inquiry',
+            'data' => null
+        ]));
+}
+
+// Updated API inquiry_list with status
+public function inquiry_list()
+{
+    header('Content-Type: application/json');
+
+    $authHeader = $this->input->get_request_header('Authorization', TRUE);
+    $token = null;
+    if ($authHeader && preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+        $token = $matches[1];
+    }
+    $decoded = $this->verify_jwt($token);
+    if (!$decoded || empty($decoded->data->id)) {
+        return $this->output->set_status_header(401)->set_output(json_encode([
+            'status' => false,
+            'code' => 401,
+            'message' => 'Unauthorized user',
+        ]));
+    }
+
+    $user_id = (int) $decoded->data->id;
+
+    $inquiries = $this->db
+        ->select('i.*, s.name, p.plot_number')
+        ->from('inquiries i')
+        ->join('sites s', 's.id = i.site_id', 'left')
+        ->join('plots p', 'p.id = i.plot_id', 'left')
+        ->where('i.user_id', $user_id)
+        ->where('i.isActive', 1)
+        ->order_by('i.id', 'DESC')
+        ->get()
+        ->result();
+
+    if ($inquiries) {
+        return $this->output->set_status_header(200)->set_output(json_encode([
+            'status' => true,
+            'code' => 200,
+            'message' => 'Inquiries fetched successfully',
+            'data' => $inquiries
+        ]));
+    } else {
+        return $this->output->set_status_header(404)->set_output(json_encode([
+            'status' => false,
+            'code' => 404,
+            'message' => 'No inquiries found',
+            'data' => []
+        ]));
+    }
 }
 public function attedance(){
     $this->load->view('header');

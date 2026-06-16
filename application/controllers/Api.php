@@ -37,256 +37,256 @@ class Api extends CI_Controller
         $this->load->library('email');
         $this->load->library(['form_validation']);
     }
-   public function send_login_otp()
-{
-    $this->output->set_content_type('application/json');
+    public function send_login_otp()
+    {
+        $this->output->set_content_type('application/json');
 
-    $input_data = json_decode($this->input->raw_input_stream, true);
+        $input_data = json_decode($this->input->raw_input_stream, true);
 
-    $mobile = trim($input_data['mobile'] ?? '');
+        $mobile = trim($input_data['mobile'] ?? '');
 
-    if (empty($mobile)) {
+        if (empty($mobile)) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 400,
+                    'message' => 'Mobile number is required'
+                ]));
+        }
+
+        $user = $this->db
+            ->where('mobile', $mobile)
+            ->get('users')
+            ->row();
+
+        if (!$user) {
+            return $this->output
+                ->set_status_header(404)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 404,
+                    'message' => 'User not found'
+                ]));
+        }
+
+        if ($user->isActive == 0) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 400,
+                    'message' => 'Your account is not active. Please contact admin.'
+                ]));
+        }
+
+        // Production
+        $otp = rand(100000, 999999);
+
+        // Testing
+        // $otp = 123456;
+
+        // Delete old OTP
+        $this->db
+            ->where('mobile', $mobile)
+            ->delete('login_otps');
+
+        // Save OTP
+        $this->db->insert('login_otps', [
+            'mobile' => $mobile,
+            'otp' => $otp,
+            'expires_at' => date('Y-m-d H:i:s', time() + (30 * 60)),
+            'created_at' => date('Y-m-d H:i:s')
+        ]);
+
+        // Send SMS
+        $this->send_otp_via_sms($mobile, $otp);
+
         return $this->output
-            ->set_status_header(400)
+            ->set_status_header(200)
             ->set_output(json_encode([
-                'status' => false,
-                'code' => 400,
-                'message' => 'Mobile number is required'
+                'status' => true,
+                'code' => 200,
+                'message' => 'OTP sent successfully',
+                'masked_mobile' => '******' . substr($mobile, -4),
+
+                // Uncomment for testing
+                // 'otp' => $otp
             ]));
     }
+    public function verify_login_otp()
+    {
+        $this->output->set_content_type('application/json');
 
-    $user = $this->db
-        ->where('mobile', $mobile)
-        ->get('users')
-        ->row();
+        $input_data = json_decode($this->input->raw_input_stream, true);
 
-    if (!$user) {
+        $mobile = trim($input_data['mobile'] ?? '');
+        $otp = trim($input_data['otp'] ?? '');
+
+        if (empty($mobile) || empty($otp)) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 400,
+                    'message' => 'Mobile and OTP are required',
+                    'data' => null
+                ]));
+        }
+
+        $otp_row = $this->db
+            ->where('mobile', $mobile)
+            ->where('otp', $otp)
+            ->where('expires_at >=', date('Y-m-d H:i:s'))
+            ->get('login_otps')
+            ->row();
+
+        if (!$otp_row) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 400,
+                    'message' => 'Invalid or expired OTP',
+                    'data' => null
+                ]));
+        }
+
+        $user = $this->db
+            ->where('mobile', $mobile)
+            ->get('users')
+            ->row();
+
+        if (!$user) {
+            return $this->output
+                ->set_status_header(404)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 404,
+                    'message' => 'User not found',
+                    'data' => null
+                ]));
+        }
+
+        if ($user->isActive == 0) {
+            return $this->output
+                ->set_status_header(400)
+                ->set_output(json_encode([
+                    'status' => false,
+                    'code' => 400,
+                    'message' => 'Your account is not active. Please contact admin.',
+                    'data' => null
+                ]));
+        }
+
+        // Delete Used OTP
+        $this->db
+            ->where('mobile', $mobile)
+            ->delete('login_otps');
+
+        // Profile Image
+        $profile_image = !empty($user->profile_image)
+            ? (strpos($user->profile_image, 'uploads/') === false
+                ? base_url('uploads/users/' . $user->profile_image)
+                : base_url($user->profile_image))
+            : base_url('uploads/users/default.png');
+
+        $token = $this->generate_jwt($user);
+
         return $this->output
-            ->set_status_header(404)
+            ->set_status_header(200)
             ->set_output(json_encode([
-                'status' => false,
-                'code' => 404,
-                'message' => 'User not found'
-            ]));
-    }
-
-    if ($user->isActive == 0) {
-        return $this->output
-            ->set_status_header(400)
-            ->set_output(json_encode([
-                'status' => false,
-                'code' => 400,
-                'message' => 'Your account is not active. Please contact admin.'
-            ]));
-    }
-
-    // Production
-    $otp = rand(100000, 999999);
-
-    // Testing
-    // $otp = 123456;
-
-    // Delete old OTP
-    $this->db
-        ->where('mobile', $mobile)
-        ->delete('login_otps');
-
-    // Save OTP
-    $this->db->insert('login_otps', [
-        'mobile'     => $mobile,
-        'otp'        => $otp,
-'expires_at' => date('Y-m-d H:i:s', time() + (30 * 60)),
-        'created_at' => date('Y-m-d H:i:s')
-    ]);
-
-    // Send SMS
-    $this->send_otp_via_sms($mobile, $otp);
-
-    return $this->output
-        ->set_status_header(200)
-        ->set_output(json_encode([
-            'status' => true,
-            'code' => 200,
-            'message' => 'OTP sent successfully',
-            'masked_mobile' => '******' . substr($mobile, -4),
-
-            // Uncomment for testing
-            // 'otp' => $otp
-        ]));
-}
-public function verify_login_otp()
-{
-    $this->output->set_content_type('application/json');
-
-    $input_data = json_decode($this->input->raw_input_stream, true);
-
-    $mobile = trim($input_data['mobile'] ?? '');
-    $otp    = trim($input_data['otp'] ?? '');
-
-    if (empty($mobile) || empty($otp)) {
-        return $this->output
-            ->set_status_header(400)
-            ->set_output(json_encode([
-                'status' => false,
-                'code' => 400,
-                'message' => 'Mobile and OTP are required',
-                'data' => null
-            ]));
-    }
-
-    $otp_row = $this->db
-        ->where('mobile', $mobile)
-        ->where('otp', $otp)
-        ->where('expires_at >=', date('Y-m-d H:i:s'))
-        ->get('login_otps')
-        ->row();
-
-    if (!$otp_row) {
-        return $this->output
-            ->set_status_header(400)
-            ->set_output(json_encode([
-                'status' => false,
-                'code' => 400,
-                'message' => 'Invalid or expired OTP',
-                'data' => null
-            ]));
-    }
-
-    $user = $this->db
-        ->where('mobile', $mobile)
-        ->get('users')
-        ->row();
-
-    if (!$user) {
-        return $this->output
-            ->set_status_header(404)
-            ->set_output(json_encode([
-                'status' => false,
-                'code' => 404,
-                'message' => 'User not found',
-                'data' => null
-            ]));
-    }
-
-    if ($user->isActive == 0) {
-        return $this->output
-            ->set_status_header(400)
-            ->set_output(json_encode([
-                'status' => false,
-                'code' => 400,
-                'message' => 'Your account is not active. Please contact admin.',
-                'data' => null
-            ]));
-    }
-
-    // Delete Used OTP
-    $this->db
-        ->where('mobile', $mobile)
-        ->delete('login_otps');
-
-    // Profile Image
-    $profile_image = !empty($user->profile_image)
-        ? (strpos($user->profile_image, 'uploads/') === false
-            ? base_url('uploads/users/' . $user->profile_image)
-            : base_url($user->profile_image))
-        : base_url('uploads/users/default.png');
-
-    $token = $this->generate_jwt($user);
-
-    return $this->output
-        ->set_status_header(200)
-        ->set_output(json_encode([
-            'status' => true,
-            'code' => 200,
-            'message' => 'Login successful',
-            'data' => [
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'admin_id' => $user->admin_id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'mobile' => $user->mobile,
-                    'location' => $user->location,
-                    'bio' => $user->bio,
-                    'daily_salary' => $user->daily_salary,
-                    'isActive' => $user->isActive,
-                    'created_at' => $user->created_at,
-                    'profile_image' => $profile_image
+                'status' => true,
+                'code' => 200,
+                'message' => 'Login successful',
+                'data' => [
+                    'token' => $token,
+                    'user' => [
+                        'id' => $user->id,
+                        'admin_id' => $user->admin_id,
+                        'name' => $user->name,
+                        'email' => $user->email,
+                        'mobile' => $user->mobile,
+                        'location' => $user->location,
+                        'bio' => $user->bio,
+                        'daily_salary' => $user->daily_salary,
+                        'isActive' => $user->isActive,
+                        'created_at' => $user->created_at,
+                        'profile_image' => $profile_image
+                    ]
                 ]
-            ]
-        ]));
-}
+            ]));
+    }
     public function send_otp_via_sms($mobileNo, $otp)
-{
+    {
 
-    $message = "Hi $mobileNo\n\nYour Verification OTP is $otp Do not share this OTP with anyone for security reasons.\n\nRegards\nOMKARENT";
-
-
-
-    $params = [
-
-        'user' => 'Fitcketsp',
-
-        'key' => '81a6b2f99cXX',
-
-        'mobile' => '91' . $mobileNo,
-
-        'message' => $message,
-
-        'senderid' => 'OENTER',
-
-        'accusage' => '1',
-
-        'entityid' => '1401487200000053882',
-
-        'tempid' => '1407168611506367587'
-
-    ];
+        $message = "Hi $mobileNo\n\nYour Verification OTP is $otp Do not share this OTP with anyone for security reasons.\n\nRegards\nOMKARENT";
 
 
 
-    $url = 'http://mobicomm.dove-sms.com/submitsms.jsp?' . http_build_query($params);
+        $params = [
+
+            'user' => 'Fitcketsp',
+
+            'key' => '81a6b2f99cXX',
+
+            'mobile' => '91' . $mobileNo,
+
+            'message' => $message,
+
+            'senderid' => 'OENTER',
+
+            'accusage' => '1',
+
+            'entityid' => '1401487200000053882',
+
+            'tempid' => '1407168611506367587'
+
+        ];
 
 
 
-    $ch = curl_init();
-
-    curl_setopt($ch, CURLOPT_URL, $url);
-
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-    $response = curl_exec($ch);
+        $url = 'http://mobicomm.dove-sms.com/submitsms.jsp?' . http_build_query($params);
 
 
 
-    if (curl_errno($ch)) {
+        $ch = curl_init();
 
-        log_message('error', 'OTP SMS cURL Error: ' . curl_error($ch));
+        curl_setopt($ch, CURLOPT_URL, $url);
+
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+        $response = curl_exec($ch);
+
+
+
+        if (curl_errno($ch)) {
+
+            log_message('error', 'OTP SMS cURL Error: ' . curl_error($ch));
+
+            curl_close($ch);
+
+            return false;
+        }
+
+
 
         curl_close($ch);
 
-        return false;
+        log_message('info', "OTP sent to $mobileNo. Response: $response");
+
+        // echo "<pre>";
+
+        // print_r($response);
+
+        // exit;
+
+        // redirect('provider/dashboard');
+
+
+
+        return $response;
     }
-
-
-
-    curl_close($ch);
-
-    log_message('info', "OTP sent to $mobileNo. Response: $response");
-
-    // echo "<pre>";
-
-    // print_r($response);
-
-    // exit;
-
-    // redirect('provider/dashboard');
-
-
-
-    return $response;
-}
 
 
     public function logout()
@@ -814,7 +814,7 @@ public function verify_login_otp()
                 if (!empty($buyer)) {
 
                     // Check sold by login user
-                    if ((int)$buyer['user_id'] === $user_id) {
+                    if ((int) $buyer['user_id'] === $user_id) {
                         $plot['is_sold_by_login_user'] = true;
                     } else {
 
@@ -1005,7 +1005,7 @@ public function verify_login_otp()
             if (!empty($buyer)) {
 
                 // Check sold by login user
-                if ((int)$buyer['user_id'] === $user_id) {
+                if ((int) $buyer['user_id'] === $user_id) {
                     $plot['is_sold_by_login_user'] = true;
                 }
 
@@ -1030,7 +1030,7 @@ public function verify_login_otp()
             }
 
             $cash_logs = [];
-            $emi_logs  = [];
+            $emi_logs = [];
 
             if (!empty($payment)) {
 
@@ -1359,21 +1359,21 @@ public function verify_login_otp()
 
         // 8) Insert payment details
         $paymentData = [
-            'user_id'          => $user_id,
-            'buyer_id'         => $buyer_id,
-            'plot_id'          => $plot_id,
-            'admin_id'         => $admin_id,
-            'total_price'      => $total_price,
-            'payment_mode'     => $payment_mode,
-            'down_payment'     => $down_payment,
+            'user_id' => $user_id,
+            'buyer_id' => $buyer_id,
+            'plot_id' => $plot_id,
+            'admin_id' => $admin_id,
+            'total_price' => $total_price,
+            'payment_mode' => $payment_mode,
+            'down_payment' => $down_payment,
             'remaining_amount' => $remaining_amount,
-            'notes'            => $payment['notes'] ?? null,
-            'created_on'       => date('Y-m-d H:i:s'),
+            'notes' => $payment['notes'] ?? null,
+            'created_on' => date('Y-m-d H:i:s'),
         ];
 
         if ($payment_mode === 'EMI') {
-            $paymentData['emi_duration']       = $emi_duration;
-            $paymentData['emi_start_date']     = $emi_start_date;
+            $paymentData['emi_duration'] = $emi_duration;
+            $paymentData['emi_start_date'] = $emi_start_date;
             $paymentData['installment_amount'] = $installment_amount;
         }
 
@@ -1387,16 +1387,16 @@ public function verify_login_otp()
         // 9) Cash log
         if ($payment_mode === 'CASH') {
             $cashLog = [
-                'admin_id'         => $admin_id,
-                'user_id'          => $user_id,
-                'buyer_id'         => $buyer_id,
-                'plot_id'          => $plot_id,
-                'paid_amount'      => $down_payment,
+                'admin_id' => $admin_id,
+                'user_id' => $user_id,
+                'buyer_id' => $buyer_id,
+                'plot_id' => $plot_id,
+                'paid_amount' => $down_payment,
                 'remaining_amount' => $remaining_amount,
-                'total_price'      => $total_price,
-                'status'           => 'pending',
-                'notes'            => $payment['notes'] ?? null,
-                'created_on'       => date('Y-m-d H:i:s'),
+                'total_price' => $total_price,
+                'status' => 'pending',
+                'notes' => $payment['notes'] ?? null,
+                'created_on' => date('Y-m-d H:i:s'),
             ];
             $this->db->insert('cash_payment_logs', $cashLog);
         }
@@ -1414,12 +1414,12 @@ public function verify_login_otp()
 
                 $emiRows[] = [
                     'payment_id' => $payment_id,
-                    'buyer_id'   => $buyer_id,
-                    'plot_id'    => $plot_id,
-                    'month_no'   => $i,
-                    'emi_date'   => $emi_date,
+                    'buyer_id' => $buyer_id,
+                    'plot_id' => $plot_id,
+                    'month_no' => $i,
+                    'emi_date' => $emi_date,
                     'emi_amount' => $monthly_emi,
-                    'status'     => 'pending',
+                    'status' => 'pending',
                     'created_on' => date('Y-m-d H:i:s'),
                 ];
             }
@@ -1755,11 +1755,11 @@ public function verify_login_otp()
             }
 
             $config = [
-                'upload_path'   => $upload_dir,
+                'upload_path' => $upload_dir,
                 'allowed_types' => 'jpg|jpeg|png|pdf',
-                'max_size'      => 2048,
-                'file_name'     => 'EXP_' . time() . '_' . $user_id,
-                'overwrite'     => false
+                'max_size' => 2048,
+                'file_name' => 'EXP_' . time() . '_' . $user_id,
+                'overwrite' => false
             ];
 
             $this->load->library('upload', $config);

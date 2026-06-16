@@ -604,10 +604,9 @@ class Site extends My_Controller
         $site_name = trim($this->input->post('site_name'));
         $location = trim($this->input->post('location'));
         $area = trim($this->input->post('area'));
-        $total_plots = trim($this->input->post('total_plots'));
-
+      
         // ✅ Validation
-        if (empty($site_name) || empty($location) || empty($area) || empty($total_plots)) {
+        if (empty($site_name) || empty($location) || empty($area) ) {
             $response['message'] = 'All fields are required';
             echo json_encode($response);
             return;
@@ -627,7 +626,6 @@ class Site extends My_Controller
             'name' => $site_name,
             'location' => $location,
             'area' => $area,
-            'total_plots' => $total_plots,
             'listed_map' => 0,
             'isActive' => 1, // Default active
             'created_at' => date('Y-m-d')

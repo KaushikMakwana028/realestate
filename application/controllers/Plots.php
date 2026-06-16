@@ -245,6 +245,153 @@ class Plots extends My_Controller
         $updated = $this->db->update('plots', $data);
 
         if ($updated) {
+            // 👤 Handle Buyer & Payment details if status is sold
+            if ($status === 'sold') {
+                $existing_buyer = $this->db->get_where('buyer', ['plot_id' => $id, 'isActive' => 1])->row();
+                $buyer_name = $this->input->post('buyer_name');
+
+                if ($buyer_name) {
+                    $buyer_user_id = $this->input->post('buyer_user_id');
+                    if ($buyer_user_id === 'admin' || empty($buyer_user_id)) {
+                        $buyer_user_id = $admin_id;
+                    } else {
+                        $buyer_user_id = (int)$buyer_user_id;
+                    }
+
+                    $buyerData = [
+                        'user_id' => $buyer_user_id,
+                        'admin_id' => $admin_id,
+                        'plot_id' => $id,
+                        'name' => trim($buyer_name),
+                        'mobile' => trim($this->input->post('buyer_mobile')),
+                        'email' => trim($this->input->post('buyer_email')),
+                        'address' => trim($this->input->post('buyer_address')),
+                        'aadhar' => trim($this->input->post('buyer_aadhar')),
+                        'isActive' => 1
+                    ];
+
+                    if ($existing_buyer) {
+                        $this->db->where('id', $existing_buyer->id)->update('buyer', $buyerData);
+                        $buyer_id = $existing_buyer->id;
+                    } else {
+                        $buyerData['created_on'] = date('Y-m-d H:i:s');
+                        $this->db->insert('buyer', $buyerData);
+                        $buyer_id = $this->db->insert_id();
+                    }
+
+                    // Prepare payment details
+                    $payment_mode = strtoupper(trim((string)$this->input->post('payment_mode')));
+                    $total_price = (float)$this->input->post('total_price');
+                    $down_payment = (float)$this->input->post('down_payment');
+                    $remaining_amount = (float)$this->input->post('remaining_amount');
+                    $notes = trim((string)$this->input->post('payment_notes'));
+
+                    $paymentData = [
+                        'user_id'          => $buyer_user_id,
+                        'buyer_id'         => $buyer_id,
+                        'plot_id'          => $id,
+                        'admin_id'         => $admin_id,
+                        'total_price'      => $total_price,
+                        'payment_mode'     => $payment_mode,
+                        'down_payment'     => $down_payment,
+                        'remaining_amount' => $remaining_amount,
+                        'notes'            => $notes,
+                    ];
+
+                    if ($payment_mode === 'EMI') {
+                        $paymentData['emi_duration']       = (int)$this->input->post('emi_duration');
+                        $paymentData['emi_start_date']     = $this->input->post('emi_start_date') ? date('Y-m-d', strtotime($this->input->post('emi_start_date'))) : null;
+                        $paymentData['installment_amount'] = (float)$this->input->post('installment_amount');
+                    } else {
+                        $paymentData['emi_duration']       = null;
+                        $paymentData['emi_start_date']     = null;
+                        $paymentData['installment_amount'] = null;
+                    }
+
+                    $existing_payment = $this->db->get_where('payment_details', ['buyer_id' => $buyer_id])->row();
+                    if ($existing_payment) {
+                        $this->db->where('id', $existing_payment->id)->update('payment_details', $paymentData);
+                        $payment_id = $existing_payment->id;
+                    } else {
+                        $paymentData['created_on'] = date('Y-m-d H:i:s');
+                        $this->db->insert('payment_details', $paymentData);
+                        $payment_id = $this->db->insert_id();
+                    }
+
+                    // Reset payment logs (cash logs and emi logs)
+                    $this->db->where('buyer_id', $buyer_id)->delete('cash_payment_logs');
+                    $this->db->where('buyer_id', $buyer_id)->delete('emi_logs');
+
+                    if ($payment_mode === 'CASH') {
+                        $cashLog = [
+                            'admin_id'         => $admin_id,
+                            'user_id'          => $buyer_user_id,
+                            'buyer_id'         => $buyer_id,
+                            'plot_id'          => $id,
+                            'paid_amount'      => $down_payment,
+                            'remaining_amount' => $remaining_amount,
+                            'total_price'      => $total_price,
+                            'status'           => 'approve',
+                            'notes'            => $notes ?: 'Initial down payment',
+                            'created_on'       => date('Y-m-d H:i:s'),
+                        ];
+                        $this->db->insert('cash_payment_logs', $cashLog);
+                    } else if ($payment_mode === 'EMI') {
+                        if ($down_payment > 0) {
+                            $cashLog = [
+                                'admin_id'         => $admin_id,
+                                'user_id'          => $buyer_user_id,
+                                'buyer_id'         => $buyer_id,
+                                'plot_id'          => $id,
+                                'paid_amount'      => $down_payment,
+                                'remaining_amount' => $remaining_amount,
+                                'total_price'      => $total_price,
+                                'status'           => 'approve',
+                                'notes'            => 'Down Payment',
+                                'created_on'       => date('Y-m-d H:i:s'),
+                            ];
+                            $this->db->insert('cash_payment_logs', $cashLog);
+                        }
+
+                        $emi_duration = (int)$this->input->post('emi_duration');
+                        $emi_start_date = $this->input->post('emi_start_date');
+                        $installment_amount = (float)$this->input->post('installment_amount');
+
+                        if ($emi_duration > 0 && !empty($emi_start_date)) {
+                            $emiRows = [];
+                            $start_date = date('Y-m-d', strtotime($emi_start_date));
+                            for ($i = 1; $i <= $emi_duration; $i++) {
+                                $emi_date = date('Y-m-d', strtotime("+$i month", strtotime($start_date)));
+                                $emiRows[] = [
+                                    'payment_id' => $payment_id,
+                                    'buyer_id'   => $buyer_id,
+                                    'plot_id'    => $id,
+                                    'month_no'   => $i,
+                                    'emi_date'   => $emi_date,
+                                    'emi_amount' => $installment_amount,
+                                    'status'     => 'pending',
+                                    'created_on' => date('Y-m-d H:i:s'),
+                                ];
+                            }
+                            if (!empty($emiRows)) {
+                                $this->db->insert_batch('emi_logs', $emiRows);
+                            }
+                        }
+                    }
+                } else {
+                    if (!$existing_buyer) {
+                        echo json_encode(['status' => 'error', 'message' => 'Buyer details are required for Sold status']);
+                        return;
+                    }
+                }
+            } else {
+                // Deactivate buyer details if status changed from sold to available/pending
+                $existing_buyer = $this->db->get_where('buyer', ['plot_id' => $id, 'isActive' => 1])->row();
+                if ($existing_buyer) {
+                    $this->db->where('id', $existing_buyer->id)->update('buyer', ['isActive' => 0]);
+                }
+            }
+
             $response = [
                 'status' => 'success',
                 'message' => 'Plot updated successfully'
@@ -694,6 +841,29 @@ class Plots extends My_Controller
     {
         $data['plots'] = $this->db->where('id', $id)->get('plots')->row();
         $data['sites'] = $this->db->get('sites')->result(); // for dropdown
+
+        $admin_id = $this->admin['user_id'] ?? null;
+        $data['users'] = $this->db->select('id, name')
+            ->from('users')
+            ->where('admin_id', $admin_id)
+            ->where('isActive', 1)
+            ->order_by('name', 'ASC')
+            ->get()
+            ->result();
+
+        // Check for active buyer details for pre-filling the sold modal
+        $data['buyer'] = $this->db->get_where('buyer', [
+            'plot_id' => $id,
+            'isActive' => 1
+        ])->row();
+
+        if ($data['buyer']) {
+            $data['payment_details'] = $this->db->get_where('payment_details', [
+                'buyer_id' => $data['buyer']->id
+            ])->row();
+        } else {
+            $data['payment_details'] = null;
+        }
 
         $this->load->view('header');
         $this->load->view('edit_plot_form', $data);

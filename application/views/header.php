@@ -1099,6 +1099,112 @@
 			cursor: pointer;
 		}
 
+		/* Unified style for form-select dropdowns */
+		.form-select {
+			width: 100% !important;
+			padding: 10px var(--spacing-md) !important;
+			background-color: var(--bg-secondary) !important;
+			background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%234b5563' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M2 5l6 6 6-6'/%3e%3c/svg%3e") !important;
+			background-repeat: no-repeat !important;
+			background-position: right var(--spacing-md) center !important;
+			background-size: 12px 12px !important;
+			border: 1px solid var(--border-color) !important;
+			border-radius: var(--radius-md) !important;
+			color: var(--text-primary) !important;
+			font-family: 'Poppins', sans-serif !important;
+			font-size: 0.875rem !important;
+			transition: var(--transition-fast) !important;
+			appearance: none !important;
+			cursor: pointer !important;
+		}
+
+		.form-select:focus {
+			outline: none !important;
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+		}
+
+		/* Premium Select2 Custom Styling */
+		.select2-container--default .select2-selection--single {
+			background-color: var(--bg-secondary) !important;
+			border: 1px solid var(--border-color) !important;
+			border-radius: var(--radius-md) !important;
+			height: 43px !important;
+			padding: 6px 12px !important;
+			font-family: 'Poppins', sans-serif !important;
+			font-size: 0.875rem !important;
+			color: var(--text-primary) !important;
+			display: flex;
+			align-items: center;
+			transition: var(--transition-fast);
+		}
+
+		.select2-container--default .select2-selection--single:focus,
+		.select2-container--default.select2-container--focus .select2-selection--single {
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1) !important;
+			outline: none !important;
+		}
+
+		.select2-container--default .select2-selection--single .select2-selection__rendered {
+			color: var(--text-primary) !important;
+			padding-left: 0 !important;
+			padding-right: 20px !important;
+		}
+
+		.select2-container--default .select2-selection--single .select2-selection__placeholder {
+			color: var(--text-tertiary) !important;
+		}
+
+		.select2-container--default .select2-selection--single .select2-selection__arrow {
+			height: 41px !important;
+			right: 12px !important;
+		}
+
+		.select2-container--default .select2-selection--single .select2-selection__arrow b {
+			border-color: var(--text-secondary) transparent transparent transparent !important;
+		}
+
+		.select2-container--default.select2-container--open .select2-selection--single .select2-selection__arrow b {
+			border-color: transparent transparent var(--text-secondary) transparent !important;
+		}
+
+		/* Select2 Dropdown Styling */
+		.select2-dropdown {
+			background-color: var(--bg-primary) !important;
+			border: 1px solid var(--border-color) !important;
+			border-radius: var(--radius-md) !important;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1) !important;
+			z-index: 9999 !important;
+		}
+
+		.select2-container--default .select2-search--dropdown .select2-search__field {
+			border: 1px solid var(--border-color) !important;
+			border-radius: var(--radius-sm) !important;
+			background-color: var(--bg-secondary) !important;
+			color: var(--text-primary) !important;
+			padding: 6px 10px !important;
+			outline: none !important;
+		}
+
+		.select2-container--default .select2-results__option {
+			padding: 8px 12px !important;
+			font-size: 0.875rem !important;
+			color: var(--text-primary) !important;
+		}
+
+		.select2-container--default .select2-results__option--highlighted[aria-selected],
+		.select2-container--default .select2-results__option[aria-selected="true"] {
+			background-color: var(--primary) !important;
+			color: #ffffff !important;
+		}
+
+		.select2-container--default .select2-selection--single .select2-selection__clear {
+			color: var(--text-secondary) !important;
+			margin-right: 10px !important;
+			font-size: 1.2rem !important;
+		}
+
 		.form-row {
 			display: grid;
 			grid-template-columns: 1fr 1fr;
