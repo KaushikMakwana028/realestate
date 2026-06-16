@@ -85,7 +85,7 @@ class Plots extends My_Controller
         $price = trim($this->input->post('price'));
 
         // ✅ Validation
-        if (empty($site_id) || empty($plot_number) || empty($size) || empty($dimension) || empty($facing) || empty($price)) {
+        if (empty($site_id) || empty($plot_number) || empty($size) || empty($price)) {
             $response['message'] = 'All fields are required';
             echo json_encode($response);
             return;
@@ -122,8 +122,8 @@ class Plots extends My_Controller
             'site_id' => $site_id,
             'plot_number' => $plot_number,
             'size' => $size,
-            'dimension' => $dimension,
-            'facing' => $facing,
+            'dimension' => ($dimension === '') ? null : $dimension,
+            'facing' => ($facing === '') ? null : $facing,
             'price' => $price,
             'status' => 'available', // 🔥 IMPORTANT
             'isActive' => 1,
@@ -201,7 +201,7 @@ class Plots extends My_Controller
         // 🧾 Required validation
         if (
             empty($site_id) || empty($plot_number) || empty($size) ||
-            empty($dimension) || empty($facing) || empty($price) || empty($status)
+            empty($price) || empty($status)
         ) {
 
             $response['message'] = 'All fields are required';
@@ -233,8 +233,8 @@ class Plots extends My_Controller
             'site_id' => $site_id,
             'plot_number' => $plot_number,
             'size' => $size,
-            'dimension' => $dimension,
-            'facing' => $facing,
+            'dimension' => ($dimension === '') ? null : $dimension,
+            'facing' => ($facing === '') ? null : $facing,
             'price' => $price,
             'status' => $status
             // 'updated_at'  => date('Y-m-d H:i:s')
@@ -839,10 +839,9 @@ class Plots extends My_Controller
     }
     public function edit_plot($id)
     {
-        $data['plots'] = $this->db->where('id', $id)->get('plots')->row();
-        $data['sites'] = $this->db->get('sites')->result(); // for dropdown
-
         $admin_id = $this->admin['user_id'] ?? null;
+        $data['plots'] = $this->db->where('id', $id)->get('plots')->row();
+        $data['sites'] = $this->db->where('admin_id', $admin_id)->get('sites')->result(); // for dropdown
         $data['users'] = $this->db->select('id, name')
             ->from('users')
             ->where('admin_id', $admin_id)

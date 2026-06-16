@@ -23,7 +23,7 @@ $(document).ready(function () {
 		$("#siteName").select2({
 			placeholder: "Select Site",
 			allowClear: true,
-			width: "100%"
+			width: "100%",
 		});
 	}
 });
@@ -288,11 +288,9 @@ $(document).ready(function () {
 				success: function (response) {
 					Swal.close();
 					if (response.status === "success") {
-						Swal.fire("Success!", response.message, "success");
-						$("#addexpForm")[0].reset();
-						$("#addexpForm").removeClass("was-validated");
-						$("#expenseImageFieldWrap").addClass("d-none");
-						$("#expenseImagePreview").empty();
+						Swal.fire("Success!", response.message, "success").then(() => {
+							window.location.href = site_url + "expenses";
+						});
 					} else {
 						Swal.fire("Error!", response.message, "error");
 					}
@@ -329,15 +327,56 @@ $(document).ready(function () {
 			preview.empty();
 
 			const file = this.files && this.files[0];
-			if (!file || !file.type.startsWith("image/")) return;
+			if (!file) return;
 
-			const reader = new FileReader();
-			reader.onload = function (event) {
+			// Validate file size (100 KB = 100 * 1024 bytes)
+			if (file.size > 100 * 1024) {
+				Swal.fire("Error!", "File size must be 100KB or less.", "error");
+				$(this).val("");
+				return;
+			}
+
+			// Validate file type (jpg, jpeg, png, pdf)
+			const allowedTypes = [
+				"image/jpeg",
+				"image/jpg",
+				"image/png",
+				"application/pdf",
+			];
+			if (!allowedTypes.includes(file.type)) {
+				const ext = file.name.split(".").pop().toLowerCase();
+				const allowedExts = ["jpg", "jpeg", "png", "pdf"];
+				if (!allowedExts.includes(ext)) {
+					Swal.fire(
+						"Error!",
+						"Only JPG, JPEG, PNG, and PDF files are allowed.",
+						"error",
+					);
+					$(this).val("");
+					return;
+				}
+			}
+
+			// Render preview
+			if (file.type.startsWith("image/")) {
+				const reader = new FileReader();
+				reader.onload = function (event) {
+					preview.html(
+						`<img src="${event.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;" alt="Expense image preview" />`,
+					);
+				};
+				reader.readAsDataURL(file);
+			} else if (
+				file.type === "application/pdf" ||
+				file.name.toLowerCase().endsWith(".pdf")
+			) {
 				preview.html(
-					`<img src="${event.target.result}" style="width:80px;height:80px;object-fit:cover;border-radius:6px;" alt="Expense image preview" />`,
+					`<div class="d-flex align-items-center gap-2" style="background: #fef2f2; border: 1px solid #fca5a5; padding: 8px 12px; border-radius: 8px; color: #b91c1c; font-size: 0.85rem; max-width: 300px;">
+						<i class="bx bxs-file-pdf" style="font-size: 1.5rem;"></i>
+						<span class="text-truncate fw-semibold">${file.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</span>
+					</div>`,
 				);
-			};
-			reader.readAsDataURL(file);
+			}
 		});
 	}
 
@@ -412,7 +451,9 @@ $(document).ready(function () {
 							const mapOk = hasMap;
 							const formatInr = (v) => {
 								const n = Number(v || 0);
-								return Number.isFinite(n) ? `₹${n.toLocaleString("en-IN")}` : "₹0";
+								return Number.isFinite(n)
+									? `₹${n.toLocaleString("en-IN")}`
+									: "₹0";
 							};
 							const siteName = site.name || "-";
 							const siteLocation = site.location || "-";
@@ -724,12 +765,12 @@ $(document).ready(function () {
 			const siteId = $(this).data("id");
 			const adminId = $(this).data("admin"); // âœ… get admin id
 
-		$.ajax({
-    url: site_url + "site/get_users",
-    method: "GET",
-    data: {
-        admin_id: adminId   // ✅ send admin id
-    },
+			$.ajax({
+				url: site_url + "site/get_users",
+				method: "GET",
+				data: {
+					admin_id: adminId, // ✅ send admin id
+				},
 
 				success: function (response) {
 					if (response.status && response.data.length > 0) {
@@ -960,7 +1001,11 @@ $(document).ready(function () {
 		function normalizePlotStatus(rawStatus) {
 			const status = String(rawStatus || "").toLowerCase();
 			if (status === "sold") return "sold";
-			if (status === "booked" || status === "reserved" || status === "pending") {
+			if (
+				status === "booked" ||
+				status === "reserved" ||
+				status === "pending"
+			) {
 				return "booked";
 			}
 			return "available";
@@ -1022,12 +1067,14 @@ $(document).ready(function () {
 			}
 
 			if ($("#statTotalPlots").length) $("#statTotalPlots").text(totalRecords);
-			if ($("#statAvailable").length) $("#statAvailable").text(counts.available);
+			if ($("#statAvailable").length)
+				$("#statAvailable").text(counts.available);
 			if ($("#statBooked").length) $("#statBooked").text(counts.booked);
 			if ($("#statSold").length) $("#statSold").text(counts.sold);
 
 			if ($("#countAll").length) $("#countAll").text(totalRecords);
-			if ($("#countAvailable").length) $("#countAvailable").text(counts.available);
+			if ($("#countAvailable").length)
+				$("#countAvailable").text(counts.available);
 			if ($("#countBooked").length) $("#countBooked").text(counts.booked);
 			if ($("#countSold").length) $("#countSold").text(counts.sold);
 
@@ -1071,32 +1118,31 @@ $(document).ready(function () {
 						let gridCards = "";
 
 						$.each(res.data, function (i, plot) {
+							const statusKey = normalizePlotStatus(plot.status);
+							const statusBadge = buildStatusBadge(statusKey);
+							const rowNo = (page - 1) * 10 + i + 1;
 
-	const statusKey = normalizePlotStatus(plot.status);
-	const statusBadge = buildStatusBadge(statusKey);
-	const rowNo = (page - 1) * 10 + i + 1;
+							// ✅ FIXED — correct fields
+							const buyerName = String(plot.buyer_name || "").trim();
+							const buyerId = plot.buyer_id || "";
 
-	// ✅ FIXED — correct fields
-	const buyerName = String(plot.buyer_name || "").trim();
-	const buyerId   = plot.buyer_id || "";
+							const hasBuyer =
+								statusKey === "sold" &&
+								buyerName.length > 0 &&
+								String(buyerId).trim().length > 0;
 
-	const hasBuyer =
-		statusKey === "sold" &&
-		buyerName.length > 0 &&
-		String(buyerId).trim().length > 0;
+							const safeBuyerName = escapeHtml(buyerName || "-");
+							const pendingInstallmentRequests =
+								parseInt(plot.pending_installment_requests || 0, 10) || 0;
 
-	const safeBuyerName = escapeHtml(buyerName || "-");
-	const pendingInstallmentRequests =
-		parseInt(plot.pending_installment_requests || 0, 10) || 0;
-
-	const buyerHtml = hasBuyer
-		? `<div class="buyer-cell">
+							const buyerHtml = hasBuyer
+								? `<div class="buyer-cell">
 				<div class="buyer-avatar" style="background:#4f46e5;">
 					${escapeHtml(getBuyerInitials(buyerName))}
 				</div>
 				<div class="buyer-name">${safeBuyerName}</div>
 		   </div>`
-		: '<span class="no-buyer">-</span>';
+								: '<span class="no-buyer">-</span>';
 
 							const safePlotNumber = escapeHtml(plot.plot_number || "-");
 							const safeSize = escapeHtml(plot.size || "-");
@@ -1145,10 +1191,9 @@ $(document).ready(function () {
 					  class="btn-action btn-action-view"
 					  data-tooltip="${
 							pendingInstallmentRequests > 0
-								? pendingInstallmentRequests +
-									" installment request(s) pending"
+								? pendingInstallmentRequests + " installment request(s) pending"
 								: "Payment Data"
-					  }">
+						}">
 						<i class="bx bx-wallet"></i>
 				   </a>`
 				: ""
@@ -1211,10 +1256,9 @@ $(document).ready(function () {
 				  class="btn-action btn-action-view"
 				  title="${
 						pendingInstallmentRequests > 0
-							? pendingInstallmentRequests +
-								" installment request(s) pending"
+							? pendingInstallmentRequests + " installment request(s) pending"
 							: "Payment Data"
-				  }">
+					}">
 					<i class="bx bx-wallet"></i>
 			   </a>`
 			: ""
@@ -1261,7 +1305,12 @@ $(document).ready(function () {
 			const cleaned = String(value).trim();
 			if (!cleaned) return null;
 			const lowered = cleaned.toLowerCase();
-			if (lowered === "null" || lowered === "na" || lowered === "n/a" || lowered === "-") {
+			if (
+				lowered === "null" ||
+				lowered === "na" ||
+				lowered === "n/a" ||
+				lowered === "-"
+			) {
 				return null;
 			}
 			return cleaned;
@@ -1271,7 +1320,12 @@ $(document).ready(function () {
 			const cleaned = normalizeImportedValue(value);
 			if (cleaned === null) return null;
 			const numberLike = cleaned.replace(/[^0-9.\-]/g, "");
-			if (!numberLike || numberLike === "-" || numberLike === "." || numberLike === "-.") {
+			if (
+				!numberLike ||
+				numberLike === "-" ||
+				numberLike === "." ||
+				numberLike === "-."
+			) {
 				return null;
 			}
 			const n = Number(numberLike);
@@ -1283,7 +1337,11 @@ $(document).ready(function () {
 			if (!cleaned) return null;
 			const status = cleaned.toLowerCase();
 			if (status === "sold") return "sold";
-			if (status === "booked" || status === "reserved" || status === "pending") {
+			if (
+				status === "booked" ||
+				status === "reserved" ||
+				status === "pending"
+			) {
 				return "pending";
 			}
 			if (status === "available") return "available";
@@ -1421,7 +1479,11 @@ $(document).ready(function () {
 			if (!file) return;
 
 			if (typeof XLSX === "undefined") {
-				Swal.fire("Error", "Excel library is not loaded. Please refresh and try again.", "error");
+				Swal.fire(
+					"Error",
+					"Excel library is not loaded. Please refresh and try again.",
+					"error",
+				);
 				$(this).val("");
 				return;
 			}
@@ -1531,7 +1593,11 @@ $(document).ready(function () {
 						},
 						error: function () {
 							Swal.close();
-							Swal.fire("Error", "Something went wrong while importing.", "error");
+							Swal.fire(
+								"Error",
+								"Something went wrong while importing.",
+								"error",
+							);
 						},
 						complete: function () {
 							$("#importPlotsFile").val("");
@@ -1641,12 +1707,12 @@ $(document).ready(function () {
                   <td>${user.actual_salary_text || "-"}</td>
                   <td>${formatMoney(user.total_upad)}</td>
                   <td>${formatMoney(user.payable_salary)}</td>
-                  <td>
-                    <div class="d-flex order-actions">
-                      <a href="javascript:;" class="text viewUserDetail" title="View User"><i class="bx bx-show"></i></a>
-                      <a href="${site_url}user/edit_user/${user.id}" class="text ms-2"><i class="bx bxs-edit"></i></a>
-                      <a href="javascript:;" class="ms-3 text deleteUser" data-id="${user.id}"><i class="bx bxs-trash"></i></a>
-                      <a href="${site_url}user/view_upad/${user.id}" class="text-primary ms-3"><i class="bx bx-wallet"></i></a>
+                  <td class="text-center">
+                    <div class="usr-actions">
+                      <button class="usr-action-btn usr-action-btn--view viewUserDetail" title="View Profile"><i class="bx bx-show"></i></button>
+                      <a href="${site_url}user/edit_user/${user.id}" class="usr-action-btn usr-action-btn--edit" title="Edit"><i class="bx bxs-edit"></i></a>
+                      <a href="${site_url}user/view_upad/${user.id}" class="usr-action-btn usr-action-btn--salary" title="UPAD History"><i class="bx bx-wallet"></i></a>
+                      <a href="javascript:;" class="usr-action-btn usr-action-btn--delete deleteUser" data-id="${user.id}" title="Delete"><i class="bx bxs-trash"></i></a>
                     </div>
                   </td>
                 </tr>
@@ -1659,14 +1725,21 @@ $(document).ready(function () {
 							res.pagination.total_pages,
 							res.pagination.current_page,
 						);
-						const activeUsers = res.data.filter((u) => Number(u.isActive) === 1).length;
-						const totalSalary = res.data.reduce((sum, u) => sum + Number(u.actual_salary || 0), 0);
-						const totalPayable = res.data.reduce((sum, u) => sum + Number(u.payable_salary || 0), 0);
+						const activeUsers = res.data.filter(
+							(u) => Number(u.isActive) === 1,
+						).length;
+						const totalSalary = res.data.reduce(
+							(sum, u) => sum + Number(u.actual_salary || 0),
+							0,
+						);
+						const totalPayable = res.data.reduce(
+							(sum, u) => sum + Number(u.payable_salary || 0),
+							0,
+						);
 						$("#statTotalUsers").text(res.data.length);
 						$("#statActiveUsers").text(activeUsers);
 						$("#statTotalSalary").text(formatMoney(totalSalary));
 						$("#statTotalPayable").text(formatMoney(totalPayable));
-
 
 						const start = (res.pagination.current_page - 1) * 10 + 1;
 						const end = start + res.data.length - 1;
@@ -1727,7 +1800,8 @@ $(document).ready(function () {
 
 		$(document).on("click", ".usr-page-link", function () {
 			const page = Number($(this).data("page") || 1);
-			if (page < 1 || $(this).closest(".page-item").hasClass("disabled")) return;
+			if (page < 1 || $(this).closest(".page-item").hasClass("disabled"))
+				return;
 			loadUsers(page, searchQuery);
 		});
 
@@ -1744,7 +1818,9 @@ $(document).ready(function () {
 		$(".usr-add-btn").on("click", function () {
 			window.location.href = site_url + "user/add_user";
 		});
-
+		$(".usr-add-upad-btn").on("click", function () {
+			window.location.href = site_url + "add_upad";
+		});
 
 		$(document).on("click", ".deleteUser", function () {
 			const id = $(this).data("id");
@@ -1790,7 +1866,9 @@ $(document).ready(function () {
 
 	function formatInr(value) {
 		const amount = Number(value || 0);
-		return "INR " + amount.toLocaleString("en-IN", { maximumFractionDigits: 2 });
+		return (
+			"INR " + amount.toLocaleString("en-IN", { maximumFractionDigits: 2 })
+		);
 	}
 
 	function formatDateTime(value) {
@@ -1971,7 +2049,9 @@ $(document).ready(function () {
 
 		filteredData = allData.filter(
 			(x) =>
-				String(x.user_name || "").toLowerCase().includes(q) ||
+				String(x.user_name || "")
+					.toLowerCase()
+					.includes(q) ||
 				x.amount.toString().includes(q) ||
 				(x.notes ?? "").toLowerCase().includes(q),
 		);
@@ -2252,14 +2332,18 @@ $(document).ready(function () {
 	// âž¤ Click pagination
 	$(document)
 		.off("click.expensePagination", "#expensePaginationList .page-link")
-		.on("click.expensePagination", "#expensePaginationList .page-link", function (e) {
-			e.preventDefault();
-			let p = $(this).data("page");
-			if (p) {
-				currentPage = p;
-				loadExpenses(p);
-			}
-		});
+		.on(
+			"click.expensePagination",
+			"#expensePaginationList .page-link",
+			function (e) {
+				e.preventDefault();
+				let p = $(this).data("page");
+				if (p) {
+					currentPage = p;
+					loadExpenses(p);
+				}
+			},
+		);
 
 	// âž¤ Search
 	$("#serchexp").keyup(function () {
@@ -2542,279 +2626,6 @@ $(document).on("shown.bs.modal", "#siteImageModal", function () {
 });
 
 $(document).ready(function () {
-	if (!document.getElementById("inquiryTableBody")) return;
-
-	let currentPage = 1;
-	let searchTimer = null;
-
-	function esc(v) {
-		return String(v ?? "")
-			.replace(/&/g, "&amp;")
-			.replace(/</g, "&lt;")
-			.replace(/>/g, "&gt;")
-			.replace(/"/g, "&quot;")
-			.replace(/'/g, "&#39;");
-	}
-
-	function updateStats(stats) {
-		const s = stats || {};
-		$("#statTotalEnquiries").text(Number(s.total_enquiries || 0));
-		$("#statTodayEnquiries").text(Number(s.today_enquiries || 0));
-		$("#statWeekEnquiries").text(Number(s.week_enquiries || 0));
-		$("#statPendingEnquiries").text(Number(s.pending_enquiries || 0));
-	}
-
-	function setDefaultInquiryMonth() {
-		// Load current month by default.
-		if (!$("#filterMonth").val()) {
-			const d = new Date();
-			const yyyy = d.getFullYear();
-			const mm = String(d.getMonth() + 1).padStart(2, "0");
-			$("#filterMonth").val(`${yyyy}-${mm}`);
-		}
-	}
-
-	function initSiteSelect() {
-		const $site = $("#filterSite");
-		if (!$site.length || typeof $.fn.select2 !== "function") return;
-		if ($site.data("select2")) return;
-		$site.select2({
-			placeholder: "All Sites",
-			allowClear: true,
-			width: "220px",
-			dropdownAutoWidth: true,
-		});
-	}
-
-	function populateSiteFilter(siteOptions) {
-		const $site = $("#filterSite");
-		if (!$site.length) return;
-		const current = $site.val() || "";
-
-		let html = '<option value="">All Sites</option>';
-		(siteOptions || []).forEach((site) => {
-			const siteId = String(site.id || "").trim();
-			const siteName = String(site.name || "").trim();
-			if (!siteId || !siteName) return;
-			html += `<option value="${esc(siteId)}">${esc(siteName)}</option>`;
-		});
-
-		$site.html(html);
-		if (current && $site.find(`option[value="${current}"]`).length > 0) {
-			$site.val(current);
-		} else {
-			$site.val("");
-		}
-		if ($site.data("select2")) {
-			$site.trigger("change.select2");
-		}
-	}
-
-	function getInquiryFilters() {
-		return {
-			site_filter: ($("#filterSite").val() || "").trim(),
-			month_filter: ($("#filterMonth").val() || "").trim(),
-		};
-	}
-
-	function toggleShowAllInquiryButton() {
-		const filters = getInquiryFilters();
-		const hasFilters =
-			!!($("#serchinquiry").val() || "").trim() ||
-			!!filters.site_filter ||
-			!!filters.month_filter;
-		$("#showAllInquiryBtn").toggleClass("d-none", !hasFilters);
-	}
-
-	function loadInquiries(page = 1, search = "") {
-		const filters = getInquiryFilters();
-		toggleShowAllInquiryButton();
-		$.ajax({
-			url: site_url + "dashboard/fetch_inquiries",
-			type: "POST",
-			data: {
-				page: page,
-				search: search,
-				site_filter: filters.site_filter,
-				month_filter: filters.month_filter,
-			},
-			dataType: "json",
-			success: function (res) {
-				let tbody = "";
-				populateSiteFilter(res.site_options || []);
-				updateStats(res.stats || null);
-
-				// If NO DATA, show message
-				if (!res.data || res.data.length === 0) {
-					$("#inquiryTableBody").html("");
-					$("#enqEmptyState").removeClass("d-none");
-					$("#enqPaginationInfo").text("No enquiries found");
-					renderPagination(0, res.limit, res.page);
-					toggleShowAllInquiryButton();
-					return;
-				}
-
-				res.data.forEach((row, index) => {
-					// Safe note handling
-					let note = row.note ? row.note : "";
-
-					// Short note
-					let shortNote =
-						note.length > 20 ? note.substring(0, 20) + "..." : note;
-
-					// Format date only (YYYY-MM-DD)
-					let formattedDate = row.created_at
-						? row.created_at.split(" ")[0]
-						: "";
-
-					tbody += `
-                    <tr data-user="${esc(row.user_name || "-")}"
-						data-site="${esc(row.name || "-")}"
-						data-plot="${esc(row.plot_number || "-")}"
-						data-customer="${esc(row.customer_name || "-")}"
-						data-mobile="${esc(row.mobile || "-")}"
-						data-notes="${esc(note)}"
-						data-date="${esc(formattedDate)}">
-                        <td>${(page - 1) * (res.limit || 10) + index + 1}</td>
-                        <td>${esc(row.user_name || "-")}</td>
-                        <td>${esc(row.name || "-")}</td>
-                        <td>${esc(row.plot_number || "-")}</td>
-                        <td>${esc(row.customer_name || "-")}</td>
-                        <td>${esc(row.mobile || "-")}</td>
-
-                        <td title="${esc(note)}">${esc(shortNote)}</td>
-
-                        <td>${esc(formattedDate)}</td>
-
-                        <td>
-                            <div class="d-flex order-actions align-items-center">
-                                <a href="javascript:;" class="viewEnquiryDetail" title="View">
-                                    <i class="bx bx-show text-primary fs-5"></i>
-                                </a>
-                                <a href="javascript:;" 
-                                   class="ms-3 deleteInquiry" 
-                                   data-id="${row.id}">
-                                    <i class="bx bxs-trash text-danger fs-5"></i>
-                                </a>
-                            </div>
-                        </td>
-                    </tr>`;
-				});
-
-				$("#inquiryTableBody").html(tbody);
-				$("#enqEmptyState").addClass("d-none");
-				renderPagination(res.total, res.limit, res.page);
-				const start = (page - 1) * (res.limit || 10) + 1;
-				const end = start + res.data.length - 1;
-				$("#enqPaginationInfo").text(`Showing ${start}-${end} of ${res.total} enquiries`);
-				toggleShowAllInquiryButton();
-			},
-		});
-	}
-
-	function renderPagination(total, limit, page) {
-		let totalPages = Math.ceil(total / limit);
-		if (!totalPages || totalPages < 1) totalPages = 1;
-		let html = "";
-
-		// Previous
-		html += `<li class="page-item ${page === 1 ? "disabled" : ""}">
-                    <a class="page-link enq-page-link" href="javascript:;" data-page="${page - 1}">Previous</a>
-                </li>`;
-
-		// Show only 3 numbers
-		let start = Math.max(1, page - 1);
-		let end = Math.min(totalPages, start + 2);
-
-		for (let i = start; i <= end; i++) {
-			html += `<li class="page-item ${page === i ? "active" : ""}">
-                        <a class="page-link enq-page-link" href="javascript:;" data-page="${i}">${i}</a>
-                    </li>`;
-		}
-
-		// Next
-		html += `<li class="page-item ${page === totalPages ? "disabled" : ""}">
-                    <a class="page-link enq-page-link" href="javascript:;" data-page="${page + 1}">Next</a>
-                </li>`;
-
-		$(".enq-pagination").html(html);
-	}
-
-	// Pagination Click
-	$(document).on("click", ".enq-page-link", function () {
-		if ($(this).closest(".page-item").hasClass("disabled")) return;
-		let page = $(this).data("page");
-		if (!page || page < 1) return;
-
-		currentPage = page;
-		loadInquiries(page, $("#serchinquiry").val());
-	});
-
-	// Search
-	$("#serchinquiry").on("keyup", function () {
-		let keyword = $(this).val();
-		toggleShowAllInquiryButton();
-		clearTimeout(searchTimer);
-		searchTimer = setTimeout(function () {
-			loadInquiries(1, keyword);
-		}, 250);
-	});
-
-	$("#filterSite, #filterMonth").on("change", function () {
-		toggleShowAllInquiryButton();
-		loadInquiries(1, $("#serchinquiry").val());
-	});
-
-	$(document).on("click", "#showAllInquiryBtn", function () {
-		$("#serchinquiry").val("");
-		$("#filterMonth").val("");
-		$("#filterSite").val("");
-		if ($("#filterSite").data("select2")) {
-			$("#filterSite").trigger("change.select2");
-		}
-		toggleShowAllInquiryButton();
-		loadInquiries(1, "");
-	});
-
-	// Initial Load
-	setDefaultInquiryMonth();
-	initSiteSelect();
-	toggleShowAllInquiryButton();
-	loadInquiries();
-	// DELETE INQUIRY (SOFT DELETE)
-	$(document).on("click", ".deleteInquiry", function () {
-		let id = $(this).data("id");
-
-		Swal.fire({
-			title: "Are you sure?",
-			text: "This inquiry will be marked as inactive.",
-			icon: "warning",
-			showCancelButton: true,
-			confirmButtonColor: "#3085d6",
-			cancelButtonColor: "#d33",
-			confirmButtonText: "Yes, Delete",
-		}).then((result) => {
-			if (result.isConfirmed) {
-				$.ajax({
-					url: site_url + "dashboard/delete_inquiry",
-					type: "POST",
-					data: { id: id },
-					dataType: "json",
-
-					success: function (res) {
-						if (res.status) {
-							Swal.fire("Deleted!", res.message, "success");
-							loadInquiries(1, $("#serchinquiry").val()); // reload list
-						} else {
-							Swal.fire("Error", res.message, "error");
-						}
-					},
-				});
-			}
-		});
-	});
-});
-$(document).ready(function () {
 	if (!$("#attedanceTableBody").length) return;
 
 	let currentPage = 1;
@@ -3095,7 +2906,11 @@ $(document).ready(function () {
 	loadAttendance();
 });
 
-function getInstallmentRowClass(statusValue, isInstallmentEntry, manualPaidByNote) {
+function getInstallmentRowClass(
+	statusValue,
+	isInstallmentEntry,
+	manualPaidByNote,
+) {
 	if (!isInstallmentEntry) return "";
 	if (statusValue === "approve") return "installment-approve-row";
 	if (statusValue === "reject") return "installment-reject-row";
@@ -3170,13 +2985,18 @@ $(document).ready(function () {
 		}
 
 		function setEmiSummary(summary) {
-			const totalInstallments = parseInt(summary?.total_installments || 0, 10) || 0;
+			const totalInstallments =
+				parseInt(summary?.total_installments || 0, 10) || 0;
 			const remainingInstallments =
 				parseInt(summary?.remaining_installments || 0, 10) || 0;
 			const pendingAmount = toAmount(summary?.pending_amount || 0);
 			const receivingAmount = toAmount(summary?.receiving_amount || 0);
-			const nextInstallmentDate = (summary?.next_installment_date || "").toString();
-			const nextInstallmentAmount = toAmount(summary?.next_installment_amount || 0);
+			const nextInstallmentDate = (
+				summary?.next_installment_date || ""
+			).toString();
+			const nextInstallmentAmount = toAmount(
+				summary?.next_installment_amount || 0,
+			);
 			let nextDateLabel = "-";
 
 			if (nextInstallmentDate) {
@@ -3197,7 +3017,9 @@ $(document).ready(function () {
 			$("#statPendingAmount").text(formatCurrency(pendingAmount));
 			$("#statReceivingAmount").text(formatCurrency(receivingAmount));
 			$("#statNextInstallmentDate").text(nextDateLabel);
-			$("#statNextInstallmentAmount").text(formatCurrency(nextInstallmentAmount));
+			$("#statNextInstallmentAmount").text(
+				formatCurrency(nextInstallmentAmount),
+			);
 		}
 
 		function renderMessage(message, cssClass = "text-muted") {
@@ -3222,9 +3044,7 @@ $(document).ready(function () {
 				const safeAmount = escapeHtml(formatCurrency(amount));
 				pagePaid += amount;
 
-				const rawStatus = (log.status || "approve")
-					.toString()
-					.toLowerCase();
+				const rawStatus = (log.status || "approve").toString().toLowerCase();
 				const statusValue = rawStatus === "requested" ? "pending" : rawStatus;
 				const sourceValue = (log.log_source || "cash").toString().toLowerCase();
 				const notesRaw = (log.notes || "").toString();
@@ -3234,14 +3054,16 @@ $(document).ready(function () {
 				const isDownPaymentFlag = parseInt(log.is_down_payment || 0, 10) === 1;
 				const isDownPayment =
 					isDownPaymentFlag ||
-					sourceValue === "cash" &&
-					!isInstallmentEntry &&
-					(notesText.indexOf("down payment") !== -1 ||
-						notesText.indexOf("initial payment") !== -1);
+					(sourceValue === "cash" &&
+						!isInstallmentEntry &&
+						(notesText.indexOf("down payment") !== -1 ||
+							notesText.indexOf("initial payment") !== -1));
 				const isRequested = parseInt(log.is_requested || 0, 10) === 1;
 				const manualPaidByNote =
 					isRequested ||
-					(sourceValue === "cash" && amount > 0 && notesText.indexOf("paid") !== -1);
+					(sourceValue === "cash" &&
+						amount > 0 &&
+						notesText.indexOf("paid") !== -1);
 				const rowClass = getInstallmentRowClass(
 					statusValue,
 					isInstallmentEntry,
@@ -3252,13 +3074,20 @@ $(document).ready(function () {
 				const modeIcon =
 					paymentMode === "emi" ? "bx-credit-card-front" : "bx-wallet";
 				const modeClass =
-					paymentMode === "emi" ? "payment-mode-chip-emi" : "payment-mode-chip-cash";
+					paymentMode === "emi"
+						? "payment-mode-chip-emi"
+						: "payment-mode-chip-cash";
 				const rowModeClass =
-					paymentMode === "emi" ? "payment-mode-row-emi" : "payment-mode-row-cash";
+					paymentMode === "emi"
+						? "payment-mode-row-emi"
+						: "payment-mode-row-cash";
 				const amountClass =
-					paymentMode === "emi" ? "amount-cell amount-emi" : "amount-cell amount-cash";
+					paymentMode === "emi"
+						? "amount-cell amount-emi"
+						: "amount-cell amount-cash";
 				const safeDate = escapeHtml(formatDateOnly(log.created_on || "-"));
-				const dateClass = statusValue === "approve" ? "date-cell paid-date" : "date-cell";
+				const dateClass =
+					statusValue === "approve" ? "date-cell paid-date" : "date-cell";
 				const statusDataAttr = log.id
 					? `data-id="${escapeHtml(log.id)}" data-source="${escapeHtml(log.log_source || "cash")}"`
 					: `title="Initial payment entry cannot be changed"`;
@@ -3282,10 +3111,14 @@ $(document).ready(function () {
 					const installmentNo =
 						monthNoRaw > 0 ? monthNoRaw : ++emiDisplayCounter;
 					const installmentClass =
-						paymentMode === "emi" ? "installment-seq-emi" : "installment-seq-cash";
+						paymentMode === "emi"
+							? "installment-seq-emi"
+							: "installment-seq-cash";
 					installmentBadge = `<span class="installment-seq-tag ${installmentClass}">${escapeHtml(formatOrdinal(installmentNo))} Installment</span>`;
 				}
-				const combinedRowClass = [rowClass, rowModeClass].filter(Boolean).join(" ");
+				const combinedRowClass = [rowClass, rowModeClass]
+					.filter(Boolean)
+					.join(" ");
 
 				html += `
 					<tr class="${combinedRowClass}" data-installment="${isInstallmentEntry ? 1 : 0}" data-manual-paid="${manualPaidByNote ? 1 : 0}">
@@ -3318,14 +3151,17 @@ $(document).ready(function () {
 
 			$("#payment_data").html(html);
 
-			const totalRows = parseInt(res.pagination?.total_rows || logs.length, 10) || 0;
+			const totalRows =
+				parseInt(res.pagination?.total_rows || logs.length, 10) || 0;
 			const start = totalRows === 0 ? 0 : (page - 1) * 10 + 1;
 			const end = Math.min(page * 10, totalRows);
 			$("#paginationInfo").html(
 				`Showing <strong>${start}-${end}</strong> of <strong>${totalRows}</strong> records`,
 			);
 
-			const receivingAmount = toAmount(res.summary?.receiving_amount ?? pagePaid);
+			const receivingAmount = toAmount(
+				res.summary?.receiving_amount ?? pagePaid,
+			);
 			setStats(totalRows, receivingAmount, buyerName !== "-" ? 1 : 0);
 			setEmiSummary(res.summary || {});
 		}
@@ -3517,11 +3353,7 @@ $(document).on("change", ".statuspayment", function () {
 							successText = "Installment moved to pending.";
 						}
 
-						Swal.fire(
-							"Updated!",
-							successText,
-							"success",
-						);
+						Swal.fire("Updated!", successText, "success");
 						return;
 					}
 
@@ -4668,9 +4500,8 @@ $(document).ready(function () {
 	if ($("#adminSitesTable").length) {
 		initAdminSitesPagination();
 	}
- 
+
 	if ($("#adminPlotsTable").length) {
 		initAdminPlotsPagination();
 	}
 });
-

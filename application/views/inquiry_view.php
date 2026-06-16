@@ -20,54 +20,6 @@
 		</div>
 		<!--end breadcrumb-->
 
-		<!-- Stats Cards -->
-		<div class="row g-3 mb-4">
-			<div class="col-6 col-lg-3">
-				<div class="enq-stat-card enq-stat--total">
-					<div class="enq-stat__icon">
-						<i class="bx bx-conversation"></i>
-					</div>
-					<div class="enq-stat__info">
-						<span class="enq-stat__value" id="statTotalEnquiries">--</span>
-						<span class="enq-stat__label">Total Enquiries</span>
-					</div>
-				</div>
-			</div>
-			<div class="col-6 col-lg-3">
-				<div class="enq-stat-card enq-stat--today">
-					<div class="enq-stat__icon">
-						<i class="bx bx-calendar-check"></i>
-					</div>
-					<div class="enq-stat__info">
-						<span class="enq-stat__value" id="statTodayEnquiries">--</span>
-						<span class="enq-stat__label">Today</span>
-					</div>
-				</div>
-			</div>
-			<div class="col-6 col-lg-3">
-				<div class="enq-stat-card enq-stat--week">
-					<div class="enq-stat__icon">
-						<i class="bx bx-bar-chart-alt-2"></i>
-					</div>
-					<div class="enq-stat__info">
-						<span class="enq-stat__value" id="statWeekEnquiries">--</span>
-						<span class="enq-stat__label">This Week</span>
-					</div>
-				</div>
-			</div>
-			<div class="col-6 col-lg-3">
-				<div class="enq-stat-card enq-stat--pending">
-					<div class="enq-stat__icon">
-						<i class="bx bx-time-five"></i>
-					</div>
-					<div class="enq-stat__info">
-						<span class="enq-stat__value" id="statPendingEnquiries">--</span>
-						<span class="enq-stat__label">Pending</span>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<!-- Main Card -->
 		<div class="card enq-main-card">
 			<div class="card-body">
@@ -82,9 +34,9 @@
 					</div>
 					<div class="enq-toolbar__right">
 						<div class="enq-filter-group">
-							<select class="form-select enq-filter-select" id="filterSite">
+							<!-- <select class="form-select enq-filter-select" id="filterSite">
 								<option value="">All Sites</option>
-							</select>
+							</select> -->
 							<select class="form-select enq-filter-select" id="filterStatus">
 								<option value="">All Status</option>
 								<option value="pending">Pending</option>
@@ -94,10 +46,10 @@
 								<option value="closed">Closed</option>
 							</select>
 							<input type="month" class="form-control enq-filter-select" id="filterMonth">
-							<button type="button" class="btn btn-outline-primary enq-show-all-btn d-none"
+							<!-- <button type="button" class="btn btn-outline-primary enq-show-all-btn d-none"
 								id="showAllInquiryBtn" title="Show all enquiries data">
 								<i class="bx bx-list-ul me-1"></i>Show All Data
-							</button>
+							</button> -->
 						</div>
 					</div>
 				</div>
@@ -143,7 +95,13 @@
 										<i class="bx bx-note"></i> Notes
 									</div>
 								</th>
-							
+
+								<th>
+									<div class="enq-th-content">
+										<i class="bx bx-calendar"></i> Date
+									</div>
+								</th>
+
 								<th class="text-center">Actions</th>
 							</tr>
 						</thead>
@@ -194,13 +152,13 @@
 					<div class="row g-3">
 						<div class="col-12">
 							<label class="form-label">Site <span class="text-danger">*</span></label>
-							<select class="form-select" id="addSiteId" name="site_id" required>
+							<select class="form-select" id="addSiteId" name="site_id">
 								<option value="">Select Site</option>
 							</select>
 						</div>
 						<div class="col-12">
 							<label class="form-label">Plot <span class="text-danger">*</span></label>
-							<select class="form-select" id="addPlotId" name="plot_id" required disabled>
+							<select class="form-select" id="addPlotId" name="plot_id" disabled>
 								<option value="">Select Plot</option>
 							</select>
 						</div>
@@ -221,7 +179,7 @@
 							<label class="form-label">Status <span class="text-danger">*</span></label>
 							<select class="form-select" name="status" required>
 								<option value="pending" selected>Pending</option>
-								
+
 								<option value="converted">Converted</option>
 								<option value="closed">Lost</option>
 							</select>
@@ -259,13 +217,13 @@
 					<div class="row g-3">
 						<div class="col-12">
 							<label class="form-label">Site <span class="text-danger">*</span></label>
-							<select class="form-select" id="editSiteId" name="site_id" required>
+							<select class="form-select" id="editSiteId" name="site_id">
 								<option value="">Select Site</option>
 							</select>
 						</div>
 						<div class="col-12">
 							<label class="form-label">Plot <span class="text-danger">*</span></label>
-							<select class="form-select" id="editPlotId" name="plot_id" required>
+							<select class="form-select" id="editPlotId" name="plot_id">
 								<option value="">Select Plot</option>
 							</select>
 						</div>
@@ -308,6 +266,8 @@
 	</div>
 </div>
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 <script>
 	// ═══════════════════════════════════════════════════════════════
 	// INQUIRY MANAGEMENT - Consolidated Script
@@ -329,6 +289,8 @@
 		// Initialize
 		init: function() {
 			this.cacheElements();
+			this.setDefaultMonth();
+			this.initSelect2Dropdowns();
 			this.bindEvents();
 			this.loadInitialData();
 		},
@@ -353,6 +315,42 @@
 			this.$editInquiryId = $('#editInquiryId');
 		},
 
+
+		setDefaultMonth: function() {
+			const now = new Date();
+			const year = now.getFullYear();
+			const month = String(now.getMonth() + 1).padStart(2, '0'); // "01"-"12"
+			const currentMonth = `${year}-${month}`; // matches <input type="month"> format
+
+			this.$filterMonth.val(currentMonth);
+			this.filters.month_filter = currentMonth;
+		},
+
+		// Enable search inside Site / Plot dropdowns
+		initSelect2Dropdowns: function() {
+			const baseOpts = {
+				width: '100%',
+				allowClear: false
+			};
+
+			this.$addSiteId.select2($.extend({}, baseOpts, {
+				dropdownParent: $('#addInquiryModal'),
+				placeholder: 'Search & select site'
+			}));
+			this.$addPlotId.select2($.extend({}, baseOpts, {
+				dropdownParent: $('#addInquiryModal'),
+				placeholder: 'Search & select plot'
+			}));
+			this.$editSiteId.select2($.extend({}, baseOpts, {
+				dropdownParent: $('#editInquiryModal'),
+				placeholder: 'Search & select site'
+			}));
+			this.$editPlotId.select2($.extend({}, baseOpts, {
+				dropdownParent: $('#editInquiryModal'),
+				placeholder: 'Search & select plot'
+			}));
+		},
+
 		// Bind all events
 		bindEvents: function() {
 			const self = this;
@@ -369,7 +367,7 @@
 
 			// Filter changes
 			this.$filterSite.add(this.$filterMonth).add(this.$filterStatus).on('change', function() {
-				self.filters.site_filter = self.$filterSite.val();
+				self.filters.site_filter = self.$filterSite.length ? self.$filterSite.val() : '';
 				self.filters.month_filter = self.$filterMonth.val();
 				self.filters.status_filter = self.$filterStatus.val();
 				self.currentPage = 1;
@@ -380,7 +378,12 @@
 			// Show All button
 			this.$showAllBtn.on('click', function() {
 				self.$searchInput.add(self.$filterSite).add(self.$filterMonth).add(self.$filterStatus).val('');
-				self.filters = { search: '', site_filter: '', month_filter: '', status_filter: '' };
+				self.filters = {
+					search: '',
+					site_filter: '',
+					month_filter: '',
+					status_filter: ''
+				};
 				self.currentPage = 1;
 				self.loadInquiries();
 				$(this).addClass('d-none');
@@ -391,9 +394,9 @@
 				const siteId = $(this).val();
 				if (siteId) {
 					self.loadPlotsForSite(siteId, self.$addPlotId);
-					self.$addPlotId.prop('disabled', false);
+					self.$addPlotId.prop('disabled', false).trigger('change.select2');
 				} else {
-					self.$addPlotId.html('<option value="">Select Plot</option>').prop('disabled', true);
+					self.$addPlotId.html('<option value="">Select Plot</option>').prop('disabled', true).trigger('change.select2');
 				}
 			});
 
@@ -451,35 +454,76 @@
 				this.$emptyState.removeClass('d-none');
 				return;
 			}
-
 			this.$emptyState.addClass('d-none');
 
 			let html = '';
 			data.forEach((item, index) => {
 				const serialNo = ((this.currentPage - 1) * 10) + index + 1;
 				const statusBadge = this.getStatusBadge(item.status);
+				const initial = (item.customer_name || '?').trim().charAt(0).toUpperCase();
+				const dateObj = item.created_at ? new Date(item.created_at) : null;
+				const dateDay = dateObj ? dateObj.toLocaleDateString('en-IN', {
+					day: '2-digit',
+					month: 'short',
+					year: 'numeric'
+				}) : '-';
+				const dateTime = dateObj ? dateObj.toLocaleTimeString('en-IN', {
+					hour: '2-digit',
+					minute: '2-digit'
+				}) : '';
 
 				html += `
-					<tr data-inquiry-id="${item.id}">
-						<td class="enq-td-index">${serialNo}</td>
-						<td>${item.user_name || '-'}</td>
-						<td>${item.name || '-'}</td>
-						<td>${item.plot_number || '-'}</td>
-						<td>${item.customer_name || '-'}</td>
-						<td>${item.mobile || '-'}</td>
-						<td>${statusBadge}</td>
-						<td><span class="enq-note-text" title="${item.note || ''}">${item.note || '-'}</span></td>
-						<td>${this.formatDate(item.created_at)}</td>
-						<td class="text-center">
-							<button class="btn btn-sm btn-outline-primary" onclick="InquiryManager.editInquiry(${item.id})" title="Edit">
-								<i class="bx bx-edit"></i>
-							</button>
-							<button class="btn btn-sm btn-outline-info viewEnquiryDetail" data-inquiry-id="${item.id}" title="View Details">
-								<i class="bx bx-eye"></i>
-							</button>
-						</td>
-					</tr>
-				`;
+            <tr data-inquiry-id="${item.id}">
+                <td><span class="enq-index">${serialNo}</span></td>
+                <td>
+                    <div class="enq-user-cell">
+                        <div class="enq-user-avatar">${initial}</div>
+                        <span class="enq-user-name">${item.user_name || '-'}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="enq-site-cell">
+                        <span class="enq-site-dot"></span>
+                        <span class="enq-site-name">${item.name || '-'}</span>
+                    </div>
+                </td>
+                <td><span class="enq-plot-badge">${item.plot_number || '-'}</span></td>
+                <td><span class="enq-customer-name">${item.customer_name || '-'}</span></td>
+                <td>
+                    <span class="enq-mobile">
+                        <i class="bx bx-phone"></i>
+                        <a href="tel:${item.mobile}">${item.mobile || '-'}</a>
+                    </span>
+                </td>
+                <td>${statusBadge}</td>
+                <td><span class="enq-notes" title="${item.note || ''}">${item.note || '-'}</span></td>
+                <td>
+                    <div class="enq-date">
+                        <span class="enq-date__day">${dateDay}</span>
+                        ${dateTime ? `<span class="enq-date__time">${dateTime}</span>` : ''}
+                    </div>
+                </td>
+                <td>
+                    <div class="enq-actions">
+                        <button class="enq-action-btn enq-action-btn--view viewEnquiryDetail" data-inquiry-id="${item.id}" title="View Details">
+                            <i class="bx bx-eye"></i>
+                        </button>
+                        <a href="tel:${item.mobile}" class="enq-action-btn enq-action-btn--call" title="Call">
+                            <i class="bx bx-phone"></i>
+                        </a>
+                        <a href="https://wa.me/91${item.mobile}" target="_blank" class="enq-action-btn enq-action-btn--whatsapp" title="WhatsApp">
+                            <i class="bx bxl-whatsapp"></i>
+                        </a>
+                        <button class="enq-action-btn enq-action-btn--edit" onclick="InquiryManager.editInquiry(${item.id})" title="Edit">
+                            <i class="bx bx-edit"></i>
+                        </button>
+                        <button class="enq-action-btn enq-action-btn--delete" onclick="InquiryManager.deleteInquiry(${item.id})" title="Delete">
+                            <i class="bx bx-trash"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
 			});
 
 			this.$tableBody.html(html);
@@ -501,13 +545,45 @@
 		editInquiry: function(id) {
 			// Find inquiry from stored data
 			const inquiry = this.allInquiries.find(item => item.id == id);
-			
+
 			if (inquiry) {
 				this.populateEditForm(inquiry);
 				new bootstrap.Modal(document.getElementById('editInquiryModal')).show();
 			} else {
 				this.showToast('Error', 'Inquiry not found', 'error');
 			}
+		},
+
+		deleteInquiry: function(id) {
+			Swal.fire({
+				title: "Are you sure?",
+				text: "This inquiry will be marked as inactive.",
+				icon: "warning",
+				showCancelButton: true,
+				confirmButtonColor: "#3085d6",
+				cancelButtonColor: "#d33",
+				confirmButtonText: "Yes, Delete"
+			}).then((result) => {
+				if (result.isConfirmed) {
+					$.ajax({
+						url: baseUrl('delete_inquiry'),
+						type: "POST",
+						data: {
+							id: id
+						},
+						dataType: "json",
+						success: (res) => {
+							if (res.status) {
+								Swal.fire("Deleted!", res.message, "success");
+								this.loadInquiries(); // reload list
+							} else {
+								Swal.fire("Error", res.message, "error");
+							}
+						},
+						error: () => this.showToast('Error', 'Failed to delete inquiry', 'error')
+					});
+				}
+			});
 		},
 
 		// Populate edit form
@@ -525,9 +601,24 @@
 		// Handle add inquiry form
 		handleAddInquiry: function(e) {
 			e.preventDefault();
-			
-			// Validate mobile
+
+			const siteId = this.$addSiteId.val();
+			const plotId = this.$addPlotId.val();
+			const customerName = this.$addForm.find('input[name="customer_name"]').val().trim();
 			const mobile = this.$addForm.find('input[name="mobile"]').val();
+
+			if (!siteId) {
+				this.showToast('Error', 'Please select a site', 'error');
+				return;
+			}
+			if (!plotId) {
+				this.showToast('Error', 'Please select a plot', 'error');
+				return;
+			}
+			if (!customerName) {
+				this.showToast('Error', 'Please enter customer name', 'error');
+				return;
+			}
 			if (!/^\d{10}$/.test(mobile)) {
 				this.showToast('Error', 'Please enter a valid 10-digit mobile number', 'error');
 				return;
@@ -543,8 +634,8 @@
 						this.showToast('Success', response.message, 'success');
 						bootstrap.Modal.getInstance(document.getElementById('addInquiryModal')).hide();
 						this.$addForm[0].reset();
-						this.$addPlotId.html('<option value="">Select Plot</option>').prop('disabled', true);
-						this.currentPage = 1; // Reset to first page
+						this.$addPlotId.html('<option value="">Select Plot</option>').prop('disabled', true).trigger('change.select2');
+						this.currentPage = 1;
 						this.loadInquiries();
 					} else {
 						this.showToast('Error', response.message, 'error');
@@ -557,7 +648,7 @@
 		// Handle edit inquiry form
 		handleEditInquiry: function(e) {
 			e.preventDefault();
-			
+
 			// Validate mobile
 			const mobile = this.$editForm.find('input[name="mobile"]').val();
 			if (!/^\d{10}$/.test(mobile)) {
@@ -625,7 +716,10 @@
 		changePage: function(page) {
 			this.currentPage = page;
 			this.loadInquiries();
-			window.scrollTo({ top: 0, behavior: 'smooth' });
+			window.scrollTo({
+				top: 0,
+				behavior: 'smooth'
+			});
 		},
 
 		// Update stats cards
@@ -641,17 +735,26 @@
 			$.ajax({
 				url: baseUrl('fetch_inquiries'),
 				type: 'POST',
-				data: { page: 1 },
+				data: {
+					page: 1
+				},
 				dataType: 'json',
 				success: (response) => {
-					if (response.status && response.site_options) {
+					console.log('fetch_inquiries response:', response); // temp debug
+					if (response.status && response.site_options && response.site_options.length) {
 						this.siteOptions = response.site_options;
 						let options = '<option value="">Select Site</option>';
 						response.site_options.forEach(site => {
 							options += `<option value="${site.id}">${site.name}</option>`;
 						});
-						this.$addSiteId.add(this.$editSiteId).add(this.$filterSite).html(options);
+						this.$addSiteId.add(this.$editSiteId).add(this.$filterSite).html(options).trigger('change.select2');
+					} else {
+						this.showToast('Error', 'No sites returned from server', 'error');
 					}
+				},
+				error: (xhr) => {
+					console.error('fetch_inquiries failed:', xhr.responseText); // temp debug
+					this.showToast('Error', 'Could not load sites (request failed)', 'error');
 				}
 			});
 		},
@@ -666,7 +769,9 @@
 			$.ajax({
 				url: baseUrl('get_plots_by_site'),
 				type: 'POST',
-				data: { site_id: siteId },
+				data: {
+					site_id: siteId
+				},
 				dataType: 'json',
 				success: (response) => {
 					if (response.status) {
@@ -675,7 +780,7 @@
 							const selected = selectedPlotId == plot.id ? 'selected' : '';
 							options += `<option value="${plot.id}" ${selected}>${plot.plot_number}</option>`;
 						});
-						$targetSelect.html(options);
+						$targetSelect.html(options).trigger('change.select2');
 					}
 				}
 			});
@@ -683,8 +788,8 @@
 
 		// Toggle show all button
 		toggleShowAllBtn: function() {
-			const hasFilters = this.filters.search || this.filters.site_filter || 
-							   this.filters.month_filter || this.filters.status_filter;
+			const hasFilters = this.filters.search || this.filters.site_filter ||
+				this.filters.month_filter || this.filters.status_filter;
 			this.$showAllBtn.toggleClass('d-none', !hasFilters);
 		},
 
@@ -775,33 +880,28 @@
 		formatDate: function(dateString) {
 			if (!dateString) return '-';
 			const date = new Date(dateString);
-			return date.toLocaleDateString('en-IN', { 
-				day: '2-digit', 
-				month: 'short', 
-				year: 'numeric' 
+			return date.toLocaleDateString('en-IN', {
+				day: '2-digit',
+				month: 'short',
+				year: 'numeric'
 			});
 		},
 
 		// Show toast notification
 		showToast: function(title, message, type) {
-			if (typeof Lobibox !== 'undefined') {
-				Lobibox.notify(type, {
-					pauseDelayOnHover: true,
-					continueDelayOnInactiveTab: false,
-					position: 'top right',
-					icon: type === 'success' ? 'bx bx-check-circle' : 'bx bx-x-circle',
-					msg: message,
-					title: title
-				});
-			} else {
-				console.log(`${type.toUpperCase()}: ${title} - ${message}`);
-			}
+			Swal.fire({
+				icon: type,
+				title: title,
+				text: message,
+				timer: type === 'success' ? 1800 : undefined,
+				showConfirmButton: type !== 'success'
+			});
 		}
 	};
 
 	// Helper function for base URL
 	function baseUrl(path) {
-		return '<?= base_url() ?>' + path;
+		return '<?= base_url() ?>dashboard/' + path;
 	}
 
 	// Initialize on document ready
@@ -1122,7 +1222,8 @@
 	.enq-table-wrap {
 		border-radius: 12px;
 		border: 1px solid #f0f1f3;
-		overflow: hidden;
+		overflow-x: auto;
+		overflow-y: hidden;
 	}
 
 	.enq-table {

@@ -223,77 +223,26 @@
 
 					<!-- Sites -->
 					<li>
-						<a href="javascript:;" class="has-arrow">
+						<a href="<?= base_url('site'); ?>" class="">
 							<div class="parent-icon"><i class='bx bx-buildings'></i></div>
 							<div class="menu-title">Sites</div>
 						</a>
-						<ul>
-							<li>
-								<a href="<?= base_url('site'); ?>">
-									<i class='bx bx-list-ul'></i>All Sites
-								</a>
-							</li>
-
-							<li>
-								<a href="<?= base_url('add_site'); ?>">
-									<i class='bx bx-building-house'></i>Add Site
-								</a>
-							</li>
-
-							<li>
-								<a href="<?= base_url('add_plot'); ?>">
-									<i class='bx bx-map'></i>Add Plots
-								</a>
-							</li>
-						</ul>
 					</li>
 
 					<!-- Expenses -->
 					<li>
-						<a href="javascript:;" class="has-arrow">
+						<a href="<?= base_url('expenses'); ?>" class="">
 							<div class="parent-icon"><i class='bx bx-wallet'></i></div>
 							<div class="menu-title">Expenses</div>
 						</a>
-						<ul>
-							<li>
-								<a href="<?= base_url('expenses'); ?>">
-									<i class='bx bx-receipt'></i>All Expenses
-								</a>
-							</li>
-
-							<li>
-								<a href="<?= base_url('add_expenses'); ?>">
-									<i class='bx bx-plus-medical'></i>Add Expenses
-								</a>
-							</li>
-						</ul>
 					</li>
 
 					<!-- Users -->
 					<li>
-						<a href="javascript:;" class="has-arrow">
+						<a href="<?= base_url('users'); ?>" class="">
 							<div class="parent-icon"><i class='bx bx-user-circle'></i></div>
 							<div class="menu-title">User</div>
 						</a>
-						<ul>
-							<li>
-								<a href="<?= base_url('users'); ?>">
-									<i class='bx bx-group'></i>All Users
-								</a>
-							</li>
-
-							<li>
-								<a href="<?= base_url('add_user'); ?>">
-									<i class='bx bx-user-plus'></i>Add New
-								</a>
-							</li>
-
-							<li>
-								<a href="<?= base_url('add_upad'); ?>">
-									<i class='bx bx-id-card'></i>Add Upad
-								</a>
-							</li>
-						</ul>
 					</li>
 
 					<!-- Inquiry -->

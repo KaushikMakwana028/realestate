@@ -47,6 +47,13 @@
 
 					</div>
 
+					<div class="ms-lg-auto mt-2 mt-lg-0">
+						<a href="<?= base_url('add_site'); ?>" class="btn site-add-btn" title="Add Site">
+							<i class="bx bx-plus"></i>
+							<span>Add Site</span>
+						</a>
+					</div>
+
 				</div>
 
 				<div class="table-responsive site-table-wrapper">
@@ -195,6 +202,33 @@
 	.site-search-icon {
 		left: 14px;
 		color: #94a3b8;
+	}
+
+	.site-add-btn {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 10px 20px;
+		border-radius: 12px;
+		background: linear-gradient(135deg, var(--site-primary), #6366f1);
+		color: #fff;
+		font-size: 13.5px;
+		font-weight: 600;
+		border: none;
+		cursor: pointer;
+		text-decoration: none;
+		transition: all 0.25s ease;
+		box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+	}
+
+	.site-add-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+		color: #fff;
+	}
+
+	.site-add-btn i {
+		font-size: 18px;
 	}
 
 	.site-table-wrapper {

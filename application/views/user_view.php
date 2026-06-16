@@ -15,63 +15,6 @@
 		</div>
 		<!--end breadcrumb-->
 
-		<!-- Stats Cards -->
-		<div class="row g-3 mb-4 usr-stats-row">
-			<div class="col-6 col-lg-3">
-				<div class="usr-stat-card usr-stat--total">
-					<div class="usr-stat__icon">
-						<i class="bx bx-group"></i>
-					</div>
-					<div class="usr-stat__info">
-						<span class="usr-stat__value" id="statTotalUsers">--</span>
-						<span class="usr-stat__label">Total Users</span>
-					</div>
-					<div class="usr-stat__trend usr-stat__trend--up">
-						<i class="bx bx-trending-up"></i>
-					</div>
-				</div>
-			</div>
-			<div class="col-6 col-lg-3">
-				<div class="usr-stat-card usr-stat--active">
-					<div class="usr-stat__icon">
-						<i class="bx bx-user-check"></i>
-					</div>
-					<div class="usr-stat__info">
-						<span class="usr-stat__value" id="statActiveUsers">--</span>
-						<span class="usr-stat__label">Active</span>
-					</div>
-					<div class="usr-stat__trend usr-stat__trend--up">
-						<i class="bx bx-trending-up"></i>
-					</div>
-				</div>
-			</div>
-			<div class="col-6 col-lg-3">
-				<div class="usr-stat-card usr-stat--salary">
-					<div class="usr-stat__icon">
-						<i class="bx bx-rupee"></i>
-					</div>
-					<div class="usr-stat__info">
-						<span class="usr-stat__value" id="statTotalSalary">--</span>
-						<span class="usr-stat__label">Total Salary</span>
-					</div>
-				</div>
-			</div>
-			<div class="col-6 col-lg-3">
-				<div class="usr-stat-card usr-stat--pending">
-					<div class="usr-stat__icon">
-						<i class="bx bx-wallet"></i>
-					</div>
-					<div class="usr-stat__info">
-						<span class="usr-stat__value" id="statTotalPayable">--</span>
-						<span class="usr-stat__label">Total Payable</span>
-					</div>
-					<div class="usr-stat__trend usr-stat__trend--down">
-						<i class="bx bx-trending-down"></i>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<!-- Main Card -->
 		<div class="card usr-main-card">
 			<div class="card-body">
@@ -100,6 +43,10 @@
 						<button class="btn usr-add-btn" title="Add User">
 							<i class="bx bx-plus"></i>
 							<span class="d-none d-md-inline">Add User</span>
+						</button>
+						<button class="btn usr-add-upad-btn" title="Add Upad">
+							<i class="bx bx-plus-circle"></i>
+							<span class="d-none d-md-inline">Add Upad</span>
 						</button>
 					</div>
 				</div>
@@ -469,20 +416,28 @@
 	}
 
 	/* Add Button */
-	.usr-add-btn {
+	.usr-add-btn, .usr-add-upad-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
 		padding: 9px 18px;
 		border-radius: 10px;
-		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 		color: #fff;
 		font-size: 13px;
 		font-weight: 600;
 		border: none;
 		cursor: pointer;
 		transition: all 0.25s ease;
+	}
+
+	.usr-add-btn {
+		background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
 		box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+	}
+
+	.usr-add-upad-btn {
+		background: linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%);
+		box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
 	}
 
 	.usr-add-btn:hover {
@@ -491,7 +446,13 @@
 		color: #fff;
 	}
 
-	.usr-add-btn i {
+	.usr-add-upad-btn:hover {
+		transform: translateY(-1px);
+		box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
+		color: #fff;
+	}
+
+	.usr-add-btn i, .usr-add-upad-btn i {
 		font-size: 18px;
 	}
 
@@ -1348,12 +1309,12 @@
 			-webkit-overflow-scrolling: touch;
 		}
 
-		.usr-add-btn {
+		.usr-add-btn, .usr-add-upad-btn {
 			width: 100%;
 			justify-content: center;
 		}
 
-		.usr-add-btn span {
+		.usr-add-btn span, .usr-add-upad-btn span {
 			display: inline !important;
 		}
 

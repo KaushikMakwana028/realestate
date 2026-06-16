@@ -72,14 +72,14 @@
                                     <label for="plotDimension" class="form-label">Dimension</label>
                                     <input type="text" name="dimension" class="form-control" id="plotDimension"
                                         placeholder="Enter dimension (e.g. 30x40)"
-                                        value="<?= isset($plots->dimension) ? htmlspecialchars($plots->dimension) : ''; ?>" required>
+                                        value="<?= isset($plots->dimension) ? htmlspecialchars($plots->dimension) : ''; ?>">
                                     <div class="invalid-feedback">Please enter the plot dimension.</div>
                                 </div>
 
                                 <!-- Facing -->
                                 <div class="mb-3">
                                     <label for="plotFacing" class="form-label">Facing</label>
-                                    <select name="facing" id="plotFacing" class="form-select" required>
+                                    <select name="facing" id="plotFacing" class="form-select">
                                         <option value="">Select Facing</option>
                                         <?php
                                         $facings = [

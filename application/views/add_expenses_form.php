@@ -46,7 +46,7 @@
 
                                 <div class="mb-3 d-none" id="expenseImageFieldWrap">
                                     <label for="expenseImage" class="form-label">Expense Image</label>
-                                    <input type="file" name="expense_image" class="form-control" id="expenseImage" accept="image/*">
+                                    <input type="file" name="expense_image" class="form-control" id="expenseImage" accept="image/jpeg,image/jpg,image/png,application/pdf">
                                     <div class="form-text">Upload image for this expense (optional).</div>
                                     <div id="expenseImagePreview" class="mt-2"></div>
                                 </div>

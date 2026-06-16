@@ -22,82 +22,6 @@
 		</div>
 		<!--end breadcrumb-->
 
-		<!-- Summary Cards -->
-		<div class="row mb-4 g-3">
-			<div class="col-xl-3 col-md-6">
-				<div class="card border-0 shadow-sm summary-card"
-					style="border-radius: 14px; border-left: 4px solid #6366f1 !important; overflow: hidden;">
-					<div class="card-body d-flex align-items-center p-3">
-						<div class="rounded-circle d-flex align-items-center justify-content-center me-3"
-							style="width: 52px; height: 52px; background: linear-gradient(135deg, #6366f1, #818cf8); flex-shrink: 0;">
-							<i class="bx bx-receipt text-white" style="font-size: 1.5rem;"></i>
-						</div>
-						<div>
-							<p class="mb-0 text-muted"
-								style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">
-								Total Expenses</p>
-							<h4 class="mb-0 fw-bold" id="totalExpenses" style="color: #2c3e50;">₹0</h4>
-							<small class="text-muted" id="totalExpCount">0 entries</small>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col-xl-3 col-md-6">
-				<div class="card border-0 shadow-sm summary-card"
-					style="border-radius: 14px; border-left: 4px solid #10b981 !important; overflow: hidden;">
-					<div class="card-body d-flex align-items-center p-3">
-						<div class="rounded-circle d-flex align-items-center justify-content-center me-3"
-							style="width: 52px; height: 52px; background: linear-gradient(135deg, #10b981, #34d399); flex-shrink: 0;">
-							<i class="bx bx-check-circle text-white" style="font-size: 1.5rem;"></i>
-						</div>
-						<div>
-							<p class="mb-0 text-muted"
-								style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Approved
-							</p>
-							<h4 class="mb-0 fw-bold" style="color: #059669;"><span id="approvedTotal">₹0</span></h4>
-							<small class="text-muted"><span id="approvedCount">0</span> entries</small>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col-xl-3 col-md-6">
-				<div class="card border-0 shadow-sm summary-card"
-					style="border-radius: 14px; border-left: 4px solid #f59e0b !important; overflow: hidden;">
-					<div class="card-body d-flex align-items-center p-3">
-						<div class="rounded-circle d-flex align-items-center justify-content-center me-3"
-							style="width: 52px; height: 52px; background: linear-gradient(135deg, #f59e0b, #fbbf24); flex-shrink: 0;">
-							<i class="bx bx-time-five text-white" style="font-size: 1.5rem;"></i>
-						</div>
-						<div>
-							<p class="mb-0 text-muted"
-								style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Pending
-							</p>
-							<h4 class="mb-0 fw-bold" style="color: #d97706;"><span id="pendingTotal">₹0</span></h4>
-							<small class="text-muted"><span id="pendingCount">0</span> entries</small>
-						</div>
-					</div>
-				</div>
-			</div>
-			<div class="col-xl-3 col-md-6">
-				<div class="card border-0 shadow-sm summary-card"
-					style="border-radius: 14px; border-left: 4px solid #ef4444 !important; overflow: hidden;">
-					<div class="card-body d-flex align-items-center p-3">
-						<div class="rounded-circle d-flex align-items-center justify-content-center me-3"
-							style="width: 52px; height: 52px; background: linear-gradient(135deg, #ef4444, #f87171); flex-shrink: 0;">
-							<i class="bx bx-x-circle text-white" style="font-size: 1.5rem;"></i>
-						</div>
-						<div>
-							<p class="mb-0 text-muted"
-								style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.5px;">Rejected
-							</p>
-							<h4 class="mb-0 fw-bold" style="color: #dc2626;"><span id="rejectTotal">₹0</span></h4>
-							<small class="text-muted"><span id="rejectCount">0</span> entries</small>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-
 		<!-- Main Table Card -->
 		<div class="card border-0 shadow-sm" style="border-radius: 16px; overflow: hidden;">
 
@@ -105,29 +29,27 @@
 			<div class="card-header bg-white py-3" style="border-bottom: 1px solid #f1f5f9;">
 				<div class="row align-items-center g-3">
 					<!-- Search -->
-					<div class="col-lg-4 col-md-6">
+					<div class="col-lg-3 col-md-6">
 						<div class="position-relative">
+							<i class="bx bx-search position-absolute"
+								style="left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem; z-index: 5;"></i>
 							<input type="text" id="serchexp" class="form-control ps-5 enhanced-input"
-								placeholder="Search expenses by name, site, amount...">
-							<button type="button" id="expSearchBtn"
-								class="btn btn-sm position-absolute top-50 end-0 translate-middle-y me-1 px-2 py-1"
-								style="border: 1px solid #e2e8f0; background: #fff; color: #6366f1; border-radius: 8px;"
-								title="Search">
-								<i class="bx bx-search"></i>
-							</button>
+								placeholder="Search expenses..." style="padding-left: 42px !important;">
 							<input type="hidden" id="siteID" value="">
 						</div>
 					</div>
 
 					<!-- Month Filter -->
-					<div class="col-lg-2 col-md-4">
+					<div class="col-lg-2 col-md-3">
 						<div class="position-relative">
-							<input type="month" id="expMonthPicker" class="form-control ps-5 enhanced-input">
+							<i class="bx bx-calendar position-absolute"
+								style="left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; font-size: 1.2rem; z-index: 5;"></i>
+							<input type="month" id="expMonthPicker" class="form-control ps-5 enhanced-input" style="padding-left: 42px !important;">
 						</div>
 					</div>
 
 					<!-- Status Filter -->
-					<div class="col-lg-2 col-md-4">
+					<div class="col-lg-2 col-md-3">
 						<select class="form-select enhanced-input" id="statusFilter">
 							<option value="">All Status</option>
 							<option value="approved">Approved</option>
@@ -137,23 +59,30 @@
 					</div>
 
 					<!-- Buttons -->
-					<div class="col-lg-4 col-md-8">
-						<div class="d-flex gap-2 justify-content-lg-end flex-wrap">
-							<button type="button" id="expShowAllBtn" class="btn btn-sm d-flex align-items-center gap-1"
-								style="border-radius: 10px; padding: 9px 18px; border: 2px solid #e2e8f0; color: #475569; background: #f8fafc; transition: all 0.2s;"
+					<div class="col-lg-5 col-md-12">
+						<div class="d-flex gap-2 justify-content-lg-end justify-content-start align-items-center">
+							<button type="button" id="expShowAllBtn" class="btn btn-outline-secondary exp-btn"
+								style="border: 2px solid #e2e8f0; color: #475569; background: #f8fafc; transition: all 0.2s;"
 								onmouseover="this.style.borderColor='#6366f1'; this.style.color='#6366f1';"
 								onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#475569';">
 								<i class="bx bx-list-ul" style="font-size: 1.1rem;"></i>
 								Show All
 							</button>
-							<button class="btn btn-sm d-flex align-items-center gap-1"
-								style="border-radius: 10px; padding: 9px 18px; border: 2px solid #e2e8f0; color: #475569; background: #f8fafc; transition: all 0.2s;"
+							<button class="btn btn-outline-secondary exp-btn"
+								style="border: 2px solid #e2e8f0; color: #475569; background: #f8fafc; transition: all 0.2s;"
 								onclick="refreshExpenses()"
 								onmouseover="this.style.borderColor='#6366f1'; this.style.color='#6366f1';"
 								onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#475569';">
 								<i class="bx bx-refresh" style="font-size: 1.1rem;"></i>
-								<span class="d-none d-xl-inline">Refresh</span>
+								<span>Refresh</span>
 							</button>
+							<a href="<?= base_url('add_expenses'); ?>" class="btn text-white exp-btn"
+								style="border: none; background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); transition: all 0.25s ease; box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);"
+								onmouseover="this.style.transform='translateY(-1px)'; this.style.boxShadow='0 4px 14px rgba(99, 102, 241, 0.4)';"
+								onmouseout="this.style.transform='none'; this.style.boxShadow='0 2px 8px rgba(99, 102, 241, 0.3)';">
+								<i class="bx bx-plus" style="font-size: 1.1rem;"></i>
+								<span>Add Expense</span>
+							</a>
 
 						</div>
 					</div>
@@ -299,16 +228,29 @@
 	.enhanced-input {
 		border-radius: 10px !important;
 		border: 2px solid #e2e8f0 !important;
-		padding: 10px 15px !important;
+		padding: 8px 15px !important;
 		transition: all 0.3s !important;
 		background: #f8fafc !important;
 		font-size: 0.88rem !important;
+		height: 42px !important;
 	}
 
 	.enhanced-input:focus {
 		border-color: #6366f1 !important;
 		box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
 		background: white !important;
+	}
+
+	.exp-btn {
+		height: 42px !important;
+		border-radius: 10px !important;
+		padding: 8px 14px !important;
+		font-size: 0.85rem !important;
+		display: inline-flex !important;
+		align-items: center !important;
+		gap: 6px !important;
+		white-space: nowrap !important;
+		font-weight: 500 !important;
 	}
 
 	/* ===== Table Styles ===== */

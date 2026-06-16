@@ -909,8 +909,8 @@ class Site extends My_Controller
             $safe_name = preg_replace('/[^A-Za-z0-9_\-\.]/', '_', $_FILES['expense_image']['name']);
             $config = [
                 'upload_path' => $upload_path,
-                'allowed_types' => 'jpg|jpeg|png|webp',
-                'max_size' => 4096,
+                'allowed_types' => 'jpg|jpeg|png|pdf',
+                'max_size' => 100,
                 'file_name' => time() . '_' . $safe_name
             ];
 

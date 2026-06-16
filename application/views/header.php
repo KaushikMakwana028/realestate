@@ -1595,67 +1595,34 @@
 				</div>
 
 				<!-- Sites -->
-				<div class="nav-item has-submenu <?= ($currentClass === 'site' || $currentClass === 'plots') ? 'open active' : '' ?>">
-					<div class="nav-link">
+				<div class="nav-item <?= (($currentClass === 'site' && !in_array($currentMethod, ['expenses', 'add_expenses', 'update_expense'])) || $currentClass === 'plots') ? 'active' : '' ?>">
+					<a href="<?= base_url('site') ?>" class="nav-link">
 						<i data-lucide="building-2"></i>
 						<span class="nav-label">Sites</span>
-						<span class="submenu-chevron"><i data-lucide="chevron-down"></i></span>
-					</div>
-					<div class="submenu">
-						<a href="<?= base_url('site') ?>" class="submenu-item <?= ($currentClass === 'site' && in_array($currentMethod, ['index', 'edit_site'])) ? 'active' : '' ?>">
-							<i data-lucide="list"></i> All Sites
-						</a>
-						<a href="<?= base_url('add_site') ?>" class="submenu-item <?= ($currentClass === 'site' && $currentMethod === 'add_site') ? 'active' : '' ?>">
-							<i data-lucide="building"></i> Add Site
-						</a>
-						<a href="<?= base_url('add_plot') ?>" class="submenu-item <?= ($currentClass === 'plots' && in_array($currentMethod, ['add_plot', 'edit_plot'])) ? 'active' : '' ?>">
-							<i data-lucide="map"></i> Add Plots
-						</a>
-					</div>
+					</a>
 				</div>
 
 				<!-- Expenses -->
-				<div class="nav-item has-submenu <?= ($currentClass === 'site' && in_array($currentMethod, ['expenses', 'add_expenses', 'update_expense'])) ? 'open active' : '' ?>">
-					<div class="nav-link">
+				<div class="nav-item <?= ($currentClass === 'site' && in_array($currentMethod, ['expenses', 'add_expenses', 'update_expense'])) ? 'active' : '' ?>">
+					<a href="<?= base_url('expenses') ?>" class="nav-link">
 						<i data-lucide="wallet"></i>
 						<span class="nav-label">Expenses</span>
-						<span class="submenu-chevron"><i data-lucide="chevron-down"></i></span>
-					</div>
-					<div class="submenu">
-						<a href="<?= base_url('expenses') ?>" class="submenu-item <?= ($currentClass === 'site' && $currentMethod === 'expenses') ? 'active' : '' ?>">
-							<i data-lucide="receipt"></i> All Expenses
-						</a>
-						<a href="<?= base_url('add_expenses') ?>" class="submenu-item <?= ($currentClass === 'site' && $currentMethod === 'add_expenses') ? 'active' : '' ?>">
-							<i data-lucide="plus-circle"></i> Add Expenses
-						</a>
-					</div>
+					</a>
 				</div>
 
 				<!-- Users -->
-				<div class="nav-item has-submenu <?= ($currentClass === 'user') ? 'open active' : '' ?>">
-					<div class="nav-link">
+				<div class="nav-item <?= ($currentClass === 'user') ? 'active' : '' ?>">
+					<a href="<?= base_url('users') ?>" class="nav-link">
 						<i data-lucide="users-round"></i>
 						<span class="nav-label">User</span>
-						<span class="submenu-chevron"><i data-lucide="chevron-down"></i></span>
-					</div>
-					<div class="submenu">
-						<a href="<?= base_url('users') ?>" class="submenu-item <?= ($currentClass === 'user' && $currentMethod === 'index') ? 'active' : '' ?>">
-							<i data-lucide="users"></i> All Users
-						</a>
-						<a href="<?= base_url('add_user') ?>" class="submenu-item <?= ($currentClass === 'user' && $currentMethod === 'add_user') ? 'active' : '' ?>">
-							<i data-lucide="user-plus"></i> Add New
-						</a>
-						<a href="<?= base_url('add_upad') ?>" class="submenu-item <?= ($currentClass === 'user' && $currentMethod === 'add_upad') ? 'active' : '' ?>">
-							<i data-lucide="id-card"></i> Add Upad
-						</a>
-					</div>
+					</a>
 				</div>
 
 				<!-- Inquiry -->
 				<div class="nav-item <?= ($currentClass === 'inquiry' || ($currentClass === 'dashboard' && $currentMethod === 'inquiry')) ? 'active' : '' ?>">
 					<a href="<?= base_url('inquiry') ?>" class="nav-link">
 						<i data-lucide="message-circle"></i>
-						<span class="nav-label">Inquiry</span>
+						<span class="nav-label">Enquiry</span>
 					</a>
 				</div>
 
