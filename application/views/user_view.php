@@ -44,10 +44,10 @@
 							<i class="bx bx-plus"></i>
 							<span class="d-none d-md-inline">Add User</span>
 						</button>
-						<button class="btn usr-add-upad-btn" title="Add Upad">
+						<!-- <button class="btn usr-add-upad-btn" title="Add Upad">
 							<i class="bx bx-plus-circle"></i>
 							<span class="d-none d-md-inline">Add Upad</span>
-						</button>
+						</button> -->
 					</div>
 				</div>
 
@@ -80,21 +80,6 @@
 								<th class="text-center">
 									<div class="usr-th-content justify-content-center">
 										<i class="bx bx-toggle-right"></i> Status
-									</div>
-								</th>
-								<th class="text-center">
-									<div class="usr-th-content justify-content-center">
-										<i class="bx bx-rupee"></i> Salary
-									</div>
-								</th>
-								<th class="text-center">
-									<div class="usr-th-content justify-content-center">
-										<i class="bx bx-money"></i> UPAD
-									</div>
-								</th>
-								<th class="text-center">
-									<div class="usr-th-content justify-content-center">
-										<i class="bx bx-wallet"></i> Payable
 									</div>
 								</th>
 								<th class="text-center">Actions</th>
@@ -1441,13 +1426,11 @@
 
 		var row = btn.closest('tr');
 		if (row) {
+			var userId = row.getAttribute('data-id');
 			var name = row.getAttribute('data-name') || '-';
 			var email = row.getAttribute('data-email') || '-';
 			var mobile = row.getAttribute('data-mobile') || '-';
 			var status = row.getAttribute('data-status') || '-';
-			var salary = row.getAttribute('data-salary') || '0';
-			var upad = row.getAttribute('data-upad') || '0';
-			var payable = row.getAttribute('data-payable') || '0';
 			var image = row.getAttribute('data-image') || '';
 			var initials = name.split(' ').map(function(w) {
 				return w[0];
@@ -1473,20 +1456,22 @@
 				'</div>' +
 
 				'<div class="usr-detail-card">' +
-				'<h6>Salary Overview</h6>' +
-				'<div class="usr-salary-summary">' +
-				'<div class="usr-salary-box usr-salary-box--salary">' +
-				'<span class="usr-salary-box__value">₹' + salary + '</span>' +
-				'<span class="usr-salary-box__label">Monthly Salary</span>' +
+				'<h6>Uploaded Documents</h6>' +
+				'<div id="usrDocumentsList" class="d-flex flex-column gap-2">' +
+				'  <div class="text-center py-2 text-muted">' +
+				'    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>' +
+				'    <span class="ms-2">Loading documents...</span>' +
+				'  </div>' +
 				'</div>' +
-				'<div class="usr-salary-box usr-salary-box--upad">' +
-				'<span class="usr-salary-box__value">₹' + upad + '</span>' +
-				'<span class="usr-salary-box__label">Total UPAD</span>' +
 				'</div>' +
-				'<div class="usr-salary-box usr-salary-box--payable">' +
-				'<span class="usr-salary-box__value">₹' + payable + '</span>' +
-				'<span class="usr-salary-box__label">Total Payable</span>' +
-				'</div>' +
+
+				'<div class="usr-detail-card mt-3">' +
+				'<h6>Assigned Sites</h6>' +
+				'<div id="usrSitesList" class="d-flex flex-column gap-2">' +
+				'  <div class="text-center py-2 text-muted">' +
+				'    <div class="spinner-border spinner-border-sm text-primary" role="status"></div>' +
+				'    <span class="ms-2">Loading assigned sites...</span>' +
+				'  </div>' +
 				'</div>' +
 				'</div>' +
 
@@ -1505,6 +1490,77 @@
 				'<a href="mailto:' + email + '" class="btn btn-sm" style="background:#6366f1;color:#fff;border-radius:10px;padding:8px 20px;font-weight:600"><i class="bx bx-envelope"></i> Email</a>' +
 				'<a href="https://wa.me/' + mobile + '" target="_blank" class="btn btn-sm" style="background:#25d366;color:#fff;border-radius:10px;padding:8px 20px;font-weight:600"><i class="bx bxl-whatsapp"></i> WhatsApp</a>' +
 				'</div>';
+
+			if (userId) {
+				$.ajax({
+					url: '<?= base_url("user/get_user_documents"); ?>',
+					method: 'POST',
+					data: { user_id: userId },
+					dataType: 'json',
+					success: function(res) {
+						var docList = document.getElementById('usrDocumentsList');
+						var sitesList = document.getElementById('usrSitesList');
+
+						// Render documents
+						if (docList) {
+							if (res.status && res.data && res.data.length > 0) {
+								var html = '';
+								res.data.forEach(function(doc) {
+									var fileIcon = 'bx-file';
+									var ext = doc.document_path.split('.').pop().toLowerCase();
+									if (['jpg', 'jpeg', 'png', 'gif'].indexOf(ext) > -1) fileIcon = 'bx-image';
+									else if (ext === 'pdf') fileIcon = 'bx-file-blank';
+									
+									html += '<div class="d-flex align-items-center justify-content-between p-2 rounded" style="background:#f8fafc;border:1px solid #e2e8f0">' +
+											'  <div class="d-flex align-items-center gap-2">' +
+											'    <i class="bx ' + fileIcon + ' text-primary" style="font-size: 20px;"></i>' +
+											'    <div>' +
+											'      <div style="font-weight:600;font-size:12.5px;color:#1e293b">' + doc.document_name + '</div>' +
+											'      <div style="font-size:10.5px;color:#94a3b8">' + doc.created_at + '</div>' +
+											'    </div>' +
+											'  </div>' +
+											'  <a href="' + doc.document_path + '" target="_blank" class="btn btn-sm btn-outline-primary" style="font-size:11.5px;padding:3px 8px;border-radius:6px"><i class="bx bx-download"></i> View</a>' +
+											'</div>';
+								});
+								docList.innerHTML = html;
+							} else {
+								docList.innerHTML = '<div class="text-center py-2 text-muted" style="font-size:12.5px;">No documents uploaded.</div>';
+							}
+						}
+
+						// Render assigned sites
+						if (sitesList) {
+							if (res.status && res.sites && res.sites.length > 0) {
+								var html = '';
+								res.sites.forEach(function(site) {
+									html += '<div class="d-flex align-items-center justify-content-between p-2 rounded" style="background:#f8fafc;border:1px solid #e2e8f0">' +
+											'  <div class="d-flex align-items-center gap-2">' +
+											'    <i class="bx bx-map-pin text-success" style="font-size: 20px;"></i>' +
+											'    <div>' +
+											'      <div style="font-weight:600;font-size:12.5px;color:#1e293b">' + site.site_name + '</div>' +
+											'      <div style="font-size:10.5px;color:#94a3b8">Assigned at: ' + (site.assigned_at || '-') + '</div>' +
+											'    </div>' +
+											'  </div>' +
+											'</div>';
+								});
+								sitesList.innerHTML = html;
+							} else {
+								sitesList.innerHTML = '<div class="text-center py-2 text-muted" style="font-size:12.5px;">No sites assigned.</div>';
+							}
+						}
+					},
+					error: function() {
+						var docList = document.getElementById('usrDocumentsList');
+						var sitesList = document.getElementById('usrSitesList');
+						if (docList) {
+							docList.innerHTML = '<div class="text-center py-2 text-danger" style="font-size:12.5px;">Failed to load documents.</div>';
+						}
+						if (sitesList) {
+							sitesList.innerHTML = '<div class="text-center py-2 text-danger" style="font-size:12.5px;">Failed to load assigned sites.</div>';
+						}
+					}
+				});
+			}
 		}
 	});
 </script>

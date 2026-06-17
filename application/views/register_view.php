@@ -431,7 +431,12 @@
 
             <section class="form-panel">
                 <div class="form-head">
-                    <img src="<?= base_url('assets/images/title_logo.png') ?>" class="logo" alt="Logo">
+                    <div class="d-flex align-items-center gap-2 justify-content-center mb-3">
+                        <div class="p-2 rounded-3 text-white" style="background: linear-gradient(135deg, #6366f1, #4f46e5); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
+                            <i class="bx bx-buildings fs-3"></i>
+                        </div>
+                        <span class="fw-bold fs-3" style="color: #0f172a; font-family: 'Poppins', sans-serif;">SiteDesk</span>
+                    </div>
                     <h2 class="form-title">Create Your Account</h2>
                     <p class="form-subtitle">Complete the form below to start managing properties.</p>
                 </div>

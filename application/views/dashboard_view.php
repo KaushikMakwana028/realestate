@@ -557,6 +557,39 @@
     <div class="page-content">
 
         <!-- ===========================
+             PLAN RENEWAL REMINDER
+        ============================ -->
+        <?php
+        $days_left = $this->session->userdata('subscription_days_left');
+        $plan_name = $this->session->userdata('subscription_plan_name');
+        $end_date = $this->session->userdata('subscription_end_date');
+        $role = $this->session->userdata('admin')['role'] ?? 'admin';
+        if ($role !== 'superadmin' && $days_left !== NULL && $days_left <= 7):
+        ?>
+            <div class="card border-0 shadow-sm mb-4 fade-in-up" style="border-radius: 20px; background: linear-gradient(135deg, #fffbeb, #fef3c7); border-left: 5px solid #d97706 !important;">
+                <div class="card-body p-4">
+                    <div class="d-flex flex-column flex-md-row align-items-start align-items-md-center justify-content-between gap-3">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="p-3 rounded-circle" style="background: #fef3c7; color: #d97706; display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; box-shadow: 0 4px 6px -1px rgba(217, 119, 6, 0.1);">
+                                <i class="bx bx-time-five fs-3"></i>
+                            </div>
+                            <div>
+                                <span class="text-uppercase tracking-wider fw-bold text-warning-custom small" style="color: #d97706; font-size: 12px; letter-spacing: 0.05em;">Plan Renewal Reminder</span>
+                                <h4 class="mb-1 mt-1 fw-bold text-dark">Your plan ends in <?= $days_left; ?> days.</h4>
+                                <p class="mb-0 text-muted small"><?= htmlspecialchars($plan_name); ?> ends in <?= $days_left; ?> days on <?= date('d M Y, h:i A', strtotime($end_date)); ?>.</p>
+                            </div>
+                        </div>
+                        <div>
+                            <a href="<?= base_url('dashboard/plans'); ?>" class="btn btn-warning px-4 py-2.5 fw-bold text-white d-flex align-items-center gap-2" style="background: #d97706; border: none; border-radius: 12px; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.2);">
+                                <i class="bx bx-cart-alt"></i> Buy Plan
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <!-- ===========================
              GREETING BANNER
         ============================ -->
         <div class="greeting-banner fade-in-up">

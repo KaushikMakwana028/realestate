@@ -16,36 +16,6 @@
             </div>
         </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-12 col-md-4">
-                <div class="upad-stat upad-stat--count">
-                    <div class="upad-stat__icon"><i class="bx bx-receipt"></i></div>
-                    <div>
-                        <div class="upad-stat__value" id="upadStatCount">0</div>
-                        <div class="upad-stat__label">Total Records</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="upad-stat upad-stat--amount">
-                    <div class="upad-stat__icon"><i class="bx bx-rupee"></i></div>
-                    <div>
-                        <div class="upad-stat__value" id="upadStatAmount">INR 0</div>
-                        <div class="upad-stat__label">Total UPAD Amount</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-12 col-md-4">
-                <div class="upad-stat upad-stat--latest">
-                    <div class="upad-stat__icon"><i class="bx bx-time-five"></i></div>
-                    <div>
-                        <div class="upad-stat__value upad-stat__value--small" id="upadStatLatest">-</div>
-                        <div class="upad-stat__label">Latest Entry</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
         <div class="card border-0 shadow-sm upad-card">
             <div class="card-header bg-white border-bottom py-3">
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
@@ -59,10 +29,13 @@
                         </div>
                     </div>
 
-                    <div class="search-box position-relative">
-                        <i class="bx bx-search search-icon"></i>
-                        <input type="text" id="serchupad" class="form-control search-input" placeholder="Search name, amount, notes...">
-                        <input type="hidden" id="user_id" value="<?= $user_id ?>">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <input type="month" id="upadMonthPicker" class="form-control" style="width: 160px; height: 38px; border-radius: 20px; border: 1.5px solid #dde3f0; padding-left: 15px; padding-right: 15px; font-size: 13px; background: #f8f9ff;">
+                        <div class="search-box position-relative">
+                            <i class="bx bx-search search-icon"></i>
+                            <input type="text" id="serchupad" class="form-control search-input" placeholder="Search name, amount, notes...">
+                            <input type="hidden" id="user_id" value="<?= $user_id ?>">
+                        </div>
                     </div>
                 </div>
             </div>

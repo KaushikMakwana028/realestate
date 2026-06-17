@@ -955,4 +955,75 @@ class Superadmin extends My_Controller
         force_download($file_path, NULL);
     }
 
+    public function plans()
+    {
+        $data['plans'] = $this->db->where('isActive', 1)->get('plans')->result();
+
+        $this->load->view('superadmin/header');
+        $this->load->view('superadmin/plans_view', $data);
+        $this->load->view('superadmin/footer');
+    }
+
+    public function add_plan()
+    {
+        $this->form_validation->set_rules('name', 'Plan Name', 'required|trim');
+        $this->form_validation->set_rules('price', 'Price', 'required|numeric');
+        $this->form_validation->set_rules('duration_days', 'Duration Days', 'required|integer');
+        $this->form_validation->set_rules('description', 'Description', 'required|trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('superadmin/plans');
+            return;
+        }
+
+        $data = [
+            'name' => $this->input->post('name'),
+            'price' => floatval($this->input->post('price')),
+            'duration_days' => intval($this->input->post('duration_days')),
+            'description' => $this->input->post('description'),
+            'created_at' => date('Y-m-d H:i:s'),
+            'isActive' => 1
+        ];
+
+        $this->db->insert('plans', $data);
+        $this->session->set_flashdata('success', 'Plan added successfully!');
+        redirect('superadmin/plans');
+    }
+
+    public function delete_plan($id)
+    {
+        $id = (int)$id;
+        $this->db->where('id', $id)->update('plans', ['isActive' => 0]);
+        $this->session->set_flashdata('success', 'Plan deleted successfully!');
+        redirect('superadmin/plans');
+    }
+
+    public function edit_plan()
+    {
+        $this->form_validation->set_rules('id', 'Plan ID', 'required|integer');
+        $this->form_validation->set_rules('name', 'Plan Name', 'required|trim');
+        $this->form_validation->set_rules('price', 'Price', 'required|numeric');
+        $this->form_validation->set_rules('duration_days', 'Duration Days', 'required|integer');
+        $this->form_validation->set_rules('description', 'Description', 'required|trim');
+
+        if ($this->form_validation->run() === FALSE) {
+            $this->session->set_flashdata('error', validation_errors());
+            redirect('superadmin/plans');
+            return;
+        }
+
+        $id = (int)$this->input->post('id');
+        $data = [
+            'name' => $this->input->post('name'),
+            'price' => floatval($this->input->post('price')),
+            'duration_days' => intval($this->input->post('duration_days')),
+            'description' => $this->input->post('description')
+        ];
+
+        $this->db->where('id', $id)->update('plans', $data);
+        $this->session->set_flashdata('success', 'Plan updated successfully!');
+        redirect('superadmin/plans');
+    }
+
 }

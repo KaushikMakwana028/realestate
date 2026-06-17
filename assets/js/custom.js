@@ -781,8 +781,8 @@ $(document).ready(function () {
 						Swal.fire({
 							title: "Assign Site",
 							html: `
-                        <label class="swal2-label" style="display:block;margin-bottom:5px;font-weight:600;">Select User</label>
-                        <select id="userDropdown" class="swal2-select" style="width:100%;">
+                        <label class="swal2-label" style="display:block;margin-bottom:12px;font-weight:600;font-size:16px;">Select User</label>
+                        <select id="swalUserDropdown" class="form-select" style="width:100%;">
                             <option value="">Select User</option>
                             ${options}
                         </select>
@@ -791,7 +791,7 @@ $(document).ready(function () {
 							confirmButtonText: "Assign",
 							cancelButtonText: "Cancel",
 							didOpen: () => {
-								$("#userDropdown").select2({
+								$("#swalUserDropdown").select2({
 									dropdownParent: $(".swal2-container"),
 									width: "100%",
 									placeholder: "Search user...",
@@ -800,7 +800,7 @@ $(document).ready(function () {
 							},
 						}).then((result) => {
 							if (result.isConfirmed) {
-								const userId = $("#userDropdown").val();
+								const userId = $("#swalUserDropdown").val();
 
 								if (!userId) {
 									Swal.fire("Error", "Please select a user", "error");
@@ -813,7 +813,7 @@ $(document).ready(function () {
 									data: {
 										site_id: siteId,
 										user_id: userId,
-										admin_id: adminId, // âœ… send admin id
+										admin_id: adminId, // ✅ send admin id
 									},
 									success: function (res) {
 										if (res.status) {
@@ -1176,28 +1176,7 @@ $(document).ready(function () {
 			<i class="bx bx-trash"></i>
 		</a>
 
-		${
-			hasBuyer
-				? `<a href="${site_url}plots/buyer_details/${buyerId}"
-					  class="btn-action btn-action-view"
-					  data-tooltip="Buyer Details">
-						<i class="bx bx-user-pin"></i>
-				   </a>`
-				: ""
-		}
-		${
-			hasBuyer
-				? `<a href="${site_url}payment_data/${buyerId}"
-					  class="btn-action btn-action-view"
-					  data-tooltip="${
-							pendingInstallmentRequests > 0
-								? pendingInstallmentRequests + " installment request(s) pending"
-								: "Payment Data"
-						}">
-						<i class="bx bx-wallet"></i>
-				   </a>`
-				: ""
-		}
+
 
 	</div>
 </td>
@@ -1242,27 +1221,7 @@ $(document).ready(function () {
 		<i class="bx bx-trash"></i>
 	</a>
 
-	${
-		hasBuyer
-			? `<a href="${site_url}plots/buyer_details/${buyerId}"
-				  class="btn-action btn-action-view">
-					<i class="bx bx-user-pin"></i>
-			   </a>`
-			: ""
-	}
-	${
-		hasBuyer
-			? `<a href="${site_url}payment_data/${buyerId}"
-				  class="btn-action btn-action-view"
-				  title="${
-						pendingInstallmentRequests > 0
-							? pendingInstallmentRequests + " installment request(s) pending"
-							: "Payment Data"
-					}">
-					<i class="bx bx-wallet"></i>
-			   </a>`
-			: ""
-	}
+
 
 </div>
 
@@ -1690,13 +1649,11 @@ $(document).ready(function () {
 								: `<img src="${site_url}assets/images/default-user.png" width="40" height="40" class="rounded-circle">`;
 
 							rows += `
-                <tr data-status="${userStatus}"
+                <tr data-id="${user.id}"
+                    data-status="${userStatus}"
                     data-name="${user.name || "-"}"
                     data-email="${user.email || "-"}"
                     data-mobile="${user.mobile || "-"}"
-                    data-salary="${formatMoney(user.actual_salary)}"
-                    data-upad="${formatMoney(user.total_upad)}"
-                    data-payable="${formatMoney(user.payable_salary)}"
                     data-image="${user.profile_image ? site_url + user.profile_image : ""}">
                   <td>${(page - 1) * 10 + i + 1}</td>
                   <td>${user.name || "-"}</td>
@@ -1704,14 +1661,10 @@ $(document).ready(function () {
                   <td>${user.email || "-"}</td>
                   <td>${profileImage}</td>
                   <td>${statusBadge}</td>
-                  <td>${user.actual_salary_text || "-"}</td>
-                  <td>${formatMoney(user.total_upad)}</td>
-                  <td>${formatMoney(user.payable_salary)}</td>
                   <td class="text-center">
                     <div class="usr-actions">
                       <button class="usr-action-btn usr-action-btn--view viewUserDetail" title="View Profile"><i class="bx bx-show"></i></button>
                       <a href="${site_url}user/edit_user/${user.id}" class="usr-action-btn usr-action-btn--edit" title="Edit"><i class="bx bxs-edit"></i></a>
-                      <a href="${site_url}user/view_upad/${user.id}" class="usr-action-btn usr-action-btn--salary" title="UPAD History"><i class="bx bx-wallet"></i></a>
                       <a href="javascript:;" class="usr-action-btn usr-action-btn--delete deleteUser" data-id="${user.id}" title="Delete"><i class="bx bxs-trash"></i></a>
                     </div>
                   </td>
@@ -1913,10 +1866,11 @@ $(document).ready(function () {
 	}
 
 	function loadUpad() {
+		const month_year = $("#upadMonthPicker").val() || "";
 		$.ajax({
 			url: site_url + "user/get_user_upads",
 			type: "POST",
-			data: { user_id },
+			data: { user_id, month_year },
 			success: function (res) {
 				let response = typeof res === "string" ? JSON.parse(res) : res;
 				allData = Array.isArray(response.data) ? response.data : [];
@@ -2058,6 +2012,24 @@ $(document).ready(function () {
 
 		currentPage = 1;
 		renderTable();
+	});
+
+	function setDefaultCurrentMonth() {
+		const $month = $("#upadMonthPicker");
+		if ($month.length === 0) return;
+		if ($month.val()) return;
+
+		const now = new Date();
+		const yyyy = now.getFullYear();
+		const mm = String(now.getMonth() + 1).padStart(2, "0");
+		$month.val(`${yyyy}-${mm}`);
+	}
+
+	setDefaultCurrentMonth();
+
+	$("#upadMonthPicker").on("change", function () {
+		currentPage = 1;
+		loadUpad();
 	});
 
 	// Initial Load

@@ -40,10 +40,11 @@
 							<select class="form-select enq-filter-select" id="filterStatus">
 								<option value="">All Status</option>
 								<option value="pending">Pending</option>
-								<option value="contacted">Contacted</option>
-								<option value="qualified">Qualified</option>
+								<option value="follow-up">Follow-up</option>
+								<!-- <option value="contacted">Contacted</option>
+								<option value="qualified">Qualified</option> -->
 								<option value="converted">Converted</option>
-								<option value="closed">Closed</option>
+								<option value="closed">Lost</option>
 							</select>
 							<input type="month" class="form-control enq-filter-select" id="filterMonth">
 							<!-- <button type="button" class="btn btn-outline-primary enq-show-all-btn d-none"
@@ -70,11 +71,7 @@
 										<i class="bx bx-building-house"></i> Site
 									</div>
 								</th>
-								<th>
-									<div class="enq-th-content">
-										<i class="bx bx-grid-alt"></i> Plot
-									</div>
-								</th>
+
 								<th>
 									<div class="enq-th-content">
 										<i class="bx bx-user-check"></i> Customer
@@ -156,12 +153,7 @@
 								<option value="">Select Site</option>
 							</select>
 						</div>
-						<div class="col-12">
-							<label class="form-label">Plot <span class="text-danger">*</span></label>
-							<select class="form-select" id="addPlotId" name="plot_id" disabled>
-								<option value="">Select Plot</option>
-							</select>
-						</div>
+
 						<div class="col-12">
 							<label class="form-label">Customer Name <span class="text-danger">*</span></label>
 							<input type="text" class="form-control" name="customer_name" required>
@@ -179,10 +171,28 @@
 							<label class="form-label">Status <span class="text-danger">*</span></label>
 							<select class="form-select" name="status" required>
 								<option value="pending" selected>Pending</option>
-
+								<option value="follow-up">Follow-up</option>
 								<option value="converted">Converted</option>
 								<option value="closed">Lost</option>
 							</select>
+						</div>
+						<div class="col-12 d-none" id="addFollowUpFields">
+							<div class="card p-3 bg-light border-0" style="border-radius: 8px;">
+								<div class="row g-2">
+									<div class="col-6">
+										<label class="form-label small fw-bold">Follow-up Date <span class="text-danger">*</span></label>
+										<input type="date" class="form-control form-control-sm" name="follow_up_date">
+									</div>
+									<div class="col-6">
+										<label class="form-label small fw-bold">Follow-up Time <span class="text-danger">*</span></label>
+										<input type="time" class="form-control form-control-sm" name="follow_up_time">
+									</div>
+									<div class="col-12">
+										<label class="form-label small fw-bold">Follow-up Remarks</label>
+										<textarea class="form-control form-control-sm" name="follow_up_remarks" rows="2" placeholder="Enter follow-up remarks..."></textarea>
+									</div>
+								</div>
+							</div>
 						</div>
 						<div class="col-12">
 							<label class="form-label">Notes</label>
@@ -221,12 +231,7 @@
 								<option value="">Select Site</option>
 							</select>
 						</div>
-						<div class="col-12">
-							<label class="form-label">Plot <span class="text-danger">*</span></label>
-							<select class="form-select" id="editPlotId" name="plot_id">
-								<option value="">Select Plot</option>
-							</select>
-						</div>
+
 						<div class="col-12">
 							<label class="form-label">Customer Name <span class="text-danger">*</span></label>
 							<input type="text" class="form-control" id="editCustomerName" name="customer_name" required>
@@ -243,11 +248,30 @@
 							<label class="form-label">Status <span class="text-danger">*</span></label>
 							<select class="form-select" id="editStatus" name="status" required>
 								<option value="pending">Pending</option>
-								<option value="contacted">Contacted</option>
-								<option value="qualified">Qualified</option>
+								<option value="follow-up">Follow-up</option>
+								<!-- <option value="contacted">Contacted</option>
+								<option value="qualified">Qualified</option> -->
 								<option value="converted">Converted</option>
-								<option value="closed">Closed</option>
+								<option value="closed">Lost</option>
 							</select>
+						</div>
+						<div class="col-12 d-none" id="editFollowUpFields">
+							<div class="card p-3 bg-light border-0" style="border-radius: 8px;">
+								<div class="row g-2">
+									<div class="col-6">
+										<label class="form-label small fw-bold">Follow-up Date <span class="text-danger">*</span></label>
+										<input type="date" class="form-control form-control-sm" id="editFollowUpDate" name="follow_up_date">
+									</div>
+									<div class="col-6">
+										<label class="form-label small fw-bold">Follow-up Time <span class="text-danger">*</span></label>
+										<input type="time" class="form-control form-control-sm" id="editFollowUpTime" name="follow_up_time">
+									</div>
+									<div class="col-12">
+										<label class="form-label small fw-bold">Follow-up Remarks</label>
+										<textarea class="form-control form-control-sm" id="editFollowUpRemarks" name="follow_up_remarks" rows="2" placeholder="Enter follow-up remarks..."></textarea>
+									</div>
+								</div>
+							</div>
 						</div>
 						<div class="col-12">
 							<label class="form-label">Notes</label>
@@ -309,9 +333,7 @@
 			this.$addForm = $('#addInquiryForm');
 			this.$editForm = $('#editInquiryForm');
 			this.$addSiteId = $('#addSiteId');
-			this.$addPlotId = $('#addPlotId');
 			this.$editSiteId = $('#editSiteId');
-			this.$editPlotId = $('#editPlotId');
 			this.$editInquiryId = $('#editInquiryId');
 		},
 
@@ -337,17 +359,9 @@
 				dropdownParent: $('#addInquiryModal'),
 				placeholder: 'Search & select site'
 			}));
-			this.$addPlotId.select2($.extend({}, baseOpts, {
-				dropdownParent: $('#addInquiryModal'),
-				placeholder: 'Search & select plot'
-			}));
 			this.$editSiteId.select2($.extend({}, baseOpts, {
 				dropdownParent: $('#editInquiryModal'),
 				placeholder: 'Search & select site'
-			}));
-			this.$editPlotId.select2($.extend({}, baseOpts, {
-				dropdownParent: $('#editInquiryModal'),
-				placeholder: 'Search & select plot'
 			}));
 		},
 
@@ -389,28 +403,54 @@
 				$(this).addClass('d-none');
 			});
 
-			// Add modal - Site change
-			this.$addSiteId.on('change', function() {
-				const siteId = $(this).val();
-				if (siteId) {
-					self.loadPlotsForSite(siteId, self.$addPlotId);
-					self.$addPlotId.prop('disabled', false).trigger('change.select2');
-				} else {
-					self.$addPlotId.html('<option value="">Select Plot</option>').prop('disabled', true).trigger('change.select2');
-				}
-			});
 
-			// Edit modal - Site change
-			this.$editSiteId.on('change', function() {
-				const siteId = $(this).val();
-				if (siteId) {
-					self.loadPlotsForSite(siteId, self.$editPlotId);
-				}
-			});
 
 			// Form submissions
 			this.$addForm.on('submit', (e) => this.handleAddInquiry(e));
 			this.$editForm.on('submit', (e) => this.handleEditInquiry(e));
+
+			// Toggle follow-up fields in add modal
+			this.$addForm.find('select[name="status"]').on('change', function() {
+				const isFollowUp = $(this).val() === 'follow-up';
+				if (isFollowUp) {
+					$('#addFollowUpFields').removeClass('d-none');
+					$('#addFollowUpFields input[name="follow_up_date"], #addFollowUpFields input[name="follow_up_time"]').prop('required', true);
+				} else {
+					$('#addFollowUpFields').addClass('d-none');
+					$('#addFollowUpFields input[name="follow_up_date"], #addFollowUpFields input[name="follow_up_time"]').prop('required', false).val('');
+					$('#addFollowUpFields textarea[name="follow_up_remarks"]').val('');
+				}
+			});
+
+			// Toggle follow-up fields in edit modal
+			this.$editForm.find('select[name="status"]').on('change', function() {
+				const isFollowUp = $(this).val() === 'follow-up';
+				if (isFollowUp) {
+					$('#editFollowUpFields').removeClass('d-none');
+					$('#editFollowUpFields input[name="follow_up_date"], #editFollowUpFields input[name="follow_up_time"]').prop('required', true);
+				} else {
+					$('#editFollowUpFields').addClass('d-none');
+					$('#editFollowUpFields input[name="follow_up_date"], #editFollowUpFields input[name="follow_up_time"]').prop('required', false).val('');
+					$('#editFollowUpFields textarea[name="follow_up_remarks"]').val('');
+				}
+			});
+
+			// Reset forms when modals are closed
+			$('#addInquiryModal').on('hidden.bs.modal', function() {
+				self.$addForm[0].reset();
+				self.$addSiteId.val('').trigger('change');
+				$('#addFollowUpFields').addClass('d-none');
+				$('#addFollowUpFields input[name="follow_up_date"], #addFollowUpFields input[name="follow_up_time"]').prop('required', false).val('');
+				$('#addFollowUpFields textarea[name="follow_up_remarks"]').val('');
+			});
+
+			$('#editInquiryModal').on('hidden.bs.modal', function() {
+				self.$editForm[0].reset();
+				self.$editSiteId.val('').trigger('change');
+				$('#editFollowUpFields').addClass('d-none');
+				$('#editFollowUpFields input[name="follow_up_date"], #editFollowUpFields input[name="follow_up_time"]').prop('required', false).val('');
+				$('#editFollowUpFields textarea[name="follow_up_remarks"]').val('');
+			});
 
 			// Detail modal (Event delegation)
 			$(document).on('click', '.viewEnquiryDetail', (e) => this.showDetailModal(e));
@@ -460,7 +500,8 @@
 			data.forEach((item, index) => {
 				const serialNo = ((this.currentPage - 1) * 10) + index + 1;
 				const statusBadge = this.getStatusBadge(item.status);
-				const initial = (item.customer_name || '?').trim().charAt(0).toUpperCase();
+				const userName = item.user_name || 'Admin';
+				const initial = userName.trim().charAt(0).toUpperCase();
 				const dateObj = item.created_at ? new Date(item.created_at) : null;
 				const dateDay = dateObj ? dateObj.toLocaleDateString('en-IN', {
 					day: '2-digit',
@@ -478,7 +519,7 @@
                 <td>
                     <div class="enq-user-cell">
                         <div class="enq-user-avatar">${initial}</div>
-                        <span class="enq-user-name">${item.user_name || '-'}</span>
+                        <span class="enq-user-name">${userName}</span>
                     </div>
                 </td>
                 <td>
@@ -487,7 +528,7 @@
                         <span class="enq-site-name">${item.name || '-'}</span>
                     </div>
                 </td>
-                <td><span class="enq-plot-badge">${item.plot_number || '-'}</span></td>
+
                 <td><span class="enq-customer-name">${item.customer_name || '-'}</span></td>
                 <td>
                     <span class="enq-mobile">
@@ -506,7 +547,7 @@
                 <td>
                     <div class="enq-actions">
                         <button class="enq-action-btn enq-action-btn--view viewEnquiryDetail" data-inquiry-id="${item.id}" title="View Details">
-                            <i class="bx bx-eye"></i>
+                            <i class="bx bx-show"></i>
                         </button>
                         <a href="tel:${item.mobile}" class="enq-action-btn enq-action-btn--call" title="Call">
                             <i class="bx bx-phone"></i>
@@ -533,10 +574,11 @@
 		getStatusBadge: function(status) {
 			const badges = {
 				'pending': '<span class="badge bg-warning">Pending</span>',
-				'contacted': '<span class="badge bg-info">Contacted</span>',
-				'qualified': '<span class="badge bg-primary">Qualified</span>',
+				'follow-up': '<span class="badge" style="background-color: #8b5cf6; color: white;"><i class="bx bx-time-five me-1"></i>Follow-up</span>',
+				// 'contacted': '<span class="badge bg-info">Contacted</span>',
+				// 'qualified': '<span class="badge bg-primary">Qualified</span>',
 				'converted': '<span class="badge bg-success">Converted</span>',
-				'closed': '<span class="badge bg-secondary">Closed</span>'
+				'closed': '<span class="badge bg-secondary">Lost</span>'
 			};
 			return badges[status] || '<span class="badge bg-secondary">Unknown</span>';
 		},
@@ -589,13 +631,26 @@
 		// Populate edit form
 		populateEditForm: function(inquiry) {
 			this.$editInquiryId.val(inquiry.id);
-			this.$editSiteId.val(inquiry.site_id);
-			this.loadPlotsForSite(inquiry.site_id, this.$editPlotId, inquiry.plot_id);
+			this.$editSiteId.val(inquiry.site_id).trigger('change');
 			$('#editCustomerName').val(inquiry.customer_name);
 			$('#editMobile').val(inquiry.mobile);
 			$('#editAddress').val(inquiry.address);
 			$('#editStatus').val(inquiry.status);
 			$('#editNote').val(inquiry.note);
+
+			if (inquiry.status === 'follow-up') {
+				$('#editFollowUpFields').removeClass('d-none');
+				$('#editFollowUpDate').val(inquiry.follow_up_date || '');
+				$('#editFollowUpTime').val(inquiry.follow_up_time || '');
+				$('#editFollowUpRemarks').val(inquiry.follow_up_remarks || '');
+				$('#editFollowUpFields input[name="follow_up_date"], #editFollowUpFields input[name="follow_up_time"]').prop('required', true);
+			} else {
+				$('#editFollowUpFields').addClass('d-none');
+				$('#editFollowUpDate').val('');
+				$('#editFollowUpTime').val('');
+				$('#editFollowUpRemarks').val('');
+				$('#editFollowUpFields input[name="follow_up_date"], #editFollowUpFields input[name="follow_up_time"]').prop('required', false);
+			}
 		},
 
 		// Handle add inquiry form
@@ -603,16 +658,11 @@
 			e.preventDefault();
 
 			const siteId = this.$addSiteId.val();
-			const plotId = this.$addPlotId.val();
 			const customerName = this.$addForm.find('input[name="customer_name"]').val().trim();
 			const mobile = this.$addForm.find('input[name="mobile"]').val();
 
 			if (!siteId) {
 				this.showToast('Error', 'Please select a site', 'error');
-				return;
-			}
-			if (!plotId) {
-				this.showToast('Error', 'Please select a plot', 'error');
 				return;
 			}
 			if (!customerName) {
@@ -634,7 +684,7 @@
 						this.showToast('Success', response.message, 'success');
 						bootstrap.Modal.getInstance(document.getElementById('addInquiryModal')).hide();
 						this.$addForm[0].reset();
-						this.$addPlotId.html('<option value="">Select Plot</option>').prop('disabled', true).trigger('change.select2');
+						this.$addSiteId.val('').trigger('change');
 						this.currentPage = 1;
 						this.loadInquiries();
 					} else {
@@ -821,10 +871,6 @@
 							<div class="enq-detail-value">${inquiry.name || '-'}</div>
 						</div>
 						<div>
-							<div class="enq-detail-label">Plot Number</div>
-							<div class="enq-detail-value">${inquiry.plot_number || '-'}</div>
-						</div>
-						<div>
 							<div class="enq-detail-label">Enquiry Date</div>
 							<div class="enq-detail-value">${this.formatDate(inquiry.created_at)}</div>
 						</div>
@@ -855,6 +901,24 @@
 						</div>
 					</div>
 				</div>
+				${inquiry.status === 'follow-up' ? `
+				<div class="enq-detail-card" style="border-left: 4px solid #8b5cf6;">
+					<h6 style="color:#8b5cf6;"><i class="bx bx-time-five me-2"></i>Follow-up Details</h6>
+					<div class="enq-detail-grid">
+						<div>
+							<div class="enq-detail-label">Follow-up Date & Time</div>
+							<div class="enq-detail-value">
+								<strong>${this.formatDate(inquiry.follow_up_date)}</strong>
+								${inquiry.follow_up_time ? ` at <strong>${inquiry.follow_up_time}</strong>` : ''}
+							</div>
+						</div>
+						<div>
+							<div class="enq-detail-label">Follow-up Remarks</div>
+							<div class="enq-detail-value" style="word-break: break-word; white-space: pre-wrap;">${inquiry.follow_up_remarks || '-'}</div>
+						</div>
+					</div>
+				</div>
+				` : ''}
 				<div class="enq-detail-card">
 					<h6><i class="bx bx-note me-2"></i>Notes</h6>
 					<p style="color:#374151;font-size:14px;line-height:1.6;margin:0;word-break:break-word;">${inquiry.note || 'No notes'}</p>

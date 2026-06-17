@@ -91,6 +91,9 @@ $route['plots/download_sample_format'] = 'plots/download_sample_format';
 $route['users'] = 'user';
 $route['add_user'] = 'user/add_user';
 $route['add_upad'] = 'user/add_upad';
+$route['add_upad/(:num)'] = 'user/add_upad/$1';
+$route['salary'] = 'user/salary';
+$route['buyers'] = 'user/buyers';
 
 $route['edit_user/(:num)'] = 'user/edit_user/$1';
 $route['payment_data/(:num)'] = 'plots/payment_data/$1';
@@ -100,6 +103,10 @@ $route['payment_data/(:num)'] = 'plots/payment_data/$1';
 $route['superadmin'] = 'superadmin/admins';
 $route['superadmin/dashboard'] = 'dashboard/index';
 $route['superadmin/admins'] = 'superadmin/admins';
+$route['superadmin/plans'] = 'superadmin/plans';
+$route['superadmin/add_plan'] = 'superadmin/add_plan';
+$route['superadmin/edit_plan'] = 'superadmin/edit_plan';
+$route['superadmin/delete_plan/(:num)'] = 'superadmin/delete_plan/$1';
 $route['superadmin/sites'] = 'superadmin/sites';
 $route['superadmin/profile'] = 'profile/index';
 $route['superadmin/admin_sites'] = 'superadmin/admin_sites';
@@ -110,6 +117,10 @@ $route['superadmin/get_admin_detail/(:num)'] = 'superadmin/get_admin_detail/$1';
 $route['superadmin/get_admin_sites/(:num)'] = 'superadmin/get_admin_sites/$1';
 $route['superadmin/get_admin_plots/(:num)'] = 'superadmin/get_admin_plots/$1';
 $route['superadmin/get_all_sites'] = 'superadmin/get_all_sites';
+
+// Admin Plans Routes
+$route['dashboard/plans'] = 'dashboard/plans';
+$route['dashboard/verify_payment'] = 'dashboard/verify_payment';
 $route['superadmin/get_site_detail/(:num)'] = 'superadmin/get_site_detail/$1';
 $route['superadmin/upload_site_map'] = 'superadmin/upload_site_map';
 $route['superadmin/site_images_pending'] = 'superadmin/site_images_pending';

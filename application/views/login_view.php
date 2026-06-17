@@ -318,8 +318,11 @@
             </aside>
 
             <section class="form-zone">
-                <div class="brand-logo-wrap">
-                    <img src="<?= base_url('assets/images/main_logo.png') ?>" class="brand-logo" alt="Main Logo">
+                <div class="brand-logo-wrap d-flex align-items-center gap-2 justify-content-center mb-3">
+                    <div class="p-2 rounded-3 text-white" style="background: linear-gradient(135deg, #6366f1, #4f46e5); display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;">
+                        <i class="bx bx-buildings fs-3"></i>
+                    </div>
+                    <span class="fw-bold fs-3" style="color: #0f172a; font-family: 'Poppins', sans-serif;">SiteDesk</span>
                 </div>
                 <h2 class="title">Welcome Back</h2>
                 <p class="subtitle">Enter your mobile number to receive an OTP.</p>

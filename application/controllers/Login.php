@@ -150,6 +150,7 @@ class Login extends CI_Controller
             'user_id'       => $user->id,
             'user_name'     => $user->name,
             'business_name' => $user->business_name,
+            'mobile'        => $user->mobile,
             'profile_image' => $user->profile_image ?? null,
             'role'          => $user->role ?? 'admin',
             'logged_in'     => TRUE
@@ -259,10 +260,26 @@ class Login extends CI_Controller
         $this->db->insert('user_master', $form_data);
         $user_id = $this->db->insert_id();
 
+        // Start 1 Month Free Trial immediately
+        $free_plan = $this->db->where('price', 0)->where('isActive', 1)->get('plans')->row();
+        if ($free_plan) {
+            $this->db->insert('user_subscriptions', [
+                'user_id' => $user_id,
+                'plan_id' => $free_plan->id,
+                'plan_name' => $free_plan->name,
+                'price' => $free_plan->price,
+                'start_date' => date('Y-m-d'),
+                'end_date' => date('Y-m-d', strtotime('+' . $free_plan->duration_days . ' days')),
+                'payment_status' => 'success',
+                'created_at' => date('Y-m-d H:i:s')
+            ]);
+        }
+
         $adminSession = [
             'user_id'       => $user_id,
             'user_name'     => $form_data['name'],
             'business_name' => $form_data['business_name'],
+            'mobile'        => $form_data['mobile'],
             'role'          => 'admin',
             'logged_in'     => TRUE
         ];
@@ -354,79 +371,79 @@ class Login extends CI_Controller
     }
 
     // ─── PRIVATE: Send OTP via SMS ──────────────────────────────────
-    public function _send_otp_via_sms($mobileNo, $otp)
-    {
+    // public function _send_otp_via_sms($mobileNo, $otp)
+    // {
 
-        $message = "Hi $mobileNo\n\nYour Verification OTP is $otp Do not share this OTP with anyone for security reasons.\n\nRegards\nOMKARENT";
-
-
-
-        $params = [
-
-            'user' => 'Fitcketsp',
-
-            'key' => '81a6b2f99cXX',
-
-            'mobile' => '91' . $mobileNo,
-
-            'message' => $message,
-
-            'senderid' => 'OENTER',
-
-            'accusage' => '1',
-
-            'entityid' => '1401487200000053882',
-
-            'tempid' => '1407168611506367587'
-
-        ];
+    //     $message = "Hi $mobileNo\n\nYour Verification OTP is $otp Do not share this OTP with anyone for security reasons.\n\nRegards\nOMKARENT";
 
 
 
-        $url = 'http://mobicomm.dove-sms.com/submitsms.jsp?' . http_build_query($params);
+    //     $params = [
+
+    //         'user' => 'Fitcketsp',
+
+    //         'key' => '81a6b2f99cXX',
+
+    //         'mobile' => '91' . $mobileNo,
+
+    //         'message' => $message,
+
+    //         'senderid' => 'OENTER',
+
+    //         'accusage' => '1',
+
+    //         'entityid' => '1401487200000053882',
+
+    //         'tempid' => '1407168611506367587'
+
+    //     ];
 
 
 
-        /* ------------------------------------------------------------------
-         * TESTING MODE: actual SMS sending is disabled.
-         * The OTP is still generated/stored as '000000' (see callers above),
-         * so login/register/resend flows work without hitting the SMS
-         * gateway or needing access to the real phone for every account.
-         *
-         * Uncomment this block to re-enable real SMS sending in production.
-         * ------------------------------------------------------------------
-
-        $ch = curl_init();
-
-        curl_setopt($ch, CURLOPT_URL, $url);
-
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-
-        $response = curl_exec($ch);
+    //     $url = 'http://mobicomm.dove-sms.com/submitsms.jsp?' . http_build_query($params);
 
 
 
-        if (curl_errno($ch)) {
+    //     /* ------------------------------------------------------------------
+    //      * TESTING MODE: actual SMS sending is disabled.
+    //      * The OTP is still generated/stored as '000000' (see callers above),
+    //      * so login/register/resend flows work without hitting the SMS
+    //      * gateway or needing access to the real phone for every account.
+    //      *
+    //      * Uncomment this block to re-enable real SMS sending in production.
+    //      * ------------------------------------------------------------------
 
-            log_message('error', 'OTP SMS cURL Error: ' . curl_error($ch));
+    //     $ch = curl_init();
 
-            curl_close($ch);
+    //     curl_setopt($ch, CURLOPT_URL, $url);
 
-            return false;
-        }
+    //     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+
+    //     $response = curl_exec($ch);
 
 
 
-        curl_close($ch);
+    //     if (curl_errno($ch)) {
 
-        log_message('info', "OTP sent to $mobileNo. Response: $response");
+    //         log_message('error', 'OTP SMS cURL Error: ' . curl_error($ch));
 
-        return $response;
+    //         curl_close($ch);
 
-        */
+    //         return false;
+    //     }
 
-        log_message('info', "TESTING MODE: OTP SMS sending skipped for $mobileNo (OTP: $otp)");
 
-        return true;
-    }
+
+    //     curl_close($ch);
+
+    //     log_message('info', "OTP sent to $mobileNo. Response: $response");
+
+    //     return $response;
+
+    //     */
+
+    //     log_message('info', "TESTING MODE: OTP SMS sending skipped for $mobileNo (OTP: $otp)");
+
+    //     return true;
+    // }
 }

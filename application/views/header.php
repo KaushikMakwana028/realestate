@@ -1546,8 +1546,11 @@
 	<aside class="sidebar" id="sidebar">
 
 		<div class="sidebar-header">
-			<a href="<?= base_url('dashboard') ?>" class="logo">
-				<img src="<?= base_url('assets/images/main_logo.png') ?>" alt="Logo" class="sidebar-logo-img">
+			<a href="<?= base_url('dashboard') ?>" class="logo d-flex align-items-center gap-2 text-decoration-none">
+				<div class="p-2 rounded-3 text-white" style="background: linear-gradient(135deg, #6366f1, #4f46e5); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px;">
+					<i class="bx bx-buildings fs-5"></i>
+				</div>
+				<span class="fw-bold fs-4 logo-text-styled" style="color: var(--text-primary); font-family: 'Poppins', sans-serif;">SiteDesk</span>
 			</a>
 			<button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
 				<i data-lucide="panel-left-close"></i>
@@ -1611,10 +1614,26 @@
 				</div>
 
 				<!-- Users -->
-				<div class="nav-item <?= ($currentClass === 'user') ? 'active' : '' ?>">
+				<div class="nav-item <?= ($currentClass === 'user' && !in_array($currentMethod, ['salary', 'buyers'])) ? 'active' : '' ?>">
 					<a href="<?= base_url('users') ?>" class="nav-link">
 						<i data-lucide="users-round"></i>
 						<span class="nav-label">User</span>
+					</a>
+				</div>
+
+				<!-- Salary -->
+				<div class="nav-item <?= ($currentClass === 'user' && $currentMethod === 'salary') ? 'active' : '' ?>">
+					<a href="<?= base_url('salary') ?>" class="nav-link">
+						<i data-lucide="banknote"></i>
+						<span class="nav-label">Salary</span>
+					</a>
+				</div>
+
+				<!-- Buyers -->
+				<div class="nav-item <?= ($currentClass === 'user' && $currentMethod === 'buyers') ? 'active' : '' ?>">
+					<a href="<?= base_url('buyers') ?>" class="nav-link">
+						<i data-lucide="users"></i>
+						<span class="nav-label">Buyers</span>
 					</a>
 				</div>
 
@@ -1631,6 +1650,14 @@
 					<a href="<?= base_url('attedance') ?>" class="nav-link">
 						<i data-lucide="calendar-check"></i>
 						<span class="nav-label">Attendance</span>
+					</a>
+				</div>
+
+				<!-- My Plan -->
+				<div class="nav-item <?= ($currentClass === 'dashboard' && $currentMethod === 'plans') ? 'active' : '' ?>">
+					<a href="<?= base_url('dashboard/plans') ?>" class="nav-link">
+						<i data-lucide="credit-card"></i>
+						<span class="nav-label">My Plan</span>
 					</a>
 				</div>
 
@@ -1653,6 +1680,21 @@
 
 	<!-- ==================== MAIN CONTENT ==================== -->
 	<main class="main-content" id="mainContent">
+
+		<?php
+		$days_left = $this->session->userdata('subscription_days_left');
+		$role = $this->session->userdata('admin')['role'] ?? 'admin';
+		if ($role !== 'superadmin' && $days_left !== NULL && $days_left <= 7):
+		?>
+			<div class="renewal-marquee-banner" style="background: #eab308; color: #ffffff; font-weight: 700; font-size: 14px; padding: 12px 16px; border-bottom: 1px solid rgba(0,0,0,0.05); overflow: hidden; z-index: 1001; position: relative;">
+				<marquee behavior="scroll" direction="left" scrollamount="6">
+					<span style="display: inline-flex; align-items: center; gap: 8px;">
+						⚠️ Only <?= $days_left; ?> days left ! Please purchase a plan to continue using your dashboard without interruption.
+						<a href="<?= base_url('dashboard/plans'); ?>" style="background: #ffffff; color: #eab308; padding: 2px 12px; border-radius: 6px; font-size: 12px; font-weight: 800; text-decoration: none; margin-left: 15px; border: 1px solid #ffffff; transition: all 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">BUY PLAN</a>
+					</span>
+				</marquee>
+			</div>
+		<?php endif; ?>
 
 		<!-- TOPBAR -->
 		<header class="topbar">

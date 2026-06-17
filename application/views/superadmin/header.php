@@ -176,8 +176,11 @@
 						?>
 					</h4> -->
 
-					<div class="sidebar-brand-img">
-						<img src="<?= base_url('assets/images/main_logo.png') ?>" alt="Main Logo">
+					<div class="sidebar-brand-img d-flex align-items-center gap-2">
+						<div class="p-2 rounded-3 text-white" style="background: linear-gradient(135deg, #6366f1, #4f46e5); display: flex; align-items: center; justify-content: center; width: 36px; height: 36px; margin-right: 8px;">
+							<i class="bx bx-buildings fs-5"></i>
+						</div>
+						<span class="fw-bold fs-4" style="font-family: 'Poppins', sans-serif;">SiteDesk</span>
 					</div>
 
 				</div>
@@ -210,6 +213,12 @@
 						<a href="<?= base_url('superadmin/sites'); ?>" class="">
 							<div class="parent-icon"><i class='bx bx-globe'></i></div>
 							<div class="menu-title">Sites</div>
+						</a>
+					</li>
+					<li>
+						<a href="<?= base_url('superadmin/plans'); ?>" class="">
+							<div class="parent-icon"><i class='bx bx-purchase-tag-alt'></i></div>
+							<div class="menu-title">Subscription Plans</div>
 						</a>
 					</li>
 				<?php else: ?>

@@ -202,21 +202,21 @@ $p_notes = isset($payment_details->notes) ? htmlspecialchars($payment_details->n
                     <!-- Row 2: Email & Aadhar -->
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label for="modalBuyerEmail" class="form-label fw-bold">Email Address <span class="text-danger">*</span></label>
-                            <input type="email" id="modalBuyerEmail" class="form-control" required placeholder="Enter email address" value="<?= $b_email; ?>">
+                            <label for="modalBuyerEmail" class="form-label fw-bold">Email Address</label>
+                            <input type="email" id="modalBuyerEmail" class="form-control" placeholder="Enter email address" value="<?= $b_email; ?>">
                             <div class="invalid-feedback">Please enter a valid email.</div>
                         </div>
                         <div class="col-md-6">
-                            <label for="modalBuyerAadhar" class="form-label fw-bold">Aadhar Number <span class="text-danger">*</span></label>
-                            <input type="text" id="modalBuyerAadhar" class="form-control" required placeholder="Enter 12-digit Aadhar number" pattern="[0-9]{12}" value="<?= $b_aadhar; ?>">
+                            <label for="modalBuyerAadhar" class="form-label fw-bold">Aadhar Number</label>
+                            <input type="text" id="modalBuyerAadhar" class="form-control" placeholder="Enter 12-digit Aadhar number" pattern="[0-9]{12}" value="<?= $b_aadhar; ?>">
                             <div class="invalid-feedback">Please enter a valid 12-digit Aadhar number.</div>
                         </div>
                     </div>
 
                     <!-- Row 3: Address -->
                     <div class="mb-3">
-                        <label for="modalBuyerAddress" class="form-label fw-bold">Address <span class="text-danger">*</span></label>
-                        <textarea id="modalBuyerAddress" class="form-control" rows="2" required placeholder="Enter full address"><?= $b_address; ?></textarea>
+                        <label for="modalBuyerAddress" class="form-label fw-bold">Address</label>
+                        <textarea id="modalBuyerAddress" class="form-control" rows="2" placeholder="Enter full address"><?= $b_address; ?></textarea>
                         <div class="invalid-feedback">Please enter the address.</div>
                     </div>
 
@@ -259,8 +259,8 @@ $p_notes = isset($payment_details->notes) ? htmlspecialchars($payment_details->n
                             <div class="invalid-feedback">Please enter a valid price.</div>
                         </div>
                         <div class="col-md-4">
-                            <label for="modalDownPayment" class="form-label fw-bold">Down Payment <span class="text-danger">*</span></label>
-                            <input type="number" id="modalDownPayment" class="form-control" required min="0" value="<?= $p_down; ?>">
+                            <label for="modalDownPayment" class="form-label fw-bold">Down Payment</label>
+                            <input type="number" id="modalDownPayment" class="form-control" min="0" value="<?= $p_down; ?>">
                             <div class="invalid-feedback">Please enter a valid down payment.</div>
                         </div>
                         <div class="col-md-4">

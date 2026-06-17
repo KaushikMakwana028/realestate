@@ -447,18 +447,27 @@ public function add_inquiry_web()
     $user_id = $this->session->userdata('user_id'); // Current logged-in user
     
     $site_id = (int)$this->input->post('site_id');
-    $plot_id = (int)$this->input->post('plot_id');
     $customer_name = trim($this->input->post('customer_name'));
     $mobile = trim($this->input->post('mobile'));
     $address = trim($this->input->post('address'));
     $note = trim($this->input->post('note'));
     $status = trim($this->input->post('status')) ?: 'pending';
     
+    $follow_up_date = null;
+    $follow_up_time = null;
+    $follow_up_remarks = null;
+
+    if ($status === 'follow-up') {
+        $follow_up_date = $this->input->post('follow_up_date') ? trim($this->input->post('follow_up_date')) : null;
+        $follow_up_time = $this->input->post('follow_up_time') ? trim($this->input->post('follow_up_time')) : null;
+        $follow_up_remarks = $this->input->post('follow_up_remarks') ? trim($this->input->post('follow_up_remarks')) : null;
+    }
+    
     // Validation
-    if (empty($site_id) || empty($plot_id) || empty($customer_name) || empty($mobile)) {
+    if (empty($site_id) || empty($customer_name) || empty($mobile)) {
         echo json_encode([
             'status' => false,
-            'message' => 'Site, plot, customer name, and mobile are required'
+            'message' => 'Site, customer name, and mobile are required'
         ]);
         return;
     }
@@ -472,25 +481,9 @@ public function add_inquiry_web()
         return;
     }
     
-    // Check if plot exists under the same site
-    $plot_exists = $this->db->get_where('plots', [
-        'id' => $plot_id,
-        'site_id' => $site_id,
-        'isActive' => 1
-    ])->row();
-    
-    if (!$plot_exists) {
-        echo json_encode([
-            'status' => false,
-            'message' => 'Invalid plot ID or plot not found under this site'
-        ]);
-        return;
-    }
-    
     // Check duplicate inquiry
     $exists = $this->db->get_where('inquiries', [
         'site_id' => $site_id,
-        'plot_id' => $plot_id,
         'mobile' => $mobile,
         'isActive' => 1
     ])->row();
@@ -498,7 +491,7 @@ public function add_inquiry_web()
     if ($exists) {
         echo json_encode([
             'status' => false,
-            'message' => 'Inquiry for this plot and mobile already exists'
+            'message' => 'Inquiry for this site and mobile already exists'
         ]);
         return;
     }
@@ -508,12 +501,15 @@ public function add_inquiry_web()
         'admin_id' => $admin_id,
         'user_id' => $user_id,
         'site_id' => $site_id,
-        'plot_id' => $plot_id,
+        'plot_id' => 0,
         'customer_name' => $customer_name,
         'mobile' => $mobile,
         'address' => $address,
         'note' => $note,
         'status' => $status,
+        'follow_up_date' => $follow_up_date,
+        'follow_up_time' => $follow_up_time,
+        'follow_up_remarks' => $follow_up_remarks,
         'isActive' => 1,
         'created_at' => date('Y-m-d H:i:s')
     ];
@@ -539,15 +535,24 @@ public function update_inquiry_web()
     $admin_id = $this->admin['user_id'];
     $inquiry_id = (int)$this->input->post('inquiry_id');
     $site_id = (int)$this->input->post('site_id');
-    $plot_id = (int)$this->input->post('plot_id');
     $customer_name = trim($this->input->post('customer_name'));
     $mobile = trim($this->input->post('mobile'));
     $address = trim($this->input->post('address'));
     $note = trim($this->input->post('note'));
     $status = trim($this->input->post('status'));
     
+    $follow_up_date = null;
+    $follow_up_time = null;
+    $follow_up_remarks = null;
+
+    if ($status === 'follow-up') {
+        $follow_up_date = $this->input->post('follow_up_date') ? trim($this->input->post('follow_up_date')) : null;
+        $follow_up_time = $this->input->post('follow_up_time') ? trim($this->input->post('follow_up_time')) : null;
+        $follow_up_remarks = $this->input->post('follow_up_remarks') ? trim($this->input->post('follow_up_remarks')) : null;
+    }
+    
     // Validation
-    if (empty($inquiry_id) || empty($site_id) || empty($plot_id) || empty($customer_name) || empty($mobile)) {
+    if (empty($inquiry_id) || empty($site_id) || empty($customer_name) || empty($mobile)) {
         echo json_encode([
             'status' => false,
             'message' => 'All required fields must be filled'
@@ -572,7 +577,6 @@ public function update_inquiry_web()
     
     // Check duplicate (exclude current inquiry)
     $this->db->where('site_id', $site_id);
-    $this->db->where('plot_id', $plot_id);
     $this->db->where('mobile', $mobile);
     $this->db->where('id !=', $inquiry_id);
     $this->db->where('isActive', 1);
@@ -581,7 +585,7 @@ public function update_inquiry_web()
     if ($exists) {
         echo json_encode([
             'status' => false,
-            'message' => 'Another inquiry with same plot and mobile already exists'
+            'message' => 'Another inquiry with same site and mobile already exists'
         ]);
         return;
     }
@@ -589,13 +593,15 @@ public function update_inquiry_web()
     // Update inquiry
     $data = [
         'site_id' => $site_id,
-        'plot_id' => $plot_id,
+        'plot_id' => 0,
         'customer_name' => $customer_name,
         'mobile' => $mobile,
         'address' => $address,
         'note' => $note,
         'status' => $status,
-        'updated_at' => date('Y-m-d H:i:s')
+        'follow_up_date' => $follow_up_date,
+        'follow_up_time' => $follow_up_time,
+        'follow_up_remarks' => $follow_up_remarks
     ];
     
     $this->db->where('id', $inquiry_id);
@@ -1167,7 +1173,91 @@ public function update_status()
     }
 }
 
+public function plans()
+{
+    $this->config->load('razorpay');
+    $data['plans'] = $this->db->where('isActive', 1)->get('plans')->result();
+    
+    $this->load->view('header');
+    $this->load->view('plans_view', $data);
+    $this->load->view('footer');
+}
 
-}  
+public function verify_payment()
+{
+    $this->config->load('razorpay');
+    $keyId = $this->config->item('razorpay_key_id');
+    $keySecret = $this->config->item('razorpay_key_secret');
 
+    $paymentId = $this->input->post('razorpay_payment_id');
+    $planId = (int)$this->input->post('plan_id');
+
+    if (empty($paymentId) || empty($planId)) {
+        echo json_encode(['status' => false, 'message' => 'Missing parameter values.']);
+        return;
+    }
+
+    // Fetch plan details
+    $plan = $this->db->where(['id' => $planId, 'isActive' => 1])->get('plans')->row();
+    if (!$plan) {
+        echo json_encode(['status' => false, 'message' => 'Plan not found or inactive.']);
+        return;
+    }
+
+    // Verify payment using Razorpay cURL API
+    $url = 'https://api.razorpay.com/v1/payments/' . $paymentId;
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $url);
+    curl_setopt($ch, CURLOPT_USERPWD, $keyId . ':' . $keySecret);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+
+    if ($httpCode === 200) {
+        $paymentData = json_decode($response, true);
+        if (isset($paymentData['status']) && in_array($paymentData['status'], ['captured', 'authorized'])) {
+            // Verify amount match (convert plan price to paise)
+            $expectedAmount = round($plan->price * 100);
+            if (intval($paymentData['amount']) >= $expectedAmount) {
+                
+                // Insert into user_subscriptions
+                $sub_data = [
+                    'user_id' => $this->admin['user_id'],
+                    'plan_id' => $plan->id,
+                    'plan_name' => $plan->name,
+                    'price' => $plan->price,
+                    'start_date' => date('Y-m-d'),
+                    'end_date' => date('Y-m-d', strtotime('+' . $plan->duration_days . ' days')),
+                    'payment_status' => 'success',
+                    'razorpay_payment_id' => $paymentId,
+                    'created_at' => date('Y-m-d H:i:s')
+                ];
+                $this->db->insert('user_subscriptions', $sub_data);
+
+                // Update session
+                $days_left = (int) ceil((strtotime($sub_data['end_date']) - strtotime(date('Y-m-d'))) / 86400);
+                $this->session->set_userdata('subscription_active', true);
+                $this->session->set_userdata('subscription_days_left', $days_left);
+                $this->session->set_userdata('subscription_plan_name', $sub_data['plan_name']);
+                $this->session->set_userdata('subscription_end_date', $sub_data['end_date']);
+
+                echo json_encode(['status' => true, 'message' => 'Subscription active!']);
+                return;
+            } else {
+                echo json_encode(['status' => false, 'message' => 'Incorrect payment amount.']);
+                return;
+            }
+        } else {
+            echo json_encode(['status' => false, 'message' => 'Payment status is: ' . ($paymentData['status'] ?? 'unknown')]);
+            return;
+        }
+    } else {
+        echo json_encode(['status' => false, 'message' => 'Failed to verify payment with Razorpay. Code: ' . $httpCode]);
+        return;
+    }
+}
+
+}
 ?>

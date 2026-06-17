@@ -38,7 +38,7 @@
 
                                         <?php if (!empty($users)) : ?>
                                             <?php foreach ($users as $user) : ?>
-                                                <option value="<?= $user->id; ?>">
+                                                <option value="<?= $user->id; ?>" <?= (isset($selected_user_id) && $selected_user_id == $user->id) ? 'selected' : ''; ?>>
                                                     <?= $user->name; ?>
                                                 </option>
                                             <?php endforeach; ?>
