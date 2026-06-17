@@ -9,9 +9,6 @@ class Site extends My_Controller
     {
 
         parent::__construct();
-
-
-
     }
 
 
@@ -26,7 +23,6 @@ class Site extends My_Controller
         $this->load->view('site_view');
 
         $this->load->view('footer');
-
     }
     public function get_sites()
     {
@@ -46,8 +42,8 @@ class Site extends My_Controller
         // ------------------------------
         // BASE QUERY FOR SITES
         // ------------------------------
-    $this->db->from('sites');
-    $this->db->where('admin_id', $admin_id);
+        $this->db->from('sites');
+        $this->db->where('admin_id', $admin_id);
 
         if (!empty($search)) {
             $this->db->group_start()
@@ -127,7 +123,7 @@ class Site extends My_Controller
 
     public function expenses()
     {
-       
+
 
         $this->load->view('header');
         $this->load->view('expenses_view'); // ← Send it here
@@ -191,18 +187,18 @@ class Site extends My_Controller
         /* ----------------------------------------------
            DATA QUERY
         ---------------------------------------------- */
-    $this->db->select('
+        $this->db->select('
         expenses.*, 
         sites.name AS site_name,
         expenses.expense_image AS expense_image,
         COALESCE(users.name, user_master.name) AS user_name
     ');
-    $this->db->from('expenses');
+        $this->db->from('expenses');
 
-    // joins
-    $this->db->join('sites', 'sites.id = expenses.site_id', 'left');
-    $this->db->join('users', 'users.id = expenses.user_id', 'left');
-    $this->db->join('user_master', 'user_master.id = expenses.admin_id', 'left');
+        // joins
+        $this->db->join('sites', 'sites.id = expenses.site_id', 'left');
+        $this->db->join('users', 'users.id = expenses.user_id', 'left');
+        $this->db->join('user_master', 'user_master.id = expenses.admin_id', 'left');
 
         // filters
         $this->db->where('expenses.admin_id', $admin_id);
@@ -417,26 +413,26 @@ class Site extends My_Controller
     }
 
     public function get_users()
-{
-    header('Content-Type: application/json');
+    {
+        header('Content-Type: application/json');
 
-    $admin_id = $this->input->get('admin_id'); // get admin id from ajax
+        $admin_id = $this->input->get('admin_id'); // get admin id from ajax
 
-    $this->db->select('id, name');
-    $this->db->from('users');
-    $this->db->where('isActive', 1);
+        $this->db->select('id, name');
+        $this->db->from('users');
+        $this->db->where('isActive', 1);
 
-    if (!empty($admin_id)) {
-        $this->db->where('admin_id', $admin_id); // filter by admin
+        if (!empty($admin_id)) {
+            $this->db->where('admin_id', $admin_id); // filter by admin
+        }
+
+        $users = $this->db->get()->result();
+
+        echo json_encode([
+            'status' => true,
+            'data'   => $users
+        ]);
     }
-
-    $users = $this->db->get()->result();
-
-    echo json_encode([
-        'status' => true,
-        'data'   => $users
-    ]);
-}
 
 
     public function get_site_images()
@@ -604,9 +600,9 @@ class Site extends My_Controller
         $site_name = trim($this->input->post('site_name'));
         $location = trim($this->input->post('location'));
         $area = trim($this->input->post('area'));
-      
+
         // ✅ Validation
-        if (empty($site_name) || empty($location) || empty($area) ) {
+        if (empty($site_name) || empty($location) || empty($area)) {
             $response['message'] = 'All fields are required';
             echo json_encode($response);
             return;
@@ -949,18 +945,10 @@ class Site extends My_Controller
                 'message' => 'expense added successfully',
 
             ];
-
         } else {
             $response['message'] = 'Failed to add expense';
         }
 
         echo json_encode($response);
     }
-
-
-
-
-
 }
-
-?>

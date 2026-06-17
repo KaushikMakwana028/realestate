@@ -416,7 +416,8 @@
 	}
 
 	/* Add Button */
-	.usr-add-btn, .usr-add-upad-btn {
+	.usr-add-btn,
+	.usr-add-upad-btn {
 		display: inline-flex;
 		align-items: center;
 		gap: 6px;
@@ -452,7 +453,8 @@
 		color: #fff;
 	}
 
-	.usr-add-btn i, .usr-add-upad-btn i {
+	.usr-add-btn i,
+	.usr-add-upad-btn i {
 		font-size: 18px;
 	}
 
@@ -1309,12 +1311,14 @@
 			-webkit-overflow-scrolling: touch;
 		}
 
-		.usr-add-btn, .usr-add-upad-btn {
+		.usr-add-btn,
+		.usr-add-upad-btn {
 			width: 100%;
 			justify-content: center;
 		}
 
-		.usr-add-btn span, .usr-add-upad-btn span {
+		.usr-add-btn span,
+		.usr-add-upad-btn span {
 			display: inline !important;
 		}
 

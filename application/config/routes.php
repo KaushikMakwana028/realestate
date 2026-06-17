@@ -1,3 +1,4 @@
+
 <?php
 defined('BASEPATH') or exit('No direct script access allowed');
 
@@ -63,6 +64,10 @@ $route['profile'] = 'profile';
 $route['logout'] = 'login/logout';
 $route['site'] = 'site';
 $route['inquiry'] = 'dashboard/inquiry';
+$route['fetch_inquiries'] = 'dashboard/fetch_inquiries';
+$route['add_inquiry_web'] = 'dashboard/add_inquiry_web';
+$route['update_inquiry_web'] = 'dashboard/update_inquiry_web';
+$route['get_plots_by_site'] = 'dashboard/get_plots_by_site';
 $route['attedance'] = 'dashboard/attedance';
 
 
@@ -128,7 +133,9 @@ $route['pages/privacy_policy'] = 'pages/privacy_policy';
 
 
 // api Route
-$route['api/login'] = 'api/login';
+$route['api/login'] = 'api/send_login_otp';
+$route['api/verify-otp'] = 'api/verify_login_otp';
+
 $route['api/logout'] = 'api/logout';
 $route['api/dashboard'] = 'api/dashboard';
 

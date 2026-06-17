@@ -84,7 +84,7 @@
 				<i class="bx bx-check-circle"></i> Available
 				<span class="filter-count filter-count-success" id="countAvailable">0</span>
 			</button>
-			
+
 			<button class="filter-tab" data-filter="sold">
 				<i class="bx bx-badge-check"></i> Sold
 				<span class="filter-count filter-count-danger" id="countSold">0</span>

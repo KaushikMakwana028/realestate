@@ -50,7 +50,9 @@ class Login extends CI_Controller
             return;
         }
 
-        $otp = rand(100000, 999999);
+        // TESTING MODE: fixed default OTP instead of a random one.
+        // Revert to: $otp = rand(100000, 999999); for production.
+        $otp = '000000';
         $this->session->set_userdata('login_otp', $otp);
         $this->session->set_userdata('login_mobile', $mobile);
 
@@ -96,7 +98,9 @@ class Login extends CI_Controller
             $session_key = 'login_otp';
         }
 
-        $otp = rand(100000, 999999);
+        // TESTING MODE: fixed default OTP instead of a random one.
+        // Revert to: $otp = rand(100000, 999999); for production.
+        $otp = '000000';
         $this->session->set_userdata($session_key, $otp);
 
         $data['masked_mobile'] = '*******' . substr($mobile, -4);
@@ -212,7 +216,9 @@ class Login extends CI_Controller
             'isActive'         => 1
         ]);
 
-        $otp = rand(100000, 999999);
+        // TESTING MODE: fixed default OTP instead of a random one.
+        // Revert to: $otp = rand(100000, 999999); for production.
+        $otp = '000000';
         $this->session->set_userdata('register_otp', $otp);
 
         $sms_sent = $this->_send_otp_via_sms($mobile, $otp);
@@ -381,6 +387,15 @@ class Login extends CI_Controller
 
 
 
+        /* ------------------------------------------------------------------
+         * TESTING MODE: actual SMS sending is disabled.
+         * The OTP is still generated/stored as '000000' (see callers above),
+         * so login/register/resend flows work without hitting the SMS
+         * gateway or needing access to the real phone for every account.
+         *
+         * Uncomment this block to re-enable real SMS sending in production.
+         * ------------------------------------------------------------------
+
         $ch = curl_init();
 
         curl_setopt($ch, CURLOPT_URL, $url);
@@ -406,16 +421,12 @@ class Login extends CI_Controller
 
         log_message('info', "OTP sent to $mobileNo. Response: $response");
 
-        // echo "<pre>";
-
-        // print_r($response);
-
-        // exit;
-
-        // redirect('provider/dashboard');
-
-
-
         return $response;
+
+        */
+
+        log_message('info', "TESTING MODE: OTP SMS sending skipped for $mobileNo (OTP: $otp)");
+
+        return true;
     }
 }
