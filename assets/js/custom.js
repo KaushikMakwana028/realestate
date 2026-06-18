@@ -380,56 +380,198 @@ $(document).ready(function () {
 		});
 	}
 
-	$("#editPlotForm").on("submit", function (e) {
-		e.preventDefault();
+	if ($("#editPlotForm").length) {
+		let previousStatus = $('#plotStatus').val();
+		window.buyerDetailsSaved = !!$('#modalBuyerName').val();
 
-		let formData = new FormData(this);
+		if ($('#plotStatus').val() === 'sold') {
+			$('#buyerDetailsBtnWrap').removeClass('d-none');
+		}
 
-		$.ajax({
-			url: site_url + "plots/update_plot",
-			type: "POST",
-			data: formData,
-			processData: false,
-			contentType: false,
+		// Toggle EMI fields visibility
+		function toggleEmiFields() {
+			const mode = $('#modalPaymentMode').val();
+			if (mode === 'EMI') {
+				$('#emiFieldsGroup').removeClass('d-none');
+				$('#modalEmiDuration, #modalEmiStartDate, #modalInstallmentAmount').prop('required', true);
+			} else {
+				$('#emiFieldsGroup').addClass('d-none');
+				$('#modalEmiDuration, #modalEmiStartDate, #modalInstallmentAmount').prop('required', false);
+			}
+		}
 
-			beforeSend: function () {
+		$('#modalPaymentMode').on('change', toggleEmiFields);
+		toggleEmiFields(); // run initially
+
+		// Status select handler
+		$('#plotStatus').on('focus', function() {
+			previousStatus = $(this).val();
+		}).on('change', function() {
+			if ($(this).val() === 'sold') {
+				$('#buyerDetailsBtnWrap').removeClass('d-none');
+				// If total price in modal is empty, pre-fill from main form price field
+				if (!$('#modalTotalPrice').val()) {
+					$('#modalTotalPrice').val($('#plotPrice').val());
+				}
+				calculatePayments();
+				$('#buyerDetailsModal').modal('show');
+			} else {
+				$('#buyerDetailsBtnWrap').addClass('d-none');
+			}
+		});
+
+		$('#btnEditBuyerDetails').on('click', function() {
+			// Update total price from main form if it was changed
+			if (!$('#modalTotalPrice').val()) {
+				$('#modalTotalPrice').val($('#plotPrice').val());
+			}
+			calculatePayments();
+			$('#buyerDetailsModal').modal('show');
+		});
+
+		// Auto-calculate payments
+		function calculatePayments() {
+			const total = parseFloat($('#modalTotalPrice').val()) || 0;
+			const down = parseFloat($('#modalDownPayment').val()) || 0;
+			const remaining = Math.max(0, total - down);
+			$('#modalRemainingAmount').val(remaining);
+
+			const duration = parseInt($('#modalEmiDuration').val()) || 0;
+			if (duration > 0 && $('#modalPaymentMode').val() === 'EMI') {
+				const installment = Math.ceil(remaining / duration);
+				$('#modalInstallmentAmount').val(installment);
+			}
+		}
+
+		$('#modalTotalPrice, #modalDownPayment, #modalEmiDuration').on('input', calculatePayments);
+
+		// Save details click handler
+		$('#btnSaveBuyerDetails').on('click', function() {
+			const modalForm = document.getElementById('buyerDetailsForm');
+			if (!modalForm.checkValidity()) {
+				$(modalForm).addClass('was-validated');
+				return;
+			}
+
+			const mainForm = document.getElementById('editPlotForm');
+			if (!mainForm.checkValidity()) {
+				$('#buyerDetailsModal').modal('hide');
+				$(mainForm).addClass('was-validated');
 				Swal.fire({
-					title: "Updating...",
-					text: "Please wait",
-					allowOutsideClick: false,
-					didOpen: () => Swal.showLoading(),
+					icon: 'error',
+					title: 'Form Validation Failed',
+					text: 'Please check the required fields on the main form.'
 				});
-			},
+				return;
+			}
 
-			success: function (response) {
-				Swal.close();
+			window.buyerDetailsSaved = true;
+			$('#buyerDetailsModal').modal('hide');
 
-				if (response.status === "success") {
-					const siteId = formData.get("site_id");
-					if (siteId) {
-						window.location.href = site_url + "plots/" + siteId;
+			// Trigger AJAX submit via submit handler
+			$("#editPlotForm").submit();
+		});
+
+		// Reset status if modal closed without saving
+		$('#buyerDetailsModal').on('hidden.bs.modal', function() {
+			if ($('#plotStatus').val() === 'sold' && !window.buyerDetailsSaved) {
+				$('#plotStatus').val(previousStatus);
+				if (previousStatus !== 'sold') {
+					$('#buyerDetailsBtnWrap').addClass('d-none');
+				}
+			}
+		});
+
+		// Hijack submit and send data via AJAX
+		$("#editPlotForm").on("submit", function(e) {
+			e.preventDefault();
+
+			// Validate main form
+			if (!this.checkValidity()) {
+				$(this).addClass('was-validated');
+				return false;
+			}
+
+			if ($('#plotStatus').val() === 'sold' && !window.buyerDetailsSaved) {
+				Swal.fire({
+					icon: 'warning',
+					title: 'Buyer Details Required',
+					text: 'Please enter the buyer and payment details for this sold plot.'
+				}).then(() => {
+					$('#buyerDetailsModal').modal('show');
+				});
+				return false;
+			}
+
+			let formData = new FormData(this);
+
+			// Append buyer details if plot is sold
+			if ($('#plotStatus').val() === 'sold') {
+				formData.append('buyer_name', $('#modalBuyerName').val());
+				formData.append('buyer_mobile', $('#modalBuyerMobile').val());
+				formData.append('buyer_email', $('#modalBuyerEmail').val());
+				formData.append('buyer_address', $('#modalBuyerAddress').val());
+				formData.append('buyer_aadhar', $('#modalBuyerAadhar').val());
+				formData.append('buyer_user_id', $('#modalBuyerAgent').val());
+				formData.append('payment_mode', $('#modalPaymentMode').val());
+				formData.append('total_price', $('#modalTotalPrice').val());
+				formData.append('down_payment', $('#modalDownPayment').val());
+				formData.append('remaining_amount', $('#modalRemainingAmount').val());
+				formData.append('emi_duration', $('#modalEmiDuration').val());
+				formData.append('emi_start_date', $('#modalEmiStartDate').val());
+				formData.append('installment_amount', $('#modalInstallmentAmount').val());
+				formData.append('payment_notes', $('#modalPaymentNotes').val());
+			}
+
+			$.ajax({
+				url: site_url + "plots/update_plot",
+				type: "POST",
+				data: formData,
+				processData: false,
+				contentType: false,
+				dataType: "json",
+
+				beforeSend: function() {
+					Swal.fire({
+						title: "Updating...",
+						text: "Please wait",
+						allowOutsideClick: false,
+						didOpen: () => Swal.showLoading(),
+					});
+				},
+
+
+				success: function(response) {
+					Swal.close();
+
+					if (response.status === "success") {
+						Swal.fire("Success!", response.message, "success").then(() => {
+							const siteId = formData.get("site_id");
+							if (siteId) {
+								window.location.href = site_url + "plots/" + siteId;
+							} else {
+								window.location.href = site_url + "plots";
+							}
+						});
 					} else {
-						window.location.href = site_url + "plots";
+						Swal.fire({
+							icon: "error",
+							title: "Error",
+							text: response.message,
+						});
 					}
-				} else {
+				},
+				error: function() {
+					Swal.close();
 					Swal.fire({
 						icon: "error",
-						title: "Error",
-						text: response.message,
+						title: "Server Error",
+						text: "Something went wrong!",
 					});
-				}
-			},
-
-			error: function () {
-				Swal.close();
-				Swal.fire({
-					icon: "error",
-					title: "Server Error",
-					text: "Something went wrong!",
-				});
-			},
+				},
+			});
 		});
-	});
+	}
 
 	if ($("#customerTableBody").length) {
 		let currentPage = 1;
@@ -3066,8 +3208,16 @@ $(document).ready(function () {
 				const optionSelected = function (value) {
 					return statusValue == value ? "selected" : "";
 				};
+				let bgStyle = "";
+				if (statusValue === "approve") {
+					bgStyle = "background-color: #d1fae5 !important; border-color: #10b981 !important; color: #065f46 !important;";
+				} else if (statusValue === "reject") {
+					bgStyle = "background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #7f1d1d !important;";
+				} else {
+					bgStyle = "background-color: #ffedd5 !important; border-color: #f97316 !important; color: #7c2d12 !important;";
+				}
 				const actionHtml = `
-					<select class="form-select form-select-sm statuspayment" ${statusDataAttr}>
+					<select class="form-select form-select-sm statuspayment" style="min-width: 105px !important; font-weight: 600; border-radius: 20px; text-align-last: center; ${bgStyle}" ${statusDataAttr}>
 						<option value="pending" ${optionSelected("pending")}>Pending</option>
 						<option value="approve" ${optionSelected("approve")}>Approve</option>
 						<option value="reject" ${optionSelected("reject")}>Reject</option>
@@ -3279,6 +3429,31 @@ $(document).on("change", ".statuspayment", function () {
 		return;
 	}
 
+	function updateSelectStyle($el, val) {
+		if (val === "approve") {
+			$el.css({
+				"background-color": "#d1fae5",
+				"border-color": "#10b981",
+				"color": "#065f46"
+			});
+		} else if (val === "reject") {
+			$el.css({
+				"background-color": "#fee2e2",
+				"border-color": "#ef4444",
+				"color": "#7f1d1d"
+			});
+		} else {
+			$el.css({
+				"background-color": "#ffedd5",
+				"border-color": "#f97316",
+				"color": "#7c2d12"
+			});
+		}
+	}
+
+	// Optimistically update style
+	updateSelectStyle($select, status);
+
 	Swal.fire({
 		title: "Are you sure?",
 		text: "Do you want to update this status?",
@@ -3335,10 +3510,12 @@ $(document).on("change", ".statuspayment", function () {
 						"error",
 					);
 					$select.val(previousStatus);
+					updateSelectStyle($select, previousStatus);
 				},
 				error: function () {
 					Swal.fire("Error", "Server error!", "error");
 					$select.val(previousStatus);
+					updateSelectStyle($select, previousStatus);
 				},
 				complete: function () {
 					$select.prop("disabled", false);
@@ -3346,6 +3523,7 @@ $(document).on("change", ".statuspayment", function () {
 			});
 		} else {
 			$select.val(previousStatus);
+			updateSelectStyle($select, previousStatus);
 		}
 	});
 });
@@ -3370,10 +3548,16 @@ $(document).on("click", ".update_form", function () {
 	$(".error-msg").html("");
 
 	let name = $("#fullName").val().trim();
+	let business_name = $("#businessName").val().trim();
 	let email = $("#email").val().trim();
 	let mobile = $("#mobile").val().trim();
 	let address = $("#address").val().trim();
-	let password = $("#password").val().trim();
+	let gst_number = $("#gstNumber").val().trim();
+	let facebook = $("#facebook").val().trim();
+	let instagram = $("#instagram").val().trim();
+	let bank_name = $("#bankName").val() ? $("#bankName").val().trim() : "";
+	let account_number = $("#accountNumber").val() ? $("#accountNumber").val().trim() : "";
+	let ifsc_code = $("#ifscCode").val() ? $("#ifscCode").val().trim() : "";
 
 	let isValid = true;
 	const setFieldError = function (selector, message) {
@@ -3392,13 +3576,19 @@ $(document).on("click", ".update_form", function () {
 		}
 	};
 
-	// âœ… Name validation
+	// ✅ Name validation
 	if (name === "") {
 		setFieldError("#fullName", "Full name is required");
 		isValid = false;
 	}
 
-	// âœ… Email validation
+	// ✅ Business Name validation
+	if (business_name === "") {
+		setFieldError("#businessName", "Business name is required");
+		isValid = false;
+	}
+
+	// ✅ Email validation
 	if (email === "") {
 		setFieldError("#email", "Email is required");
 		isValid = false;
@@ -3407,21 +3597,33 @@ $(document).on("click", ".update_form", function () {
 		isValid = false;
 	}
 
-	// âŒ Stop if validation fails
+	// ❌ Stop if validation fails
 	if (!isValid) return;
 
-	// âœ… MUST use FormData for file upload
+	// ✅ MUST use FormData for file upload
 	let formData = new FormData();
 	formData.append("name", name);
+	formData.append("business_name", business_name);
 	formData.append("email", email);
 	formData.append("mobile", mobile);
 	formData.append("address", address);
-	formData.append("password", password);
+	formData.append("gst_number", gst_number);
+	formData.append("facebook", facebook);
+	formData.append("instagram", instagram);
+	formData.append("bank_name", bank_name);
+	formData.append("account_number", account_number);
+	formData.append("ifsc_code", ifsc_code);
 
-	// âœ… Profile image (optional)
+	// ✅ Profile image (optional)
 	const file = $("#avatar-upload")[0].files[0];
 	if (file) {
 		formData.append("profile_image", file);
+	}
+
+	// ✅ Signature image (optional)
+	const sigFile = $("#signatureUpload").length ? $("#signatureUpload")[0].files[0] : null;
+	if (sigFile) {
+		formData.append("signature", sigFile);
 	}
 
 	// âœ… AJAX Request
@@ -3707,8 +3909,34 @@ $(document).ready(function () {
 
 						let imageBadge = "";
 						if (imgStatus === "pending") {
-							imageBadge =
-								'<span class="badge bg-warning-light text-warning">Pending</span>';
+							let firstImage = "";
+							try {
+								const parsedImages = JSON.parse(site.site_images_pending || "[]");
+								if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+									firstImage = parsedImages[0];
+								}
+							} catch (e) {}
+							
+							if (!firstImage) {
+								try {
+									const parsedImages = JSON.parse(site.site_images || "[]");
+									if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+										firstImage = parsedImages[0];
+									}
+								} catch (e) {}
+							}
+
+							if (firstImage) {
+								imageBadge = `
+									<div class="d-flex flex-column align-items-center">
+										<img src="${site_url}${firstImage}" alt="Site Image" style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+										<span class="badge bg-warning-light text-warning mt-1">Pending</span>
+									</div>
+								`;
+							} else {
+								imageBadge =
+									'<span class="badge bg-warning-light text-warning">Pending</span>';
+							}
 						} else if (imgStatus === "reject") {
 							imageBadge =
 								'<span class="badge bg-danger-light text-danger">Rejected</span>';
@@ -3741,8 +3969,10 @@ $(document).ready(function () {
 							? '<span class="badge bg-success-light text-success">Yes</span>'
 							: '<span class="badge bg-secondary-light text-secondary mapReason" data-reason="Map not uploaded" style="cursor:pointer;">No</span>';
 
+						const hasPendingImages = imgStatus === "pending" && site.site_images_pending && site.site_images_pending !== "NULL" && site.site_images_pending !== "null";
+						const hasAnyImages = hasApprovedImages || hasPendingImages;
 						const viewBtn = `<button class="btn btn-sm btn-primary viewSiteDetail" data-id="${site.id}" title="View Details"><i class="bx bx-show"></i></button>`;
-						const uploadBtn = `<button type="button" class="btn btn-sm btn-success uploadSiteMap" data-id="${site.id}" data-has-images="${hasApprovedImages ? "1" : "0"}" data-has-map="${hasMap ? "1" : "0"}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map"><i class="bx bx-upload"></i></button>`;
+						const uploadBtn = `<button type="button" class="btn btn-sm btn-success uploadSiteMap" data-id="${site.id}" data-has-images="${hasAnyImages ? "1" : "0"}" data-has-map="${hasMap ? "1" : "0"}" data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map"><i class="bx bx-upload"></i></button>`;
 
 						rows += `
 							<tr>
@@ -3813,8 +4043,33 @@ $(document).ready(function () {
 
 						let imageBadge = "";
 						if (imgStatus === "pending") {
-							imageBadge =
-								'<span class="badge bg-warning-light text-warning">Pending</span>';
+							let firstImage = "";
+							try {
+								const parsedImages = JSON.parse(site.site_images_pending || "[]");
+								if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+									firstImage = parsedImages[0];
+								}
+							} catch (e) {}
+							
+							if (!firstImage) {
+								try {
+									const parsedImages = JSON.parse(site.site_images || "[]");
+									if (Array.isArray(parsedImages) && parsedImages.length > 0) {
+										firstImage = parsedImages[0];
+									}
+								} catch (e) {}
+							}
+
+							if (firstImage) {
+								imageBadge =
+									'<div style="text-align:center;"><img src="' +
+									site_url +
+									firstImage +
+									'" style="width:100px;height:100px;object-fit:cover;border-radius:6px;margin-bottom:8px;"><br><span class="badge bg-warning-light text-warning">Pending</span></div>';
+							} else {
+								imageBadge =
+									'<span class="badge bg-warning-light text-warning">Pending</span>';
+							}
 						} else if (imgStatus === "reject") {
 							imageBadge =
 								'<span class="badge bg-danger-light text-danger">Rejected</span>';
@@ -3842,11 +4097,13 @@ $(document).ready(function () {
 								'<span class="badge bg-secondary-light text-secondary">No Images</span>';
 						}
 
+						const hasPendingImages = imgStatus === "pending" && site.site_images_pending && site.site_images_pending !== "NULL" && site.site_images_pending !== "null";
+						const hasAnyImages = hasApprovedImages || hasPendingImages;
 						const mapBtn = hasMap
 							? `<a href="${site_url}${site.site_map}" target="_blank" class="btn btn-sm btn-outline-success">
 									<i class="bx bx-map"></i> View Map
 								</a>`
-							: hasApprovedImages
+							: hasAnyImages
 								? `<button type="button" class="btn btn-sm btn-outline-primary uploadMapBtn" data-site-id="${site.id}">
 									<i class="bx bx-upload"></i> Upload Map
 								</button>`

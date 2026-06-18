@@ -571,7 +571,7 @@ class Superadmin extends My_Controller
 
         /* ---------------- DATA QUERY ---------------- */
 
-        $this->db->select("s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.listed_map, s.site_images_status, (SELECT COUNT(*) FROM plots p WHERE p.site_id = s.id AND p.isActive = 1) AS plot_count");
+        $this->db->select("s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_images_pending, s.site_images_status, (SELECT COUNT(*) FROM plots p WHERE p.site_id = s.id AND p.isActive = 1) AS plot_count");
         $this->db->from('sites s');
         $this->db->where('s.admin_id', (int) $admin_id);
         $this->db->where('s.isActive', 1);
@@ -673,7 +673,7 @@ class Superadmin extends My_Controller
         }
 
         $site = $this->db
-            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_map, s.listed_map, s.admin_id, um.name as admin_name')
+            ->select('s.id, s.name, s.location, s.area, s.total_plots, s.site_images, s.site_images_pending, s.site_map, s.listed_map, s.admin_id, um.name as admin_name')
             ->from('sites s')
             ->join('user_master um', 'um.id = s.admin_id', 'left')
             ->where('s.id', $site_id)
@@ -692,7 +692,13 @@ class Superadmin extends My_Controller
         if (!empty($site->site_images)) {
             $decoded = json_decode($site->site_images, true);
             if (is_array($decoded)) {
-                $images = $decoded;
+                $images = array_merge($images, $decoded);
+            }
+        }
+        if (!empty($site->site_images_pending)) {
+            $decoded_pending = json_decode($site->site_images_pending, true);
+            if (is_array($decoded_pending)) {
+                $images = array_merge($images, $decoded_pending);
             }
         }
 
@@ -743,7 +749,7 @@ class Superadmin extends My_Controller
         }
 
         $site = $this->db
-            ->select('id, site_images, site_images_status')
+            ->select('id, site_images, site_images_pending, site_images_status')
             ->where('id', $site_id)
             ->where('isActive', 1)
             ->get('sites')
@@ -755,11 +761,11 @@ class Superadmin extends My_Controller
         }
 
         $has_images = !empty($site->site_images) && $site->site_images !== 'NULL' && $site->site_images !== 'null';
-        $images_approved = (($site->site_images_status ?? '') === 'approve');
-        if (!$has_images || !$images_approved) {
+        $has_pending_images = !empty($site->site_images_pending) && $site->site_images_pending !== 'NULL' && $site->site_images_pending !== 'null';
+        if (!$has_images && !$has_pending_images) {
             echo json_encode([
                 'status' => false,
-                'message' => 'Image is not uploaded/approved. Please upload and approve site images first.'
+                'message' => 'Image is not uploaded. Please upload site images first.'
             ]);
             return;
         }

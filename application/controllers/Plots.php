@@ -1704,12 +1704,13 @@ class Plots extends My_Controller
         $buyer = $this->db->get_where('buyer', ['id' => $buyer_id])->row();
 
         // ---- User ----
-        $user = $this->db->select('name,business_name,email,mobile,address,profile_image')
+        $user = $this->db->select('name,business_name,email,mobile,address,profile_image,facebook,instagram,gst_number,bank_name,account_number,ifsc_code,signature')
             ->from('user_master')
             ->where('id', $admin_id)
             ->get()->row();
         if ($user) {
             $user->profile_image_data_uri = null;
+            $user->signature_data_uri = null;
             $resolveDataUri = function ($path) {
                 if (empty($path)) {
                     return null;
@@ -1718,6 +1719,7 @@ class Plots extends My_Controller
                 $candidates = [];
                 $candidates[] = FCPATH . ltrim($clean, '/');
                 $candidates[] = FCPATH . 'uploads/profile/' . basename($clean);
+                $candidates[] = FCPATH . 'uploads/signature/' . basename($clean);
                 foreach ($candidates as $candidate) {
                     if (!is_file($candidate)) {
                         continue;
@@ -1748,6 +1750,10 @@ class Plots extends My_Controller
             // Guaranteed fallback: app main logo
             if (empty($user->profile_image_data_uri)) {
                 $user->profile_image_data_uri = $resolveDataUri('assets/images/main_logo.png');
+            }
+
+            if (!empty($user->signature)) {
+                $user->signature_data_uri = $resolveDataUri($user->signature);
             }
         }
 
@@ -1791,6 +1797,35 @@ class Plots extends My_Controller
                     $entry->created_on = $payment->created_on ?? date('Y-m-d H:i:s');
                     $logs[] = $entry;
                 }
+            }
+        }
+
+        // ---- Approved EMI Logs ----
+        $approved_emi = $this->db->where('buyer_id', $buyer_id)
+            ->where('status', 'approve')
+            ->get('emi_logs')
+            ->result();
+
+        if (!empty($approved_emi)) {
+            $total_price = isset($payment) ? (float) ($payment->total_price ?? 0) : 0;
+            foreach ($approved_emi as $emi) {
+                $entry = new stdClass();
+                $entry->id = $emi->id;
+                $entry->buyer_id = $emi->buyer_id;
+                $entry->plot_id = $emi->plot_id;
+                $entry->paid_amount = (float) $emi->emi_amount;
+                $entry->total_price = $total_price;
+                
+                $ord = (int) $emi->month_no;
+                if ($ord === 1) $ord_str = '1st';
+                elseif ($ord === 2) $ord_str = '2nd';
+                elseif ($ord === 3) $ord_str = '3rd';
+                else $ord_str = $ord . 'th';
+                
+                $entry->notes = $ord_str . ' Installment';
+                $entry->status = 'approve';
+                $entry->created_on = $emi->emi_date ? $emi->emi_date . ' 12:00:00' : ($emi->created_on ?? date('Y-m-d H:i:s'));
+                $logs[] = $entry;
             }
         }
 

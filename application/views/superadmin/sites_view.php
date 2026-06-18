@@ -67,8 +67,13 @@
                                     $has_images = !empty($site->site_images) &&
                                         $site->site_images !== 'NULL' &&
                                         $site->site_images !== 'null';
+                                    $has_pending_images = !empty($site->site_images_pending) &&
+                                        $site->site_images_pending !== 'NULL' &&
+                                        $site->site_images_pending !== 'null';
 
                                     $has_approved_images = ($img_status === 'approve') && $has_images;
+                                    $has_any_images = $has_approved_images || ($img_status === 'pending' && $has_pending_images);
+
                                     $has_map = !empty($site->site_map) &&
                                         $site->site_map !== 'NULL' &&
                                         $site->site_map !== 'null';
@@ -85,7 +90,30 @@
 
                                         <td class="text-center">
                                             <?php if ($img_status === 'pending'): ?>
-                                                <span class="badge bg-warning-light text-warning">Pending</span>
+                                                <?php
+                                                $first_image = '';
+                                                if (!empty($site->site_images_pending) && $site->site_images_pending !== 'NULL' && $site->site_images_pending !== 'null') {
+                                                    $decoded_images = json_decode($site->site_images_pending, true);
+                                                    if (is_array($decoded_images) && !empty($decoded_images[0])) {
+                                                        $first_image = $decoded_images[0];
+                                                    }
+                                                }
+                                                if (empty($first_image) && !empty($site->site_images) && $site->site_images !== 'NULL' && $site->site_images !== 'null') {
+                                                    $decoded_images = json_decode($site->site_images, true);
+                                                    if (is_array($decoded_images) && !empty($decoded_images[0])) {
+                                                        $first_image = $decoded_images[0];
+                                                    }
+                                                }
+                                                ?>
+                                                <?php if (!empty($first_image)): ?>
+                                                    <div class="d-flex flex-column align-items-center">
+                                                        <img src="<?= base_url($first_image); ?>" alt="Site Image"
+                                                            style="width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid #e5e7eb;">
+                                                        <span class="badge bg-warning-light text-warning mt-1">Pending</span>
+                                                    </div>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning-light text-warning">Pending</span>
+                                                <?php endif; ?>
 
                                             <?php elseif ($img_status === 'reject'): ?>
                                                 <span class="badge bg-danger-light text-danger">Rejected</span>
@@ -133,7 +161,7 @@
                                                 </button>
                                                 <button type="button" class="btn btn-success uploadSiteMap"
                                                     data-id="<?= $site->id; ?>"
-                                                    data-has-images="<?= $has_approved_images ? '1' : '0'; ?>"
+                                                    data-has-images="<?= $has_any_images ? '1' : '0'; ?>"
                                                     data-has-map="<?= $has_map ? '1' : '0'; ?>"
                                                     data-bs-toggle="modal" data-bs-target="#siteMapUploadModal" title="Upload Map">
                                                     <i class="bx bx-upload"></i>
